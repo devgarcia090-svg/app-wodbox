@@ -5,43 +5,31 @@ import {
 } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
+import { supabase } from '../lib/supabase';
 
-export type UserRole = 'athlete' | 'admin';
-
-interface LoginResult {
-  role: UserRole;
-  name: string;
-}
-
-const MOCK_USERS: Record<string, { password: string; role: UserRole; name: string }> = {
-  'carlos@wodbox.com':  { password: 'carlos123', role: 'athlete', name: 'Carlos' },
-  'ana@wodbox.com':     { password: 'ana123',    role: 'athlete', name: 'Ana' },
-  'admin@wodbox.com':   { password: 'admin123',  role: 'admin',   name: 'Admin' },
-  'sara@wodbox.com':    { password: 'sara123',   role: 'admin',   name: 'Sara' },
-};
-
-interface Props {
-  onLogin: (result: LoginResult) => void;
-}
-
-export function LoginScreen({ onLogin }: Props) {
+export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
-    const user = MOCK_USERS[email.trim().toLowerCase()];
-    if (!user || user.password !== password) {
-      setError('Email o contraseña incorrectos');
-      return;
-    }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (error) {
+        setError('Email o contraseña incorrectos');
+      }
+      // On success AuthContext auto-updates — no callback needed
+    } catch {
+      setError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
       setLoading(false);
-      onLogin({ role: user.role, name: user.name });
-    }, 600);
+    }
   };
 
   return (

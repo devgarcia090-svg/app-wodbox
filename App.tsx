@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -16,18 +16,58 @@ import {
 } from '@expo-google-fonts/inter';
 import { AthleteNavigator } from './src/navigation/AthleteNavigator';
 import { AdminNavigator } from './src/navigation/AdminNavigator';
-import { LoginScreen, type UserRole } from './src/screens/LoginScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
 
-interface Session {
-  role: UserRole;
-  name: string;
+function AppContent() {
+  const { session, profile, loading, signOut } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingLogo}>WOD<Text style={styles.loadingAccent}>BOX</Text></Text>
+        <ActivityIndicator color={Colors.orange} style={{ marginTop: 24 }} />
+      </View>
+    );
+  }
+
+  if (!session || !profile) {
+    return (
+      <>
+        <StatusBar barStyle="light-content" backgroundColor={Colors.black} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.black }} edges={['top']}>
+          <LoginScreen />
+        </SafeAreaView>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.surface} />
+      <NavigationContainer>
+        <SafeAreaView style={styles.root} edges={['top']}>
+          {/* Top Nav */}
+          <View style={styles.nav}>
+            <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
+            <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
+              <Text style={styles.logoutText}>Salir</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          <View style={styles.content}>
+            {profile.role === 'athlete' ? <AthleteNavigator /> : <AdminNavigator />}
+          </View>
+        </SafeAreaView>
+      </NavigationContainer>
+    </>
+  );
 }
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-
   const [fontsLoaded] = useFonts({
     BarlowCondensed_400Regular,
     BarlowCondensed_600SemiBold,
@@ -40,41 +80,29 @@ export default function App() {
 
   if (!fontsLoaded) return null;
 
-  if (!session) {
-    return (
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor={Colors.black} />
-        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.black }} edges={['top']}>
-          <LoginScreen onLogin={setSession} />
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
-  }
-
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.surface} />
-      <NavigationContainer>
-        <SafeAreaView style={styles.root} edges={['top']}>
-          {/* Top Nav */}
-          <View style={styles.nav}>
-            <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
-            <TouchableOpacity style={styles.logoutBtn} onPress={() => setSession(null)}>
-              <Text style={styles.logoutText}>Salir</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Content */}
-          <View style={styles.content}>
-            {session.role === 'athlete' ? <AthleteNavigator /> : <AdminNavigator />}
-          </View>
-        </SafeAreaView>
-      </NavigationContainer>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingLogo: {
+    fontFamily: Fonts.headingXBold,
+    fontSize: 48,
+    letterSpacing: 2,
+    color: Colors.white,
+  },
+  loadingAccent: { color: Colors.orange },
   root: { flex: 1, backgroundColor: Colors.surface },
   nav: {
     height: 56,
