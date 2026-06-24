@@ -33,14 +33,6 @@ export function AdminDashboard() {
         <Text style={styles.adminSub}>Panel de gestión · Miércoles 24 jun 2026</Text>
       </View>
 
-      {/* Stats grid */}
-      <View style={styles.statsGrid}>
-        <StatCard label="Atletas activos" value="47" sub="+3 este mes" />
-        <StatCard label="Clases hoy" value="5" sub="63 reservas" />
-        <StatCard label="Ingresos junio" value="1.840€" sub="Objetivo: 2.100€" valueSize={24} />
-        <StatCard label="Pagos pendientes" value="3" sub="Requieren acción" valueColor={Colors.yellow} subColor={Colors.yellow} />
-      </View>
-
       {/* Tab scroll */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabContent}>
         {TABS.map(t => (
@@ -69,17 +61,6 @@ export function AdminDashboard() {
   );
 }
 
-function StatCard({ label, value, sub, valueSize = 32, valueColor = Colors.orange, subColor = Colors.muted }: {
-  label: string; value: string; sub: string; valueSize?: number; valueColor?: string; subColor?: string;
-}) {
-  return (
-    <View style={statStyles.card}>
-      <Text style={statStyles.label}>{label}</Text>
-      <Text style={[statStyles.value, { fontSize: valueSize, color: valueColor }]}>{value}</Text>
-      <Text style={[statStyles.sub, { color: subColor }]}>{sub}</Text>
-    </View>
-  );
-}
 
 function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   return (
@@ -87,28 +68,51 @@ function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
       {CLASSES_TODAY.map(cls => {
         const pct = Math.round((cls.enrolled / cls.capacity) * 100);
         const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
+        const isFull = pct >= 100;
         return (
-          <View key={cls.id} style={clsStyles.row}>
-            <View style={clsStyles.info}>
-              <Text style={clsStyles.name}>{cls.name} · {cls.time}</Text>
-              <View style={clsStyles.meta}>
-                <Text style={clsStyles.metaText}>{cls.coach}</Text>
-                <Text style={[clsStyles.metaText, pct >= 100 && { color: Colors.red }]}>
-                  {cls.enrolled}/{cls.capacity}{pct >= 100 ? ' LLENA' : ''}
+          <View key={cls.id} style={clsStyles.card}>
+            {/* Header row */}
+            <View style={clsStyles.cardHeader}>
+              <View style={clsStyles.timeBlock}>
+                <Text style={clsStyles.cardTime}>{cls.time}</Text>
+                <Text style={clsStyles.cardDuration}>{cls.duration}</Text>
+              </View>
+              <View style={clsStyles.info}>
+                <Text style={clsStyles.name}>{cls.name}</Text>
+                <Text style={clsStyles.coachText}>👤 {cls.coach}</Text>
+              </View>
+              <View style={clsStyles.rightCol}>
+                <Text style={[clsStyles.spotsText, isFull && { color: Colors.red }]}>
+                  {cls.enrolled}/{cls.capacity}
                 </Text>
-              </View>
-              <View style={clsStyles.bar}>
-                <View style={[clsStyles.fill, { width: `${pct}%` as any, backgroundColor: fillColor }]} />
+                {isFull && <Text style={clsStyles.fullLabel}>LLENA</Text>}
+                <TouchableOpacity onPress={() => showToast('Editando clase', 'info')}>
+                  <Text style={clsStyles.editBtn}>✏️</Text>
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={clsStyles.actions}>
-              <TouchableOpacity style={clsStyles.iconBtn} onPress={() => showToast('Lista abierta', 'success')}>
-                <Text>👥</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[clsStyles.iconBtn, clsStyles.ghostBtn]} onPress={() => showToast('Editando', 'info')}>
-                <Text>✏️</Text>
-              </TouchableOpacity>
+
+            {/* Capacity bar */}
+            <View style={clsStyles.bar}>
+              <View style={[clsStyles.fill, { width: `${pct}%` as any, backgroundColor: fillColor }]} />
             </View>
+
+            {/* Attendees list */}
+            {cls.attendees.length > 0 && (
+              <View style={clsStyles.attendeesSection}>
+                <Text style={clsStyles.attendeesLabel}>Inscritos</Text>
+                <View style={clsStyles.attendeesGrid}>
+                  {cls.attendees.map((att, i) => (
+                    <View key={i} style={clsStyles.attendeeItem}>
+                      <View style={[clsStyles.attendeeAvatar, { backgroundColor: att.color }]}>
+                        <Text style={clsStyles.attendeeInitials}>{att.initials}</Text>
+                      </View>
+                      <Text style={clsStyles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         );
       })}
@@ -483,7 +487,6 @@ const styles = StyleSheet.create({
   },
   adminTitle: { fontFamily: Fonts.headingXBold, fontSize: 26, color: Colors.white },
   adminSub: { color: Colors.muted, fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 16 },
   tabScroll: { flexGrow: 0 },
   tabContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 4, flexDirection: 'row' },
   adminTab: {
@@ -499,19 +502,6 @@ const styles = StyleSheet.create({
   adminTabTextActive: { color: '#fff' },
 });
 
-const statStyles = StyleSheet.create({
-  card: {
-    width: '47%',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 16,
-  },
-  label: { fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, fontFamily: Fonts.body },
-  value: { fontFamily: Fonts.headingXBold, lineHeight: 36 },
-  sub: { fontSize: 11, marginTop: 4, fontFamily: Fonts.body },
-});
 
 const panelStyles = StyleSheet.create({
   panel: { flex: 1 },
@@ -527,36 +517,86 @@ const panelStyles = StyleSheet.create({
 });
 
 const clsStyles = StyleSheet.create({
-  row: {
+  card: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
+    marginBottom: 10,
+  },
+  timeBlock: {
+    alignItems: 'center',
+    minWidth: 48,
+  },
+  cardTime: {
+    fontFamily: Fonts.heading,
+    fontSize: 22,
+    color: Colors.orange,
+    lineHeight: 24,
+  },
+  cardDuration: {
+    fontSize: 10,
+    color: Colors.muted,
+    fontFamily: Fonts.body,
+    marginTop: 2,
   },
   info: { flex: 1 },
-  name: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white, marginBottom: 3 },
-  meta: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  metaText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
-  bar: { height: 4, backgroundColor: Colors.surface3, borderRadius: 2, marginTop: 8, overflow: 'hidden' },
+  name: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white, marginBottom: 2 },
+  coachText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
+  rightCol: { alignItems: 'flex-end', gap: 2 },
+  spotsText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
+  fullLabel: { fontSize: 10, color: Colors.red, fontFamily: Fonts.bodySemiBold },
+  editBtn: { fontSize: 16, marginTop: 2 },
+  bar: { height: 4, backgroundColor: Colors.surface3, borderRadius: 2, marginBottom: 12, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 2 },
-  actions: { flexDirection: 'row', gap: 6 },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    backgroundColor: Colors.surface3,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  attendeesSection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 10,
+  },
+  attendeesLabel: {
+    fontSize: 10,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  attendeesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  attendeeItem: {
+    alignItems: 'center',
+    width: 48,
+  },
+  attendeeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
-  ghostBtn: { backgroundColor: Colors.orangeGlow, borderColor: Colors.orange },
+  attendeeInitials: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: '#fff',
+  },
+  attendeeName: {
+    fontSize: 10,
+    color: Colors.muted,
+    fontFamily: Fonts.body,
+    textAlign: 'center',
+  },
 });
 
 const memStyles = StyleSheet.create({

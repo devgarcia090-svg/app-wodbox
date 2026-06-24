@@ -1,5 +1,11 @@
 export type ClassStatus = 'reserved' | 'full' | 'open';
 
+export interface Attendee {
+  name: string;
+  initials: string;
+  color: string;
+}
+
 export interface ClassItem {
   id: string;
   name: string;
@@ -11,6 +17,7 @@ export interface ClassItem {
   status: ClassStatus;
   wod: string;
   avatars: { initial: string; color: string }[];
+  attendees: Attendee[];
 }
 
 export interface Member {
@@ -59,6 +66,20 @@ export const CLASSES_TODAY: ClassItem[] = [
       { initial: 'M', color: '#8b5cf6' },
       { initial: 'A', color: '#06b6d4' },
     ],
+    attendees: [
+      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
+      { name: 'María López', initials: 'ML', color: '#8b5cf6' },
+      { name: 'Ana Pérez', initials: 'AP', color: '#22c55e' },
+      { name: 'David Ruiz', initials: 'DR', color: '#06b6d4' },
+      { name: 'Elena Gómez', initials: 'EG', color: '#ec4899' },
+      { name: 'Felipe Torres', initials: 'FT', color: '#f59e0b' },
+      { name: 'Sofía Navarro', initials: 'SN', color: '#3b82f6' },
+      { name: 'Javier Molina', initials: 'JM', color: '#ef4444' },
+      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
+      { name: 'Roberto Díaz', initials: 'RD', color: '#f95c00' },
+      { name: 'Nuria Fernández', initials: 'NF', color: '#06b6d4' },
+      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
+    ],
   },
   {
     id: '2',
@@ -73,6 +94,13 @@ export const CLASSES_TODAY: ClassItem[] = [
     avatars: [
       { initial: 'L', color: '#8b5cf6' },
       { initial: 'N', color: '#ec4899' },
+    ],
+    attendees: [
+      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
+      { name: 'Nuria Fernández', initials: 'NF', color: '#ec4899' },
+      { name: 'Tomás Iglesias', initials: 'TI', color: '#06b6d4' },
+      { name: 'Vera Castillo', initials: 'VC', color: '#f59e0b' },
+      { name: 'Iván Ramos', initials: 'IR', color: '#3b82f6' },
     ],
   },
   {
@@ -90,6 +118,24 @@ export const CLASSES_TODAY: ClassItem[] = [
       { initial: 'J', color: '#22c55e' },
       { initial: 'T', color: '#06b6d4' },
     ],
+    attendees: [
+      { name: 'Roberto Díaz', initials: 'RD', color: '#f95c00' },
+      { name: 'Javier Molina', initials: 'JM', color: '#22c55e' },
+      { name: 'Tomás Iglesias', initials: 'TI', color: '#06b6d4' },
+      { name: 'Ana Pérez', initials: 'AP', color: '#ec4899' },
+      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
+      { name: 'Elena Gómez', initials: 'EG', color: '#8b5cf6' },
+      { name: 'Felipe Torres', initials: 'FT', color: '#f59e0b' },
+      { name: 'María López', initials: 'ML', color: '#3b82f6' },
+      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
+      { name: 'Sofía Navarro', initials: 'SN', color: '#ef4444' },
+      { name: 'Nuria Fernández', initials: 'NF', color: '#06b6d4' },
+      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
+      { name: 'Iván Ramos', initials: 'IR', color: '#f95c00' },
+      { name: 'Vera Castillo', initials: 'VC', color: '#22c55e' },
+      { name: 'David Ruiz', initials: 'DR', color: '#06b6d4' },
+      { name: 'Rosa Torres', initials: 'RT', color: '#ec4899' },
+    ],
   },
   {
     id: '4',
@@ -104,6 +150,11 @@ export const CLASSES_TODAY: ClassItem[] = [
     avatars: [
       { initial: 'D', color: '#f59e0b' },
       { initial: 'E', color: '#8b5cf6' },
+    ],
+    attendees: [
+      { name: 'David Ruiz', initials: 'DR', color: '#f59e0b' },
+      { name: 'Elena Gómez', initials: 'EG', color: '#8b5cf6' },
+      { name: 'Felipe Torres', initials: 'FT', color: '#22c55e' },
     ],
   },
   {
@@ -120,6 +171,16 @@ export const CLASSES_TODAY: ClassItem[] = [
       { initial: 'G', color: '#22c55e' },
       { initial: 'I', color: '#06b6d4' },
       { initial: 'V', color: '#f95c00' },
+    ],
+    attendees: [
+      { name: 'Gonzalo Prieto', initials: 'GP', color: '#22c55e' },
+      { name: 'Iván Ramos', initials: 'IR', color: '#06b6d4' },
+      { name: 'Vera Castillo', initials: 'VC', color: '#f95c00' },
+      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
+      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
+      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
+      { name: 'Ana Pérez', initials: 'AP', color: '#ec4899' },
+      { name: 'Roberto Díaz', initials: 'RD', color: '#f59e0b' },
     ],
   },
 ];
