@@ -1,7 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, StatusBar,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -18,13 +16,17 @@ import {
 } from '@expo-google-fonts/inter';
 import { AthleteNavigator } from './src/navigation/AthleteNavigator';
 import { AdminNavigator } from './src/navigation/AdminNavigator';
+import { LoginScreen, type UserRole } from './src/screens/LoginScreen';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
 
-type ViewMode = 'athlete' | 'admin';
+interface Session {
+  role: UserRole;
+  name: string;
+}
 
 export default function App() {
-  const [view, setView] = useState<ViewMode>('athlete');
+  const [session, setSession] = useState<Session | null>(null);
 
   const [fontsLoaded] = useFonts({
     BarlowCondensed_400Regular,
@@ -38,6 +40,17 @@ export default function App() {
 
   if (!fontsLoaded) return null;
 
+  if (!session) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor={Colors.black} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.black }} edges={['top']}>
+          <LoginScreen onLogin={setSession} />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor={Colors.surface} />
@@ -46,25 +59,14 @@ export default function App() {
           {/* Top Nav */}
           <View style={styles.nav}>
             <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
-            <View style={styles.navTabs}>
-              <TouchableOpacity
-                style={[styles.navTab, view === 'athlete' && styles.navTabActive]}
-                onPress={() => setView('athlete')}
-              >
-                <Text style={[styles.navTabText, view === 'athlete' && styles.navTabTextActive]}>Atleta</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.navTab, view === 'admin' && styles.navTabActive]}
-                onPress={() => setView('admin')}
-              >
-                <Text style={[styles.navTabText, view === 'admin' && styles.navTabTextActive]}>Gestión</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.logoutBtn} onPress={() => setSession(null)}>
+              <Text style={styles.logoutText}>Salir</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Content */}
           <View style={styles.content}>
-            {view === 'athlete' ? <AthleteNavigator /> : <AdminNavigator />}
+            {session.role === 'athlete' ? <AthleteNavigator /> : <AdminNavigator />}
           </View>
         </SafeAreaView>
       </NavigationContainer>
@@ -91,24 +93,18 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   logoAccent: { color: Colors.orange },
-  navTabs: {
-    flexDirection: 'row',
-    gap: 4,
-    backgroundColor: Colors.surface2,
-    borderRadius: 8,
-    padding: 4,
-  },
-  navTab: {
-    paddingHorizontal: 16,
+  logoutBtn: {
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
   },
-  navTabActive: { backgroundColor: Colors.orange },
-  navTabText: {
+  logoutText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: 13,
     color: Colors.muted,
   },
-  navTabTextActive: { color: '#fff' },
   content: { flex: 1, backgroundColor: Colors.black },
 });
