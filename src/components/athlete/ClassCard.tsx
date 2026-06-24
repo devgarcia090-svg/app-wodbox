@@ -55,6 +55,22 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
           <Text style={styles.freeText}><Text style={styles.freeNum}>{free}</Text> libres</Text>
         )}
       </View>
+
+      {item.attendees.length > 0 && (
+        <View style={styles.attendeesSection}>
+          <Text style={styles.attendeesLabel}>Quién viene</Text>
+          <View style={styles.attendeesGrid}>
+            {item.attendees.map((att, i) => (
+              <View key={i} style={styles.attendeeItem}>
+                <View style={[styles.attendeeAvatar, { backgroundColor: att.color }]}>
+                  <Text style={styles.attendeeInitials}>{att.initials}</Text>
+                </View>
+                <Text style={styles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -151,5 +167,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.red,
     fontFamily: Fonts.bodySemiBold,
+  },
+  attendeesSection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    marginTop: 12,
+    paddingTop: 10,
+  },
+  attendeesLabel: {
+    fontSize: 10,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  attendeesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  attendeeItem: {
+    alignItems: 'center',
+    width: 48,
+  },
+  attendeeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  attendeeInitials: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: '#fff',
+  },
+  attendeeName: {
+    fontSize: 10,
+    color: Colors.muted,
+    fontFamily: Fonts.body,
+    textAlign: 'center',
   },
 });
