@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   timeContent: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 14,
     gap: 8,
     flexDirection: 'row',
   },

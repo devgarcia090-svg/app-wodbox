@@ -933,7 +933,7 @@ const chatStyles = StyleSheet.create({
 
 const adminTimeStyles = StyleSheet.create({
   scroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  content: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
+  content: { paddingHorizontal: 16, paddingVertical: 14, gap: 8, flexDirection: 'row' },
   pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2 },
   pillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   pillText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
