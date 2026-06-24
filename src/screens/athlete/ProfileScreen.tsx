@@ -1,89 +1,187 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../context/AuthContext';
+import { useInvoices } from '../../hooks/useInvoices';
+import { supabase } from '../../lib/supabase';
+
+interface RecentBooking {
+  id: string;
+  status: string;
+  class_name: string;
+  class_date: string;
+  class_time: string;
+}
+
+function fmtDate(iso: string) {
+  const d = new Date(iso + 'T00:00:00');
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function fmtExpiry(iso: string | null) {
+  if (!iso) return 'Sin fecha';
+  const d = new Date(iso + 'T00:00:00');
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${d.getDate()} de ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function fmtAmount(n: number) {
+  return n.toFixed(2).replace('.', ',') + '€';
+}
 
 export function ProfileScreen() {
   const { toast, showToast } = useToast();
+  const { profile, session } = useAuth();
+  const { invoices, loading: invLoading } = useInvoices(session?.user.id);
+
+  const [stats, setStats] = useState({ total: 0, thisMonth: 0 });
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+
+  const fetchStats = useCallback(async () => {
+    if (!session?.user.id) return;
+    setBookingsLoading(true);
+
+    const userId = session.user.id;
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+    const [totalRes, monthRes, recentRes] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('athlete_id', userId)
+        .eq('status', 'confirmed'),
+      supabase
+        .from('bookings')
+        .select('id, classes!bookings_class_id_fkey(date)', { count: 'exact' })
+        .eq('athlete_id', userId)
+        .eq('status', 'confirmed')
+        .gte('classes.date', monthStart),
+      supabase
+        .from('bookings')
+        .select('id, status, classes!bookings_class_id_fkey(name, date, time)')
+        .eq('athlete_id', userId)
+        .eq('status', 'confirmed')
+        .order('created_at', { ascending: false })
+        .limit(3),
+    ]);
+
+    setStats({ total: totalRes.count ?? 0, thisMonth: monthRes.count ?? 0 });
+
+    setRecentBookings(
+      ((recentRes.data || []) as any[])
+        .filter(b => b.classes)
+        .map(b => ({
+          id: b.id,
+          status: b.status,
+          class_name: b.classes.name,
+          class_date: b.classes.date,
+          class_time: b.classes.time,
+        }))
+    );
+    setBookingsLoading(false);
+  }, [session?.user.id]);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  const statusBadge = profile?.membership_status === 'active' ? 'orange' : profile?.membership_status === 'pending' ? 'yellow' : 'red';
+  const statusLabel = profile?.membership_status === 'active' ? 'Activa' : profile?.membership_status === 'pending' ? 'Pendiente' : 'Inactiva';
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.hero}>
-          <View style={styles.avatarBig}>
-            <Text style={styles.avatarText}>CM</Text>
+          <View style={[styles.avatarBig, { backgroundColor: profile?.avatar_color ?? Colors.orange }]}>
+            <Text style={styles.avatarText}>{profile?.avatar_initials ?? '?'}</Text>
           </View>
-          <View>
-            <Text style={styles.name}>Carlos Martínez</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{profile?.name ?? '—'}</Text>
             <Text style={styles.box}>CrossFit Murcia</Text>
-            <Text style={styles.since}>Atleta desde enero 2024</Text>
           </View>
         </View>
 
         {/* Stats row */}
         <View style={styles.statsRow}>
-          <View style={styles.statCell}>
-            <Text style={styles.statValue}>127</Text>
-            <Text style={styles.statLabel}>Clases</Text>
-          </View>
-          <View style={[styles.statCell, styles.statCellBorder]}>
-            <Text style={styles.statValue}>18</Text>
-            <Text style={styles.statLabel}>Este mes</Text>
-          </View>
-          <View style={styles.statCell}>
-            <Text style={styles.statValue}>94%</Text>
-            <Text style={styles.statLabel}>Asistencia</Text>
-          </View>
+          {bookingsLoading ? (
+            <ActivityIndicator color={Colors.orange} style={{ flex: 1, padding: 16 }} />
+          ) : (
+            <>
+              <View style={styles.statCell}>
+                <Text style={styles.statValue}>{stats.total}</Text>
+                <Text style={styles.statLabel}>Clases</Text>
+              </View>
+              <View style={[styles.statCell, styles.statCellBorder]}>
+                <Text style={styles.statValue}>{stats.thisMonth}</Text>
+                <Text style={styles.statLabel}>Este mes</Text>
+              </View>
+              <View style={styles.statCell}>
+                <Text style={styles.statValue}>{profile?.plan ? '✓' : '—'}</Text>
+                <Text style={styles.statLabel}>Membresía</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Membership card */}
         <View style={styles.memberCard}>
           <Text style={styles.mcLabel}>Mi membresía</Text>
-          <Text style={styles.mcPlan}>Ilimitado</Text>
-          <Text style={styles.mcMeta}>CrossFit Murcia · 55€/mes</Text>
+          <Text style={styles.mcPlan}>{profile?.plan ?? 'Sin plan'}</Text>
+          <Text style={styles.mcMeta}>CrossFit Murcia</Text>
           <View style={styles.mcExpires}>
             <View>
-              <Text style={styles.mcExpiresLabel}>Próxima renovación</Text>
-              <Text style={styles.mcExpiresDate}>1 de agosto 2026</Text>
+              <Text style={styles.mcExpiresLabel}>Válida hasta</Text>
+              <Text style={styles.mcExpiresDate}>{fmtExpiry(profile?.membership_expires ?? null)}</Text>
             </View>
-            <Badge label="Activa" variant="orange" />
+            <Badge label={statusLabel} variant={statusBadge} />
           </View>
         </View>
 
         {/* Recent activity */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Actividad reciente</Text>
-        </View>
-        <ActivityRow
-          color={Colors.green}
-          name="WOD CrossFit · 07:00"
-          date="Hoy, miércoles 24 jun"
-          badge={<Badge label="Reservada" variant="orange" />}
-        />
-        <ActivityRow
-          color={Colors.orange}
-          name="WOD CrossFit · 18:00"
-          date="Martes 23 jun"
-          badge={<Badge label="Asistido" variant="green" />}
-        />
-        <ActivityRow
-          color={Colors.orange}
-          name="Halterofilia · 12:00"
-          date="Lunes 22 jun"
-          badge={<Badge label="Asistido" variant="green" />}
-        />
+        {!bookingsLoading && recentBookings.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Actividad reciente</Text>
+            </View>
+            {recentBookings.map(b => (
+              <ActivityRow
+                key={b.id}
+                color={Colors.orange}
+                name={`${b.class_name} · ${b.class_time}`}
+                date={fmtDate(b.class_date)}
+                badge={<Badge label="Reservada" variant="orange" />}
+              />
+            ))}
+          </>
+        )}
 
         {/* Invoices */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Mis facturas</Text>
         </View>
         <View style={{ paddingHorizontal: 16 }}>
-          <InvoiceRow num="FAC-2026-006" date="1 jun 2026 · Membresía Ilimitado" amount="55,00€" />
-          <InvoiceRow num="FAC-2026-005" date="1 may 2026 · Membresía Ilimitado" amount="55,00€" />
+          {invLoading ? (
+            <ActivityIndicator color={Colors.orange} style={{ marginTop: 8 }} />
+          ) : invoices.length === 0 ? (
+            <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, marginTop: 4 }}>Sin facturas aún</Text>
+          ) : (
+            invoices.slice(0, 5).map(inv => (
+              <InvoiceRow
+                key={inv.id}
+                num={inv.number}
+                date={`${fmtDate(inv.date)} · ${inv.plan_name}`}
+                amount={fmtAmount(inv.amount)}
+                paid={inv.paid}
+              />
+            ))
+          )}
         </View>
 
         <View style={styles.settingsBtn}>
@@ -115,7 +213,7 @@ function ActivityRow({ color, name, date, badge }: { color: string; name: string
   );
 }
 
-function InvoiceRow({ num, date, amount }: { num: string; date: string; amount: string }) {
+function InvoiceRow({ num, date, amount, paid }: { num: string; date: string; amount: string; paid: boolean }) {
   return (
     <View style={invStyles.row}>
       <View style={invStyles.icon}><Text style={{ fontSize: 18 }}>🧾</Text></View>
@@ -125,7 +223,7 @@ function InvoiceRow({ num, date, amount }: { num: string; date: string; amount: 
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={invStyles.amount}>{amount}</Text>
-        <Badge label="Pagada" variant="green" small />
+        <Badge label={paid ? 'Pagada' : 'Pendiente'} variant={paid ? 'green' : 'yellow'} small />
       </View>
     </View>
   );
@@ -147,7 +245,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.orange,
     borderWidth: 3,
     borderColor: Colors.orangeDim,
     alignItems: 'center',
@@ -156,7 +253,6 @@ const styles = StyleSheet.create({
   avatarText: { fontFamily: Fonts.headingXBold, fontSize: 28, color: '#fff' },
   name: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.white, lineHeight: 28 },
   box: { color: Colors.muted, fontSize: 13, fontFamily: Fonts.body, marginTop: 4 },
-  since: { color: Colors.muted, fontSize: 12, fontFamily: Fonts.body, marginTop: 2 },
   statsRow: {
     flexDirection: 'row',
     borderTopWidth: 1,

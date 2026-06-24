@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -8,13 +8,19 @@ import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
-import { MEMBERS, INVOICES, ADMIN_DMS, TODAY_ISO } from '../../data/mockData';
+import { TODAY_ISO } from '../../data/mockData';
 import { useClasses } from '../../hooks/useClasses';
+import { useMembers, MemberRow } from '../../hooks/useMembers';
+import { useInvoices } from '../../hooks/useInvoices';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 type AdminTab = 'clases' | 'miembros' | 'cobros' | 'facturas' | 'chat' | 'nueva';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('clases');
+  const [classRefreshKey, setClassRefreshKey] = useState(0);
+  const [memberRefreshKey, setMemberRefreshKey] = useState(0);
   const { toast, showToast } = useToast();
 
   const TABS: { key: AdminTab; label: string }[] = [
@@ -26,15 +32,18 @@ export function AdminDashboard() {
     { key: 'nueva', label: '+ Nueva clase' },
   ];
 
+  const today = new Date();
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const todayStr = `${dayNames[today.getDay()]} ${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+
   return (
     <View style={styles.container}>
-      {/* Admin header */}
       <View style={styles.adminHeader}>
         <Text style={styles.adminTitle}>CrossFit Murcia 🔥</Text>
-        <Text style={styles.adminSub}>Panel de gestión · Miércoles 24 jun 2026</Text>
+        <Text style={styles.adminSub}>Panel de gestión · {todayStr}</Text>
       </View>
 
-      {/* Tab scroll */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabContent}>
         {TABS.map(t => (
           <TouchableOpacity
@@ -47,14 +56,21 @@ export function AdminDashboard() {
         ))}
       </ScrollView>
 
-      {/* Panels */}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {activeTab === 'clases' && <ClasesPanel showToast={showToast} />}
-        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} />}
+        {activeTab === 'clases' && <ClasesPanel showToast={showToast} refreshKey={classRefreshKey} />}
+        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={memberRefreshKey} />}
         {activeTab === 'cobros' && <CobrosPanel showToast={showToast} />}
         {activeTab === 'facturas' && <FacturasPanel showToast={showToast} />}
         {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
-        {activeTab === 'nueva' && <NuevaClasePanel showToast={showToast} />}
+        {activeTab === 'nueva' && (
+          <NuevaClasePanel
+            showToast={showToast}
+            onCreated={() => {
+              setClassRefreshKey(k => k + 1);
+              setActiveTab('clases');
+            }}
+          />
+        )}
       </KeyboardAvoidingView>
 
       <Toast {...toast} />
@@ -62,10 +78,16 @@ export function AdminDashboard() {
   );
 }
 
+// ─── Clases Panel ─────────────────────────────────────────────────────────────
 
-function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const { classes, loading } = useClasses(TODAY_ISO);
+  const { classes, loading, refetch } = useClasses(TODAY_ISO);
+
+  useEffect(() => {
+    if (refreshKey > 0) refetch();
+  }, [refreshKey]);
+
   const timePills = ['Todas', ...classes.map(c => c.time)];
   const filtered = selectedTime && selectedTime !== 'Todas'
     ? classes.filter(c => c.time === selectedTime)
@@ -73,7 +95,6 @@ function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
 
   return (
     <View style={panelStyles.panel}>
-      {/* Time filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminTimeStyles.scroll} contentContainerStyle={adminTimeStyles.content}>
         {timePills.map(t => {
           const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
@@ -85,90 +106,147 @@ function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
         })}
       </ScrollView>
       <ScrollView contentContainerStyle={panelStyles.content}>
-      {loading ? (
-        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
-      ) : filtered.length === 0 ? (
-        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para hoy</Text>
-      ) : null}
-      {filtered.map(cls => {
-        const pct = Math.round((cls.enrolled / cls.capacity) * 100);
-        const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
-        const isFull = pct >= 100;
-        return (
-          <View key={cls.id} style={clsStyles.card}>
-            {/* Header row */}
-            <View style={clsStyles.cardHeader}>
-              <View style={clsStyles.timeBlock}>
-                <Text style={clsStyles.cardTime}>{cls.time}</Text>
-                <Text style={clsStyles.cardDuration}>{cls.duration}</Text>
-              </View>
-              <View style={clsStyles.info}>
-                <Text style={clsStyles.name}>{cls.name}</Text>
-                <Text style={clsStyles.coachText}>👤 {cls.coach}</Text>
-              </View>
-              <View style={clsStyles.rightCol}>
-                <Text style={[clsStyles.spotsText, isFull && { color: Colors.red }]}>
-                  {cls.enrolled}/{cls.capacity}
-                </Text>
-                {isFull && <Text style={clsStyles.fullLabel}>LLENA</Text>}
-                <TouchableOpacity onPress={() => showToast('Editando clase', 'info')}>
-                  <Text style={clsStyles.editBtn}>✏️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Capacity bar */}
-            <View style={clsStyles.bar}>
-              <View style={[clsStyles.fill, { width: `${pct}%` as any, backgroundColor: fillColor }]} />
-            </View>
-
-            {/* Attendees list */}
-            {cls.attendees.length > 0 && (
-              <View style={clsStyles.attendeesSection}>
-                <Text style={clsStyles.attendeesLabel}>Inscritos</Text>
-                <View style={clsStyles.attendeesGrid}>
-                  {cls.attendees.map((att, i) => (
-                    <View key={i} style={clsStyles.attendeeItem}>
-                      <View style={[clsStyles.attendeeAvatar, { backgroundColor: att.color }]}>
-                        <Text style={clsStyles.attendeeInitials}>{att.initials}</Text>
-                      </View>
-                      <Text style={clsStyles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
-                    </View>
-                  ))}
+        {loading ? (
+          <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+        ) : filtered.length === 0 ? (
+          <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para hoy</Text>
+        ) : null}
+        {filtered.map(cls => {
+          const pct = Math.round((cls.enrolled / cls.capacity) * 100);
+          const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
+          const isFull = pct >= 100;
+          return (
+            <View key={cls.id} style={clsStyles.card}>
+              <View style={clsStyles.cardHeader}>
+                <View style={clsStyles.timeBlock}>
+                  <Text style={clsStyles.cardTime}>{cls.time}</Text>
+                  <Text style={clsStyles.cardDuration}>{cls.duration}</Text>
+                </View>
+                <View style={clsStyles.info}>
+                  <Text style={clsStyles.name}>{cls.name}</Text>
+                  <Text style={clsStyles.coachText}>👤 {cls.coach}</Text>
+                </View>
+                <View style={clsStyles.rightCol}>
+                  <Text style={[clsStyles.spotsText, isFull && { color: Colors.red }]}>{cls.enrolled}/{cls.capacity}</Text>
+                  {isFull && <Text style={clsStyles.fullLabel}>LLENA</Text>}
                 </View>
               </View>
-            )}
-          </View>
-        );
-      })}
+              <View style={clsStyles.bar}>
+                <View style={[clsStyles.fill, { width: `${pct}%` as any, backgroundColor: fillColor }]} />
+              </View>
+              {cls.attendees.length > 0 && (
+                <View style={clsStyles.attendeesSection}>
+                  <Text style={clsStyles.attendeesLabel}>Inscritos</Text>
+                  <View style={clsStyles.attendeesGrid}>
+                    {cls.attendees.map((att, i) => (
+                      <View key={i} style={clsStyles.attendeeItem}>
+                        <View style={[clsStyles.attendeeAvatar, { backgroundColor: att.color }]}>
+                          <Text style={clsStyles.attendeeInitials}>{att.initials}</Text>
+                        </View>
+                        <Text style={clsStyles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
 }
 
+// ─── Tariffs ──────────────────────────────────────────────────────────────────
+
 const TARIFFS = [
-  { id: '10clases', name: '10 CLASES', price: '45', unit: '€/bono', desc: 'Sin caducidad mensual.', features: ['10 clases de cualquier tipo', 'Validez 1 mes', 'Acceso a todas las disciplinas'] },
-  { id: '14clases', name: '14 CLASES', price: '55', unit: '€/bono', desc: 'Ideal para venir 3-4 veces por semana.', features: ['14 clases de cualquier tipo', 'Validez 1 mes', 'Acceso a todas las disciplinas', 'Reserva garantizada'], popular: true },
-  { id: 'ilimitado', name: 'ILIMITADO', price: '65', unit: '€/mes', desc: 'Sin límite de clases al mes.', features: ['Clases ilimitadas', 'Todas las disciplinas', 'Open Box incluido', 'Sin permanencia'] },
-  { id: 'menor20', name: 'MENOR DE 20', price: '30', unit: '€/mes', desc: 'Tarifa especial para menores de 20 años.', features: ['Clases ilimitadas', 'Todas las disciplinas', 'Válido con DNI'], badge: 'OFERTA JOVEN' },
+  { id: '10 Clases', name: '10 CLASES', price: '45', unit: '€/bono', desc: 'Sin caducidad mensual.', features: ['10 clases de cualquier tipo', 'Validez 1 mes'] },
+  { id: '14 Clases', name: '14 CLASES', price: '55', unit: '€/bono', desc: 'Ideal 3-4 veces/semana.', features: ['14 clases de cualquier tipo', 'Validez 1 mes'], popular: true },
+  { id: 'Ilimitado', name: 'ILIMITADO', price: '65', unit: '€/mes', desc: 'Sin límite de clases.', features: ['Clases ilimitadas', 'Open Box incluido'] },
+  { id: 'Menor 20', name: 'MENOR DE 20', price: '30', unit: '€/mes', desc: 'Tarifa especial menores.', features: ['Clases ilimitadas', 'Válido con DNI'], badge: 'OFERTA JOVEN' },
 ];
 
-function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+// ─── Miembros Panel ────────────────────────────────────────────────────────────
+
+function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
+  const { members, loading, refetch } = useMembers();
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editPlan, setEditPlan] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [selectedTariff, setSelectedTariff] = useState<string | null>(null);
-  const filtered = MEMBERS.filter(m => m.name.toLowerCase().includes(search.toLowerCase()));
+  const [inviting, setInviting] = useState(false);
 
-  const handleSend = () => {
+  useEffect(() => {
+    if (refreshKey > 0) refetch();
+  }, [refreshKey]);
+
+  const filtered = members.filter(m =>
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    (m.email ?? '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const savePlan = async (member: MemberRow, plan: string) => {
+    if (member.isPendingInvite) {
+      setSavingId(member.id);
+      const { error } = await supabase
+        .from('pending_invites')
+        .update({ plan })
+        .eq('id', member.id);
+      setSavingId(null);
+      if (!error) { showToast('✅ Tarifa actualizada', 'success'); refetch(); setExpandedId(null); }
+      else showToast('Error al guardar', 'error');
+      return;
+    }
+    setSavingId(member.id);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ plan, membership_status: 'active' })
+      .eq('id', member.id);
+    setSavingId(null);
+    if (!error) { showToast('✅ Tarifa actualizada', 'success'); refetch(); setExpandedId(null); }
+    else showToast('Error al guardar', 'error');
+  };
+
+  const deleteMember = async (member: MemberRow) => {
+    if (member.isPendingInvite) {
+      const { error } = await supabase.from('pending_invites').delete().eq('id', member.id);
+      if (!error) { showToast('Invitación eliminada', 'success'); refetch(); }
+      else showToast('Error al eliminar', 'error');
+    } else {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ membership_status: 'inactive' })
+        .eq('id', member.id);
+      if (!error) { showToast('Atleta desactivado', 'success'); refetch(); }
+      else showToast('Error al desactivar', 'error');
+    }
+    setExpandedId(null);
+  };
+
+  const handleInvite = async () => {
     if (!newName.trim() || !newEmail.trim() || !selectedTariff) {
       showToast('Completa nombre, email y tarifa', 'error');
       return;
     }
-    showToast(`✉️ Invitación enviada a ${newEmail}`, 'success');
+    setInviting(true);
+    const { error } = await supabase.from('pending_invites').insert({
+      name: newName.trim(),
+      email: newEmail.trim().toLowerCase(),
+      plan: selectedTariff,
+    });
+    setInviting(false);
+    if (error) {
+      showToast(error.message.includes('unique') ? 'Ese email ya existe' : 'Error al crear atleta', 'error');
+      return;
+    }
+    showToast(`✅ Atleta añadido (${newEmail})`, 'success');
     setShowForm(false);
     setNewName(''); setNewEmail(''); setSelectedTariff(null);
+    refetch();
   };
 
   if (showForm) {
@@ -192,12 +270,7 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
           {TARIFFS.map(t => {
             const sel = selectedTariff === t.id;
             return (
-              <TouchableOpacity
-                key={t.id}
-                style={[addStyles.tariffCard, sel && addStyles.tariffCardSel]}
-                onPress={() => setSelectedTariff(t.id)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity key={t.id} style={[addStyles.tariffCard, sel && addStyles.tariffCardSel]} onPress={() => setSelectedTariff(t.id)} activeOpacity={0.8}>
                 {t.popular && <View style={addStyles.tariffBadge}><Text style={addStyles.tariffBadgeText}>MÁS POPULAR</Text></View>}
                 {t.badge && <View style={[addStyles.tariffBadge, { backgroundColor: Colors.surface3 }]}><Text style={[addStyles.tariffBadgeText, { color: Colors.muted }]}>{t.badge}</Text></View>}
                 <Text style={[addStyles.tariffName, sel && { color: Colors.orange }]}>{t.name}</Text>
@@ -215,8 +288,8 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
           })}
         </View>
 
-        <TouchableOpacity style={addStyles.sendBtn} onPress={handleSend} activeOpacity={0.85}>
-          <Text style={addStyles.sendBtnText}>✉️ Enviar invitación</Text>
+        <TouchableOpacity style={[addStyles.sendBtn, inviting && { opacity: 0.6 }]} onPress={handleInvite} activeOpacity={0.85} disabled={inviting}>
+          <Text style={addStyles.sendBtnText}>{inviting ? 'Creando...' : '+ Añadir atleta'}</Text>
         </TouchableOpacity>
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -224,8 +297,8 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
   }
 
   return (
-    <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
-      <View style={{ marginBottom: 12 }}>
+    <View style={panelStyles.panel}>
+      <View style={{ padding: 16, paddingBottom: 8 }}>
         <TextInput
           style={memStyles.search}
           placeholder="🔍 Buscar atleta..."
@@ -234,76 +307,169 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
           onChangeText={setSearch}
         />
       </View>
-      {filtered.map(m => (
-        <View key={m.id} style={memStyles.row}>
-          <View style={[memStyles.avatar, { backgroundColor: m.color }]}>
-            <Text style={memStyles.avatarText}>{m.initials}</Text>
-          </View>
-          <View style={memStyles.info}>
-            <Text style={memStyles.name}>{m.name}</Text>
-            <Text style={memStyles.plan}>{m.plan}</Text>
-          </View>
-          <Badge
-            label={m.status === 'active' ? 'Activo' : m.status === 'pending' ? 'Pendiente' : 'Inactivo'}
-            variant={m.status === 'active' ? 'green' : m.status === 'pending' ? 'yellow' : 'red'}
-          />
-        </View>
-      ))}
-      <TouchableOpacity style={memStyles.addBtn} onPress={() => setShowForm(true)}>
-        <Text style={memStyles.addBtnText}>+ Añadir atleta</Text>
-      </TouchableOpacity>
-    </ScrollView>
+
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+        {loading ? (
+          <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+        ) : filtered.length === 0 ? (
+          <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>
+            {search ? 'Sin resultados' : 'Sin miembros aún'}
+          </Text>
+        ) : null}
+
+        {filtered.map(m => {
+          const isExpanded = expandedId === m.id;
+          const statusVariant = m.membership_status === 'active' ? 'green' : m.membership_status === 'pending' ? 'yellow' : 'red';
+          const statusLabel = m.membership_status === 'active' ? 'Activo' : m.membership_status === 'pending' ? 'Pendiente' : 'Inactivo';
+
+          return (
+            <View key={m.id} style={memStyles.card}>
+              <TouchableOpacity
+                style={memStyles.row}
+                onPress={() => {
+                  setExpandedId(isExpanded ? null : m.id);
+                  setEditPlan(m.plan);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[memStyles.avatar, { backgroundColor: m.avatar_color }]}>
+                  <Text style={memStyles.avatarText}>{m.avatar_initials}</Text>
+                </View>
+                <View style={memStyles.info}>
+                  <Text style={memStyles.name}>{m.name}</Text>
+                  <Text style={memStyles.plan}>{m.isPendingInvite ? `📧 ${m.email}` : m.plan}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Badge label={statusLabel} variant={statusVariant} />
+                  <Text style={{ color: Colors.muted, fontSize: 14 }}>{isExpanded ? '▲' : '▼'}</Text>
+                </View>
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={expandStyles.body}>
+                  {m.membership_expires && (
+                    <Text style={expandStyles.detail}>Vence: {m.membership_expires}</Text>
+                  )}
+                  {m.email && (
+                    <Text style={expandStyles.detail}>Email: {m.email}</Text>
+                  )}
+
+                  <Text style={expandStyles.sectionLabel}>Cambiar tarifa</Text>
+                  <View style={expandStyles.tariffRow}>
+                    {TARIFFS.map(t => {
+                      const sel = editPlan === t.id;
+                      return (
+                        <TouchableOpacity
+                          key={t.id}
+                          style={[expandStyles.tariffChip, sel && expandStyles.tariffChipSel]}
+                          onPress={() => setEditPlan(t.id)}
+                        >
+                          <Text style={[expandStyles.tariffChipText, sel && expandStyles.tariffChipTextSel]}>{t.name}</Text>
+                          <Text style={[expandStyles.tariffChipPrice, sel && { color: Colors.orange }]}>€{t.price}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <View style={expandStyles.actions}>
+                    <TouchableOpacity
+                      style={[expandStyles.saveBtn, savingId === m.id && { opacity: 0.6 }]}
+                      onPress={() => editPlan && savePlan(m, editPlan)}
+                      disabled={savingId === m.id || !editPlan}
+                    >
+                      <Text style={expandStyles.saveBtnText}>{savingId === m.id ? 'Guardando...' : '✓ Guardar tarifa'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={expandStyles.deleteBtn}
+                      onPress={() => deleteMember(m)}
+                    >
+                      <Text style={expandStyles.deleteBtnText}>{m.isPendingInvite ? 'Eliminar invitación' : 'Desactivar'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        <TouchableOpacity style={memStyles.addBtn} onPress={() => setShowForm(true)}>
+          <Text style={memStyles.addBtnText}>+ Añadir atleta</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
+
+// ─── Cobros Panel ─────────────────────────────────────────────────────────────
 
 function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+  const { invoices, loading } = useInvoices();
+  const pending = invoices.filter(i => !i.paid);
+  const recent = invoices.filter(i => i.paid).slice(0, 5);
+
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
-      <View style={cobroStyles.pendingBox}>
-        <Text style={cobroStyles.pendingTitle}>⚠️ Pagos pendientes</Text>
-        {[
-          { name: 'Javier Ruiz', plan: 'Mensual · vencido 1 jun', amount: '40,00€' },
-          { name: 'Rosa Torres', plan: 'Mensual · vencido 1 jun', amount: '40,00€' },
-        ].map((p, i) => (
-          <View key={i} style={[cobroStyles.pendingRow, i === 0 && cobroStyles.pendingRowBorder]}>
-            <View>
-              <Text style={cobroStyles.pendingName}>{p.name}</Text>
-              <Text style={cobroStyles.pendingPlan}>{p.plan}</Text>
+      {loading ? (
+        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+      ) : (
+        <>
+          {pending.length > 0 && (
+            <View style={cobroStyles.pendingBox}>
+              <Text style={cobroStyles.pendingTitle}>⚠️ Pagos pendientes ({pending.length})</Text>
+              {pending.map((p, i) => (
+                <View key={p.id} style={[cobroStyles.pendingRow, i < pending.length - 1 && cobroStyles.pendingRowBorder]}>
+                  <View>
+                    <Text style={cobroStyles.pendingName}>{p.member_name}</Text>
+                    <Text style={cobroStyles.pendingPlan}>{p.plan_name} · {p.date}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={cobroStyles.pendingAmount}>{p.amount.toFixed(2).replace('.', ',')}€</Text>
+                    <TouchableOpacity style={cobroStyles.avisarBtn} onPress={() => showToast('Recordatorio enviado', 'success')}>
+                      <Text style={cobroStyles.avisarText}>Avisar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={cobroStyles.pendingAmount}>{p.amount}</Text>
-              <TouchableOpacity style={cobroStyles.avisarBtn} onPress={() => showToast('Recordatorio enviado', 'success')}>
-                <Text style={cobroStyles.avisarText}>Avisar</Text>
-              </TouchableOpacity>
+          )}
+
+          {pending.length === 0 && (
+            <View style={[cobroStyles.pendingBox, { borderColor: Colors.green }]}>
+              <Text style={[cobroStyles.pendingTitle, { color: Colors.green }]}>✅ Sin pagos pendientes</Text>
             </View>
-          </View>
-        ))}
-      </View>
-      <View style={panelStyles.sectionHeader}>
-        <Text style={panelStyles.sectionTitle}>Cobros recientes</Text>
-      </View>
-      {[
-        { name: 'Carlos Martínez', date: '1 jun · Ilimitado', amount: '55,00€' },
-        { name: 'Laura García', date: '1 jun · 3 días/semana', amount: '40,00€' },
-        { name: 'Nuria Fernández', date: '1 jun · Ilimitado', amount: '55,00€' },
-      ].map((c, i) => (
-        <View key={i} style={invRowStyles.row}>
-          <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>💳</Text></View>
-          <View style={invRowStyles.info}>
-            <Text style={invRowStyles.num}>{c.name}</Text>
-            <Text style={invRowStyles.meta}>{c.date}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={invRowStyles.amount}>{c.amount}</Text>
-            <Badge label="Cobrado" variant="green" small />
-          </View>
-        </View>
-      ))}
+          )}
+
+          {recent.length > 0 && (
+            <>
+              <View style={panelStyles.sectionHeader}>
+                <Text style={panelStyles.sectionTitle}>Cobros recientes</Text>
+              </View>
+              {recent.map(c => (
+                <View key={c.id} style={invRowStyles.row}>
+                  <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>💳</Text></View>
+                  <View style={invRowStyles.info}>
+                    <Text style={invRowStyles.num}>{c.member_name}</Text>
+                    <Text style={invRowStyles.meta}>{c.date} · {c.plan_name}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={invRowStyles.amount}>{c.amount.toFixed(2).replace('.', ',')}€</Text>
+                    <Badge label="Cobrado" variant="green" small />
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }
 
+// ─── Facturas Panel ───────────────────────────────────────────────────────────
+
 function FacturasPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+  const { invoices, loading } = useInvoices();
+
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
       <View style={factStyles.diffBox}>
@@ -318,68 +484,173 @@ function FacturasPanel({ showToast }: { showToast: (m: string, t: any) => void }
           <Text style={factStyles.btnSecondaryText}>📥 Exportar</Text>
         </TouchableOpacity>
       </View>
-      {INVOICES.map(inv => (
+
+      {loading ? (
+        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+      ) : invoices.length === 0 ? (
+        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>Sin facturas</Text>
+      ) : null}
+
+      {invoices.map(inv => (
         <View key={inv.id} style={invRowStyles.row}>
           <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>🧾</Text></View>
           <View style={invRowStyles.info}>
             <Text style={invRowStyles.num}>{inv.number}</Text>
-            <Text style={invRowStyles.meta}>{inv.member} · {inv.date}</Text>
+            <Text style={invRowStyles.meta}>{inv.member_name} · {inv.date}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={invRowStyles.amount}>{inv.amount}</Text>
-            <TouchableOpacity
-              style={factStyles.pdfBtn}
-              onPress={() => showToast('Descargando PDF', 'success')}
-            >
-              <Text style={factStyles.pdfBtnText}>PDF</Text>
-            </TouchableOpacity>
+            <Text style={invRowStyles.amount}>{inv.amount.toFixed(2).replace('.', ',')}€</Text>
+            <Badge label={inv.paid ? 'Pagada' : 'Pendiente'} variant={inv.paid ? 'green' : 'yellow'} small />
           </View>
         </View>
       ))}
+
       <Text style={factStyles.footer}>Numeración correlativa automática · IVA incluido · VeriFactu</Text>
     </ScrollView>
   );
 }
 
+// ─── Admin Chat Panel ─────────────────────────────────────────────────────────
+
 type AdminChatTab = 'broadcast' | 'dms';
 
-function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
-  const [chatTab, setChatTab] = useState<AdminChatTab>('broadcast');
-  const [broadcastMsgs, setBroadcastMsgs] = useState([
-    { id: '1', text: '¡Buenos días equipo! 🔥 Hoy la clase de las 12:00 está completa. Plaza para las 18:00 disponible.', mine: true, time: '08:15', seen: 31 },
-    { id: '2', text: '¿Alguien más para la clase de las 18:00? 🙋', mine: false, sender: 'Carlos Martínez', time: '10:32' },
-    { id: '3', text: '¡Yo me apunto! Ya he reservado 👊', mine: false, sender: 'Ana Pérez', time: '10:34' },
-  ]);
-  const [bInput, setBInput] = useState('');
-  const [activeDM, setActiveDM] = useState<string | null>(null);
-  const [dmMsgs, setDmMsgs] = useState<Record<string, any[]>>({});
-  const [dmInput, setDmInput] = useState('');
+interface ChatMsg {
+  id: string;
+  text: string;
+  sender_id: string;
+  sender_name: string;
+  sender_initials: string;
+  sender_color: string;
+  created_at: string;
+}
 
-  const now = () => {
-    const d = new Date();
+interface ConvItem {
+  id: string;
+  athlete_id: string;
+  athlete_name: string;
+  athlete_initials: string;
+  athlete_color: string;
+  last_preview: string;
+  last_at: string;
+  unread_admin: number;
+}
+
+function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+  const { session } = useAuth();
+  const [chatTab, setChatTab] = useState<AdminChatTab>('broadcast');
+  const [broadcasts, setBroadcasts] = useState<ChatMsg[]>([]);
+  const [bInput, setBInput] = useState('');
+  const [bcLoading, setBcLoading] = useState(true);
+  const [conversations, setConversations] = useState<ConvItem[]>([]);
+  const [convLoading, setConvLoading] = useState(true);
+  const [activeDM, setActiveDM] = useState<ConvItem | null>(null);
+  const [dmMsgs, setDmMsgs] = useState<ChatMsg[]>([]);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [dmInput, setDmInput] = useState('');
+  const bcScroll = useRef<ScrollView>(null);
+  const dmScroll = useRef<ScrollView>(null);
+
+  const fetchBroadcasts = useCallback(async () => {
+    setBcLoading(true);
+    const { data } = await supabase
+      .from('messages')
+      .select('id, text, sender_id, created_at, profiles!messages_sender_id_fkey(name, avatar_initials, avatar_color)')
+      .eq('is_broadcast', true)
+      .order('created_at');
+    setBroadcasts(((data || []) as any[]).map(m => ({
+      id: m.id, text: m.text, sender_id: m.sender_id,
+      sender_name: m.profiles?.name ?? 'Admin',
+      sender_initials: m.profiles?.avatar_initials ?? 'A',
+      sender_color: m.profiles?.avatar_color ?? Colors.orange,
+      created_at: m.created_at,
+    })));
+    setBcLoading(false);
+  }, []);
+
+  const fetchConversations = useCallback(async () => {
+    setConvLoading(true);
+    const { data } = await supabase
+      .from('conversations')
+      .select('id, athlete_id, last_preview, last_at, unread_admin, profiles!conversations_athlete_id_fkey(name, avatar_initials, avatar_color)')
+      .order('last_at', { ascending: false });
+    setConversations(((data || []) as any[]).map(c => ({
+      id: c.id,
+      athlete_id: c.athlete_id,
+      athlete_name: c.profiles?.name ?? '—',
+      athlete_initials: c.profiles?.avatar_initials ?? '?',
+      athlete_color: c.profiles?.avatar_color ?? Colors.muted,
+      last_preview: c.last_preview ?? '',
+      last_at: c.last_at,
+      unread_admin: c.unread_admin ?? 0,
+    })));
+    setConvLoading(false);
+  }, []);
+
+  const fetchDMMessages = useCallback(async (convId: string) => {
+    setDmLoading(true);
+    const { data } = await supabase
+      .from('messages')
+      .select('id, text, sender_id, created_at, profiles!messages_sender_id_fkey(name, avatar_initials, avatar_color)')
+      .eq('conversation_id', convId)
+      .order('created_at');
+    setDmMsgs(((data || []) as any[]).map(m => ({
+      id: m.id, text: m.text, sender_id: m.sender_id,
+      sender_name: m.profiles?.name ?? '—',
+      sender_initials: m.profiles?.avatar_initials ?? '?',
+      sender_color: m.profiles?.avatar_color ?? Colors.muted,
+      created_at: m.created_at,
+    })));
+    await supabase.from('conversations').update({ unread_admin: 0 }).eq('id', convId);
+    setDmLoading(false);
+  }, []);
+
+  useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
+  useEffect(() => { if (chatTab === 'dms') fetchConversations(); }, [chatTab, fetchConversations]);
+
+  const fmtTime = (iso: string) => {
+    const d = new Date(iso);
     return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
-  const sendBroadcast = () => {
-    if (!bInput.trim()) return;
-    setBroadcastMsgs(prev => [...prev, { id: String(Date.now()), text: bInput.trim(), mine: true, time: now(), seen: 0 }]);
+  const sendBroadcast = async () => {
+    if (!bInput.trim() || !session?.user.id) return;
+    const text = bInput.trim();
     setBInput('');
-    showToast('📢 Enviado a todos los atletas', 'success');
-  };
-
-  const openDM = (id: string) => {
-    setActiveDM(id);
-    if (!dmMsgs[id]) {
-      const dm = ADMIN_DMS.find(d => d.id === id)!;
-      setDmMsgs(prev => ({ ...prev, [id]: dm.messages.map((m, i) => ({ id: String(i), text: m, mine: false, time: 'Hoy' })) }));
+    const { error } = await supabase.from('messages').insert({
+      sender_id: session.user.id, text, is_broadcast: true, conversation_id: null,
+    });
+    if (!error) {
+      fetchBroadcasts();
+      showToast('📢 Enviado a todos los atletas', 'success');
+      setTimeout(() => bcScroll.current?.scrollToEnd(), 200);
+    } else {
+      showToast('Error al enviar', 'error');
     }
   };
 
-  const sendAdminDM = () => {
-    if (!dmInput.trim() || !activeDM) return;
-    setDmMsgs(prev => ({ ...prev, [activeDM]: [...(prev[activeDM] || []), { id: String(Date.now()), text: dmInput.trim(), mine: true, time: now() }] }));
+  const sendDM = async () => {
+    if (!dmInput.trim() || !session?.user.id || !activeDM) return;
+    const text = dmInput.trim();
     setDmInput('');
+    const { error } = await supabase.from('messages').insert({
+      sender_id: session.user.id, text, is_broadcast: false, conversation_id: activeDM.id,
+    });
+    if (!error) {
+      await supabase.from('conversations').update({
+        last_preview: text.slice(0, 100),
+        last_at: new Date().toISOString(),
+      }).eq('id', activeDM.id);
+      fetchDMMessages(activeDM.id);
+      setTimeout(() => dmScroll.current?.scrollToEnd(), 200);
+    }
   };
+
+  const openDM = (conv: ConvItem) => {
+    setActiveDM(conv);
+    fetchDMMessages(conv.id);
+  };
+
+  const totalUnread = conversations.reduce((s, c) => s + c.unread_admin, 0);
 
   return (
     <View style={styles.flex}>
@@ -388,7 +659,9 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
           <Text style={[chatStyles.tabText, chatTab === 'broadcast' && chatStyles.tabTextActive]}>📢 Anuncio general</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[chatStyles.tabBtn, chatTab === 'dms' && chatStyles.tabBtnActive]} onPress={() => setChatTab('dms')}>
-          <Text style={[chatStyles.tabText, chatTab === 'dms' && chatStyles.tabTextActive]}>💬 Mensajes <Text style={chatStyles.badge}>3</Text></Text>
+          <Text style={[chatStyles.tabText, chatTab === 'dms' && chatStyles.tabTextActive]}>
+            💬 Mensajes {totalUnread > 0 && <Text style={chatStyles.badge}> {totalUnread} </Text>}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -397,31 +670,35 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
           <View style={chatStyles.channelInfo}>
             <Text style={chatStyles.channelInfoText}>📢 Canal general — visible para todos los atletas</Text>
           </View>
-          <ScrollView style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
-            {broadcastMsgs.map(msg => (
-              <View key={msg.id}>
-                {msg.mine ? (
-                  <View style={chatStyles.broadcastWrap}>
-                    <Text style={chatStyles.broadcastLabel}>📢 Tú (Admin)</Text>
-                    <View style={chatStyles.broadcastBubble}>
-                      <Text style={chatStyles.broadcastText}>{msg.text}</Text>
+          {bcLoading ? (
+            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+          ) : (
+            <ScrollView ref={bcScroll} style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
+              {broadcasts.map(msg => {
+                const mine = msg.sender_id === session?.user.id;
+                if (mine) {
+                  return (
+                    <View key={msg.id} style={chatStyles.broadcastWrap}>
+                      <Text style={chatStyles.broadcastLabel}>📢 Tú (Admin)</Text>
+                      <View style={chatStyles.broadcastBubble}>
+                        <Text style={chatStyles.broadcastText}>{msg.text}</Text>
+                      </View>
+                      <Text style={chatStyles.time}>{fmtTime(msg.created_at)}</Text>
                     </View>
-                    {msg.seen !== undefined && (
-                      <Text style={chatStyles.seenText}>Visto por {msg.seen} atletas</Text>
-                    )}
-                  </View>
-                ) : (
-                  <View style={chatStyles.theirMsg}>
-                    {msg.sender && <Text style={chatStyles.sender}>{msg.sender}</Text>}
+                  );
+                }
+                return (
+                  <View key={msg.id} style={chatStyles.theirMsg}>
+                    <Text style={chatStyles.sender}>{msg.sender_name}</Text>
                     <View style={chatStyles.theirBubble}>
                       <Text style={chatStyles.theirText}>{msg.text}</Text>
                     </View>
-                    <Text style={chatStyles.time}>{msg.time}</Text>
+                    <Text style={chatStyles.time}>{fmtTime(msg.created_at)}</Text>
                   </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
+                );
+              })}
+            </ScrollView>
+          )}
           <View style={chatStyles.inputBar}>
             <TextInput
               style={chatStyles.input}
@@ -440,61 +717,73 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
       )}
 
       {chatTab === 'dms' && !activeDM && (
-        <ScrollView>
-          {ADMIN_DMS.map(dm => (
-            <TouchableOpacity key={dm.id} style={dmListStyles.item} onPress={() => openDM(dm.id)}>
-              <View style={[dmListStyles.avatar, { backgroundColor: dm.color }]}>
-                <Text style={dmListStyles.avatarText}>{dm.initials}</Text>
-                {dm.unread > 0 && <View style={dmListStyles.unreadDot} />}
-              </View>
-              <View style={dmListStyles.info}>
-                <Text style={dmListStyles.name}>{dm.name}</Text>
-                <Text style={dmListStyles.preview} numberOfLines={1}>{dm.preview}</Text>
-              </View>
-              <View style={dmListStyles.meta}>
-                <Text style={dmListStyles.time}>{dm.time}</Text>
-                {dm.unread > 0 && (
-                  <View style={dmListStyles.badge}>
-                    <Text style={dmListStyles.badgeText}>{dm.unread}</Text>
+        <>
+          {convLoading ? (
+            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+          ) : conversations.length === 0 ? (
+            <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 40 }}>Sin conversaciones aún</Text>
+          ) : (
+            <ScrollView>
+              {conversations.map(conv => (
+                <TouchableOpacity key={conv.id} style={dmListStyles.item} onPress={() => openDM(conv)}>
+                  <View style={[dmListStyles.avatar, { backgroundColor: conv.athlete_color }]}>
+                    <Text style={dmListStyles.avatarText}>{conv.athlete_initials}</Text>
+                    {conv.unread_admin > 0 && <View style={dmListStyles.unreadDot} />}
                   </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                  <View style={dmListStyles.info}>
+                    <Text style={dmListStyles.name}>{conv.athlete_name}</Text>
+                    <Text style={dmListStyles.preview} numberOfLines={1}>{conv.last_preview}</Text>
+                  </View>
+                  <View style={dmListStyles.meta}>
+                    {conv.unread_admin > 0 && (
+                      <View style={dmListStyles.badge}>
+                        <Text style={dmListStyles.badgeText}>{conv.unread_admin}</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </>
       )}
 
       {chatTab === 'dms' && activeDM && (
         <>
           <View style={chatStyles.convHeader}>
-            <TouchableOpacity onPress={() => setActiveDM(null)}>
+            <TouchableOpacity onPress={() => { setActiveDM(null); fetchConversations(); }}>
               <Text style={chatStyles.backBtn}>‹</Text>
             </TouchableOpacity>
-            {(() => {
-              const dm = ADMIN_DMS.find(d => d.id === activeDM)!;
-              return (
-                <>
-                  <View style={[chatStyles.convAvatar, { backgroundColor: dm.color }]}>
-                    <Text style={chatStyles.convAvatarText}>{dm.initials}</Text>
-                  </View>
-                  <View>
-                    <Text style={chatStyles.convName}>{dm.name}</Text>
-                    <Text style={chatStyles.convSub}>Atleta</Text>
-                  </View>
-                </>
-              );
-            })()}
+            <View style={[chatStyles.convAvatar, { backgroundColor: activeDM.athlete_color }]}>
+              <Text style={chatStyles.convAvatarText}>{activeDM.athlete_initials}</Text>
+            </View>
+            <View>
+              <Text style={chatStyles.convName}>{activeDM.athlete_name}</Text>
+              <Text style={chatStyles.convSub}>Atleta</Text>
+            </View>
           </View>
-          <ScrollView style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
-            {(dmMsgs[activeDM] || []).map(msg => (
-              <View key={msg.id} style={[chatStyles.msgRow, msg.mine ? chatStyles.msgMine : chatStyles.msgTheirs]}>
-                <View style={[chatStyles.bubble, msg.mine ? chatStyles.bubbleMine : chatStyles.bubbleTheirs]}>
-                  <Text style={[chatStyles.bubbleText, msg.mine && chatStyles.bubbleTextMine]}>{msg.text}</Text>
-                </View>
-                <Text style={chatStyles.time}>{msg.time}</Text>
-              </View>
-            ))}
-          </ScrollView>
+
+          {dmLoading ? (
+            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+          ) : (
+            <ScrollView ref={dmScroll} style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
+              {dmMsgs.length === 0 && (
+                <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, textAlign: 'center', marginTop: 40 }}>Sin mensajes aún</Text>
+              )}
+              {dmMsgs.map(msg => {
+                const mine = msg.sender_id === session?.user.id;
+                return (
+                  <View key={msg.id} style={[chatStyles.msgRow, mine ? chatStyles.msgMine : chatStyles.msgTheirs]}>
+                    <View style={[chatStyles.bubble, mine ? chatStyles.bubbleMine : chatStyles.bubbleTheirs]}>
+                      <Text style={[chatStyles.bubbleText, mine && chatStyles.bubbleTextMine]}>{msg.text}</Text>
+                    </View>
+                    <Text style={chatStyles.time}>{fmtTime(msg.created_at)}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+
           <View style={chatStyles.inputBar}>
             <TextInput
               style={chatStyles.input}
@@ -502,10 +791,10 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
               placeholderTextColor={Colors.muted}
               value={dmInput}
               onChangeText={setDmInput}
-              onSubmitEditing={sendAdminDM}
+              onSubmitEditing={sendDM}
               returnKeyType="send"
             />
-            <TouchableOpacity style={chatStyles.sendBtn} onPress={sendAdminDM}>
+            <TouchableOpacity style={chatStyles.sendBtn} onPress={sendDM}>
               <Text style={chatStyles.sendIcon}>↑</Text>
             </TouchableOpacity>
           </View>
@@ -515,50 +804,177 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
   );
 }
 
-function NuevaClasePanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+// ─── Nueva Clase Panel ────────────────────────────────────────────────────────
+
+function NuevaClasePanel({ showToast, onCreated }: { showToast: (m: string, t: any) => void; onCreated: () => void }) {
+  const [name, setName] = useState('WOD CrossFit');
+  const [time, setTime] = useState('07:00');
+  const [duration, setDuration] = useState('60 min');
+  const [coach, setCoach] = useState('');
+  const [capacity, setCapacity] = useState('16');
+  const [wod, setWod] = useState('');
+  const [date, setDate] = useState(TODAY_ISO);
+  const [repeat, setRepeat] = useState<'once' | 'week'>('once');
+  const [busy, setBusy] = useState(false);
+
+  const isoFromDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const adjustDate = (delta: number) => {
+    const d = new Date(date + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    setDate(isoFromDate(d));
+  };
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso + 'T00:00:00');
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+  };
+
+  const CLASS_TYPES = ['WOD CrossFit', 'Halterofilia', 'Gimnasia', 'Open Box', 'Endurance', 'Kids'];
+
+  const handleCreate = async () => {
+    if (!name.trim() || !time.trim() || !coach.trim()) {
+      showToast('Nombre, hora y coach son obligatorios', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      const base = {
+        name: name.trim(),
+        time: time.trim(),
+        duration: duration.trim() || '60 min',
+        coach: coach.trim(),
+        capacity: parseInt(capacity, 10) || 16,
+        wod: wod.trim() || null,
+      };
+
+      let rows;
+      if (repeat === 'week') {
+        const d = new Date(date + 'T00:00:00');
+        const dow = d.getDay();
+        const mon = new Date(d);
+        mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+        rows = Array.from({ length: 5 }, (_, i) => {
+          const day = new Date(mon);
+          day.setDate(mon.getDate() + i);
+          return { ...base, date: isoFromDate(day) };
+        });
+      } else {
+        rows = [{ ...base, date }];
+      }
+
+      const { error } = await supabase.from('classes').insert(rows);
+      if (error) throw error;
+      showToast(repeat === 'week' ? '✅ 5 clases creadas (lun-vie)' : '✅ Clase creada', 'success');
+      onCreated();
+    } catch {
+      showToast('Error al crear la clase', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
       <View style={nuevaStyles.card}>
-        <FormField label="Tipo de clase" input={
-          <View style={nuevaStyles.fakeSelect}><Text style={nuevaStyles.fakeSelectText}>WOD CrossFit</Text></View>
+
+        <Text style={nuevaStyles.sectionLabel}>Tipo de clase</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {CLASS_TYPES.map(ct => (
+              <TouchableOpacity
+                key={ct}
+                style={[nuevaStyles.typeChip, name === ct && nuevaStyles.typeChipActive]}
+                onPress={() => setName(ct)}
+              >
+                <Text style={[nuevaStyles.typeChipText, name === ct && nuevaStyles.typeChipTextActive]}>{ct}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+
+        <FormField label="Nombre personalizado" input={
+          <TextInput style={nuevaStyles.input} placeholder="Ej: WOD CrossFit" placeholderTextColor={Colors.muted}
+            value={name} onChangeText={setName} />
         } />
+
         <View style={nuevaStyles.row}>
           <View style={nuevaStyles.half}>
             <FormField label="Hora inicio" input={
-              <TextInput style={[nuevaStyles.input, { color: Colors.white }]} defaultValue="07:00" placeholderTextColor={Colors.muted} />
+              <TextInput style={nuevaStyles.input} placeholder="07:00" placeholderTextColor={Colors.muted}
+                value={time} onChangeText={setTime} />
             } />
           </View>
           <View style={nuevaStyles.half}>
             <FormField label="Duración" input={
-              <View style={nuevaStyles.fakeSelect}><Text style={nuevaStyles.fakeSelectText}>60 min</Text></View>
+              <TextInput style={nuevaStyles.input} placeholder="60 min" placeholderTextColor={Colors.muted}
+                value={duration} onChangeText={setDuration} />
             } />
           </View>
         </View>
+
         <FormField label="Coach" input={
-          <View style={nuevaStyles.fakeSelect}><Text style={nuevaStyles.fakeSelectText}>Sara Martínez</Text></View>
+          <TextInput style={nuevaStyles.input} placeholder="Nombre del coach" placeholderTextColor={Colors.muted}
+            value={coach} onChangeText={setCoach} />
         } />
+
         <View style={nuevaStyles.row}>
           <View style={nuevaStyles.half}>
             <FormField label="Plazas máx." input={
-              <TextInput style={[nuevaStyles.input, { color: Colors.white }]} defaultValue="16" keyboardType="numeric" placeholderTextColor={Colors.muted} />
+              <TextInput style={nuevaStyles.input} placeholder="16" placeholderTextColor={Colors.muted}
+                value={capacity} onChangeText={setCapacity} keyboardType="numeric" />
             } />
           </View>
           <View style={nuevaStyles.half}>
-            <FormField label="Repetir" input={
-              <View style={nuevaStyles.fakeSelect}><Text style={nuevaStyles.fakeSelectText}>Solo hoy</Text></View>
-            } />
+            <Text style={nuevaStyles.label}>Fecha</Text>
+            <View style={nuevaStyles.dateRow}>
+              <TouchableOpacity style={nuevaStyles.dateBtn} onPress={() => adjustDate(-1)}>
+                <Text style={nuevaStyles.dateBtnText}>‹</Text>
+              </TouchableOpacity>
+              <Text style={nuevaStyles.dateText}>{fmtDate(date)}</Text>
+              <TouchableOpacity style={nuevaStyles.dateBtn} onPress={() => adjustDate(1)}>
+                <Text style={nuevaStyles.dateBtnText}>›</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
+
+        <Text style={nuevaStyles.label}>Repetir</Text>
+        <View style={nuevaStyles.repeatRow}>
+          <TouchableOpacity
+            style={[nuevaStyles.repeatBtn, repeat === 'once' && nuevaStyles.repeatBtnActive]}
+            onPress={() => setRepeat('once')}
+          >
+            <Text style={[nuevaStyles.repeatBtnText, repeat === 'once' && nuevaStyles.repeatBtnTextActive]}>Solo esta fecha</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[nuevaStyles.repeatBtn, repeat === 'week' && nuevaStyles.repeatBtnActive]}
+            onPress={() => setRepeat('week')}
+          >
+            <Text style={[nuevaStyles.repeatBtnText, repeat === 'week' && nuevaStyles.repeatBtnTextActive]}>Lun–Vie (5 días)</Text>
+          </TouchableOpacity>
+        </View>
+
         <FormField label="WOD (opcional)" input={
           <TextInput
-            style={[nuevaStyles.input, { height: 80, textAlignVertical: 'top', paddingTop: 10, color: Colors.white }]}
+            style={[nuevaStyles.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
             placeholder="Describe el entrenamiento..."
             placeholderTextColor={Colors.muted}
+            value={wod}
+            onChangeText={setWod}
             multiline
           />
         } />
-        <TouchableOpacity style={nuevaStyles.createBtn} onPress={() => showToast('✅ Clase creada', 'success')}>
-          <Text style={nuevaStyles.createBtnText}>Crear clase</Text>
+
+        <TouchableOpacity
+          style={[nuevaStyles.createBtn, busy && { opacity: 0.6 }]}
+          onPress={handleCreate}
+          disabled={busy}
+        >
+          <Text style={nuevaStyles.createBtnText}>{busy ? 'Creando...' : 'Crear clase'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -573,6 +989,8 @@ function FormField({ label, input }: { label: string; input: React.ReactNode }) 
     </View>
   );
 }
+
+// ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.black },
@@ -589,162 +1007,104 @@ const styles = StyleSheet.create({
   tabScroll: { flexGrow: 0 },
   tabContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, gap: 4, flexDirection: 'row' },
   adminTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface2,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
   },
   adminTabActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   adminTabText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
   adminTabTextActive: { color: '#fff' },
 });
 
-
 const panelStyles = StyleSheet.create({
   panel: { flex: 1 },
   content: { padding: 16, paddingTop: 0 },
   sectionHeader: { paddingVertical: 12 },
-  sectionTitle: {
-    fontFamily: Fonts.heading,
-    fontSize: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: Colors.muted,
-  },
+  sectionTitle: { fontFamily: Fonts.heading, fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.muted },
 });
 
 const clsStyles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 12, padding: 14, marginBottom: 10,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 10,
-  },
-  timeBlock: {
-    alignItems: 'center',
-    minWidth: 48,
-  },
-  cardTime: {
-    fontFamily: Fonts.heading,
-    fontSize: 22,
-    color: Colors.orange,
-    lineHeight: 24,
-  },
-  cardDuration: {
-    fontSize: 10,
-    color: Colors.muted,
-    fontFamily: Fonts.body,
-    marginTop: 2,
-  },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 10 },
+  timeBlock: { alignItems: 'center', minWidth: 48 },
+  cardTime: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.orange, lineHeight: 24 },
+  cardDuration: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, marginTop: 2 },
   info: { flex: 1 },
   name: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white, marginBottom: 2 },
   coachText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   rightCol: { alignItems: 'flex-end', gap: 2 },
   spotsText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
   fullLabel: { fontSize: 10, color: Colors.red, fontFamily: Fonts.bodySemiBold },
-  editBtn: { fontSize: 16, marginTop: 2 },
   bar: { height: 4, backgroundColor: Colors.surface3, borderRadius: 2, marginBottom: 12, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 2 },
-  attendeesSection: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: 10,
-  },
-  attendeesLabel: {
-    fontSize: 10,
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  attendeesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  attendeeItem: {
-    alignItems: 'center',
-    width: 48,
-  },
-  attendeeAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  attendeeInitials: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
-    color: '#fff',
-  },
-  attendeeName: {
-    fontSize: 10,
-    color: Colors.muted,
-    fontFamily: Fonts.body,
-    textAlign: 'center',
-  },
+  attendeesSection: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10 },
+  attendeesLabel: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  attendeesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  attendeeItem: { alignItems: 'center', width: 48 },
+  attendeeAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  attendeeInitials: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#fff' },
+  attendeeName: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, textAlign: 'center' },
 });
 
 const memStyles = StyleSheet.create({
   search: {
-    backgroundColor: Colors.surface2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 10,
-    paddingHorizontal: 12,
-    color: Colors.white,
-    fontFamily: Fonts.body,
-    fontSize: 14,
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, padding: 10, paddingHorizontal: 12, color: Colors.white, fontFamily: Fonts.body, fontSize: 14,
   },
-  row: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    padding: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  card: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 10, marginBottom: 8, overflow: 'hidden',
   },
+  row: { padding: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: Fonts.headingXBold, fontSize: 16, color: '#fff' },
   info: { flex: 1 },
   name: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white, marginBottom: 2 },
   plan: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
-  addBtn: {
-    backgroundColor: Colors.orange,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  addBtn: { backgroundColor: Colors.orange, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 4 },
   addBtnText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 13 },
+});
+
+const expandStyles = StyleSheet.create({
+  body: {
+    borderTopWidth: 1, borderTopColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 12, gap: 10,
+    backgroundColor: Colors.surface2,
+  },
+  detail: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
+  sectionLabel: {
+    fontSize: 11, color: Colors.muted, fontFamily: Fonts.bodySemiBold,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  tariffRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tariffChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
+    alignItems: 'center',
+  },
+  tariffChipSel: { borderColor: Colors.orange, backgroundColor: Colors.orangeGlow },
+  tariffChipText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.muted },
+  tariffChipTextSel: { color: Colors.orange },
+  tariffChipPrice: { fontFamily: Fonts.heading, fontSize: 16, color: Colors.white, marginTop: 2 },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  saveBtn: {
+    flex: 1, backgroundColor: Colors.orange, borderRadius: 8,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  saveBtnText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 12 },
+  deleteBtn: {
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.red, alignItems: 'center',
+  },
+  deleteBtnText: { fontFamily: Fonts.bodySemiBold, color: Colors.red, fontSize: 12 },
 });
 
 const cobroStyles = StyleSheet.create({
   pendingBox: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.yellow,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.yellow,
+    borderRadius: 12, padding: 14, marginBottom: 12,
   },
   pendingTitle: { fontSize: 12, color: Colors.yellow, fontFamily: Fonts.bodySemiBold, marginBottom: 8 },
   pendingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
@@ -753,37 +1113,21 @@ const cobroStyles = StyleSheet.create({
   pendingPlan: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   pendingAmount: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white },
   avisarBtn: {
-    backgroundColor: Colors.orangeGlow,
-    borderWidth: 1,
-    borderColor: Colors.orange,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginTop: 4,
+    backgroundColor: Colors.orangeGlow, borderWidth: 1, borderColor: Colors.orange,
+    borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, marginTop: 4,
   },
   avisarText: { fontSize: 12, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
 });
 
 const invRowStyles = StyleSheet.create({
   row: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    padding: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 10, padding: 12, paddingHorizontal: 14, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   icon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: Colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.surface2,
+    alignItems: 'center', justifyContent: 'center',
   },
   info: { flex: 1 },
   num: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white, marginBottom: 2 },
@@ -793,12 +1137,8 @@ const invRowStyles = StyleSheet.create({
 
 const factStyles = StyleSheet.create({
   diffBox: {
-    backgroundColor: Colors.orangeGlow,
-    borderWidth: 1,
-    borderColor: Colors.orange,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 14,
+    backgroundColor: Colors.orangeGlow, borderWidth: 1, borderColor: Colors.orange,
+    borderRadius: 10, padding: 12, marginBottom: 14,
   },
   diffTitle: { color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 13, marginBottom: 4 },
   diffSub: { color: Colors.muted, fontSize: 12, fontFamily: Fonts.body },
@@ -808,63 +1148,55 @@ const factStyles = StyleSheet.create({
   btnPrimaryText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 12 },
   btnSecondary: { backgroundColor: Colors.surface3, borderWidth: 1, borderColor: Colors.border },
   btnSecondaryText: { fontFamily: Fonts.bodySemiBold, color: Colors.white, fontSize: 12 },
-  pdfBtn: {
-    backgroundColor: Colors.orangeGlow,
-    borderWidth: 1,
-    borderColor: Colors.orange,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginTop: 4,
-  },
-  pdfBtnText: { fontSize: 12, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
   footer: { textAlign: 'center', color: Colors.muted, fontSize: 12, fontFamily: Fonts.body, marginTop: 8 },
 });
 
 const nuevaStyles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 0,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 12, padding: 16,
+  },
+  sectionLabel: {
+    fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
   },
   label: {
-    fontSize: 12,
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
+    fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
   },
   input: {
-    backgroundColor: Colors.surface2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 10,
-    paddingHorizontal: 12,
-    fontFamily: Fonts.body,
-    fontSize: 14,
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, padding: 10, paddingHorizontal: 12,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 14,
   },
-  fakeSelect: {
-    backgroundColor: Colors.surface2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 10,
-    paddingHorizontal: 12,
-  },
-  fakeSelectText: { color: Colors.white, fontFamily: Fonts.body, fontSize: 14 },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
+  dateRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, overflow: 'hidden',
+  },
+  dateBtn: { paddingHorizontal: 12, paddingVertical: 10 },
+  dateBtnText: { color: Colors.orange, fontSize: 20, fontFamily: Fonts.heading },
+  dateText: { flex: 1, textAlign: 'center', color: Colors.white, fontFamily: Fonts.body, fontSize: 12 },
+  typeChip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
+  },
+  typeChipActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  typeChipText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.muted },
+  typeChipTextActive: { color: '#fff' },
+  repeatRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  repeatBtn: {
+    flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
+  },
+  repeatBtnActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  repeatBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.muted },
+  repeatBtnTextActive: { color: '#fff' },
   createBtn: {
-    backgroundColor: Colors.orange,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 4,
+    backgroundColor: Colors.orange, borderRadius: 8, padding: 12,
+    alignItems: 'center', marginTop: 4,
   },
   createBtnText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 14 },
 });
@@ -880,26 +1212,13 @@ const chatStyles = StyleSheet.create({
   channelInfoText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   msgList: { flex: 1 },
   inputBar: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    padding: 10,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    flexDirection: 'row', gap: 8, alignItems: 'center', padding: 10, paddingHorizontal: 12,
+    backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border,
   },
   input: {
-    flex: 1,
-    backgroundColor: Colors.surface2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: Colors.white,
-    fontFamily: Fonts.body,
-    fontSize: 14,
+    flex: 1, backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 14,
   },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.orange, alignItems: 'center', justifyContent: 'center' },
   sendIcon: { color: '#fff', fontSize: 18 },
@@ -914,14 +1233,8 @@ const chatStyles = StyleSheet.create({
   theirText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.body, lineHeight: 19 },
   time: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, paddingHorizontal: 4 },
   convHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, paddingHorizontal: 16,
+    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: { color: Colors.orange, fontSize: 22, lineHeight: 24, paddingHorizontal: 4 },
   convAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
@@ -958,15 +1271,9 @@ const addStyles = StyleSheet.create({
     color: Colors.white, fontFamily: Fonts.body, fontSize: 15, marginBottom: 4,
   },
   tariffGrid: { gap: 10, marginTop: 4 },
-  tariffCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 12, padding: 14,
-  },
+  tariffCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, padding: 14 },
   tariffCardSel: { borderColor: Colors.orange, backgroundColor: Colors.orangeGlow },
-  tariffBadge: {
-    alignSelf: 'flex-end', backgroundColor: Colors.orange,
-    borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 6,
-  },
+  tariffBadge: { alignSelf: 'flex-end', backgroundColor: Colors.orange, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 6 },
   tariffBadgeText: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: '#fff' },
   tariffName: { fontFamily: Fonts.headingXBold, fontSize: 18, color: Colors.white, marginBottom: 2 },
   tariffDesc: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginBottom: 8 },
@@ -988,7 +1295,6 @@ const dmListStyles = StyleSheet.create({
   name: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white, marginBottom: 2 },
   preview: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   meta: { alignItems: 'flex-end' },
-  time: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.body },
   badge: { backgroundColor: Colors.orange, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginTop: 4 },
   badgeText: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: '#fff' },
 });
