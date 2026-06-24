@@ -1,30 +1,40 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { ClassCard } from '../../components/athlete/ClassCard';
 import { ClassModal } from '../../components/athlete/ClassModal';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
-import { CLASSES_TODAY, DATE_PILLS, type ClassItem } from '../../data/mockData';
+import { useClasses } from '../../hooks/useClasses';
+import { useAuth } from '../../context/AuthContext';
+import { DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 
 export function HomeScreen() {
-  const [activeDateIdx, setActiveDateIdx] = useState(2);
+  const { profile } = useAuth();
+  const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [selectedClass, setSelectedClass] = useState<any>(null);
   const { toast, showToast } = useToast();
 
-  const timePills = ['Todas', ...CLASSES_TODAY.map(c => c.time)];
+  const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? DATE_PILLS[0].isoDate;
+  const { classes, loading, refetch } = useClasses(selectedDate);
+
+  const timePills = ['Todas', ...classes.map(c => c.time)];
   const filteredClasses = selectedTime && selectedTime !== 'Todas'
-    ? CLASSES_TODAY.filter(c => c.time === selectedTime)
-    : CLASSES_TODAY;
+    ? classes.filter(c => c.time === selectedTime)
+    : classes;
+
+  const today = DATE_PILLS[TODAY_IDX];
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hola, <Text style={styles.name}>Carlos</Text> 💪</Text>
-        <Text style={styles.sub}>Miércoles 24 jun · CrossFit Murcia</Text>
+        <Text style={styles.greeting}>Hola, <Text style={styles.name}>{profile?.name ?? 'Atleta'}</Text> 💪</Text>
+        <Text style={styles.sub}>
+          {today ? `${today.day} ${today.num} · ` : ''}CrossFit Murcia
+        </Text>
         <View style={styles.memberBadge}>
           <View style={styles.memberDot} />
           <Text style={styles.memberText}>Ilimitado — activo hasta 31 jul</Text>
@@ -38,7 +48,7 @@ export function HomeScreen() {
             <TouchableOpacity
               key={i}
               style={[styles.datePill, activeDateIdx === i && styles.datePillActive]}
-              onPress={() => setActiveDateIdx(i)}
+              onPress={() => { setActiveDateIdx(i); setSelectedTime(null); }}
             >
               <Text style={[styles.dateDay, activeDateIdx === i && styles.dateDayActive]}>{d.day}</Text>
               <Text style={[styles.dateNum, activeDateIdx === i && styles.dateNumActive]}>{d.num}</Text>
@@ -48,20 +58,22 @@ export function HomeScreen() {
       </View>
 
       {/* Time filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll} contentContainerStyle={styles.timeContent}>
-        {timePills.map(t => {
-          const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
-          return (
-            <TouchableOpacity
-              key={t}
-              style={[styles.timePill, active && styles.timePillActive]}
-              onPress={() => setSelectedTime(t)}
-            >
-              <Text style={[styles.timePillText, active && styles.timePillTextActive]}>{t}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {!loading && classes.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll} contentContainerStyle={styles.timeContent}>
+          {timePills.map(t => {
+            const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
+            return (
+              <TouchableOpacity
+                key={t}
+                style={[styles.timePill, active && styles.timePillActive]}
+                onPress={() => setSelectedTime(t)}
+              >
+                <Text style={[styles.timePillText, active && styles.timePillTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.sectionHeader}>
@@ -69,9 +81,16 @@ export function HomeScreen() {
             {selectedTime && selectedTime !== 'Todas' ? `Clases · ${selectedTime}` : 'Clases de hoy'}
           </Text>
         </View>
-        {filteredClasses.map(item => (
-          <ClassCard key={item.id} item={item} onPress={setSelectedClass} />
-        ))}
+
+        {loading ? (
+          <ActivityIndicator color={Colors.orange} style={{ marginTop: 40 }} />
+        ) : filteredClasses.length === 0 ? (
+          <Text style={styles.emptyText}>No hay clases para este día</Text>
+        ) : (
+          filteredClasses.map(item => (
+            <ClassCard key={item.id} item={item} onPress={setSelectedClass} />
+          ))
+        )}
         <View style={{ height: 16 }} />
       </ScrollView>
 
@@ -79,6 +98,7 @@ export function HomeScreen() {
         item={selectedClass}
         onClose={() => setSelectedClass(null)}
         onAction={(msg, type) => showToast(msg, type)}
+        onRefresh={refetch}
       />
       <Toast {...toast} />
     </View>
@@ -117,28 +137,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 12,
   },
-  memberDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.orange,
-  },
-  memberText: {
-    fontSize: 12,
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.orange,
-  },
+  memberDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.orange },
+  memberText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.orange },
   dateScroll: {
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  dateContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 8,
-    flexDirection: 'row',
-  },
+  dateContent: { paddingHorizontal: 20, paddingVertical: 16, gap: 8, flexDirection: 'row' },
   datePill: {
     alignItems: 'center',
     minWidth: 52,
@@ -149,10 +155,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surface2,
   },
-  datePillActive: {
-    backgroundColor: Colors.orange,
-    borderColor: Colors.orange,
-  },
+  datePillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   dateDay: {
     fontSize: 10,
     fontFamily: Fonts.bodySemiBold,
@@ -161,12 +164,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   dateDayActive: { color: 'rgba(255,255,255,0.8)' },
-  dateNum: {
-    fontFamily: Fonts.heading,
-    fontSize: 20,
-    color: Colors.white,
-    lineHeight: 24,
-  },
+  dateNum: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.white, lineHeight: 24 },
   dateNumActive: { color: '#fff' },
   timeScroll: {
     flexGrow: 0,
@@ -174,12 +172,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  timeContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 8,
-    flexDirection: 'row',
-  },
+  timeContent: { paddingHorizontal: 16, paddingVertical: 14, gap: 8, flexDirection: 'row' },
   timePill: {
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -188,21 +181,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surface2,
   },
-  timePillActive: {
-    backgroundColor: Colors.orange,
-    borderColor: Colors.orange,
-  },
-  timePillText: {
-    fontSize: 13,
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.muted,
-  },
+  timePillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  timePillText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
   timePillTextActive: { color: '#fff' },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
+  sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   sectionTitle: {
     fontFamily: Fonts.heading,
     fontSize: 18,
@@ -210,5 +192,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: Colors.muted,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: Colors.muted,
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    marginTop: 40,
   },
 });

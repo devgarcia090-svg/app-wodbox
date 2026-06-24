@@ -50,150 +50,27 @@ export interface DM {
   messages: string[];
 }
 
-export const CLASSES_TODAY: ClassItem[] = [
-  {
-    id: '1',
-    name: 'WOD CrossFit',
-    time: '07:00',
-    coach: 'Sara Martínez',
-    duration: '60 min',
-    enrolled: 12,
-    capacity: 16,
-    status: 'reserved',
-    wod: '3 rounds:\n10 Pull-ups\n15 Push-ups\n20 Air Squats\nPor tiempo — cap 20 min',
-    avatars: [
-      { initial: 'C', color: '#f95c00' },
-      { initial: 'M', color: '#8b5cf6' },
-      { initial: 'A', color: '#06b6d4' },
-    ],
-    attendees: [
-      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
-      { name: 'María López', initials: 'ML', color: '#8b5cf6' },
-      { name: 'Ana Pérez', initials: 'AP', color: '#22c55e' },
-      { name: 'David Ruiz', initials: 'DR', color: '#06b6d4' },
-      { name: 'Elena Gómez', initials: 'EG', color: '#ec4899' },
-      { name: 'Felipe Torres', initials: 'FT', color: '#f59e0b' },
-      { name: 'Sofía Navarro', initials: 'SN', color: '#3b82f6' },
-      { name: 'Javier Molina', initials: 'JM', color: '#ef4444' },
-      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
-      { name: 'Roberto Díaz', initials: 'RD', color: '#f95c00' },
-      { name: 'Nuria Fernández', initials: 'NF', color: '#06b6d4' },
-      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Open Box',
-    time: '10:00',
-    coach: 'Libre',
-    duration: '60 min',
-    enrolled: 5,
-    capacity: 20,
-    status: 'open',
-    wod: 'Todo el material disponible.',
-    avatars: [
-      { initial: 'L', color: '#8b5cf6' },
-      { initial: 'N', color: '#ec4899' },
-    ],
-    attendees: [
-      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
-      { name: 'Nuria Fernández', initials: 'NF', color: '#ec4899' },
-      { name: 'Tomás Iglesias', initials: 'TI', color: '#06b6d4' },
-      { name: 'Vera Castillo', initials: 'VC', color: '#f59e0b' },
-      { name: 'Iván Ramos', initials: 'IR', color: '#3b82f6' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Halterofilia',
-    time: '12:00',
-    coach: 'Marcos Díaz',
-    duration: '75 min',
-    enrolled: 16,
-    capacity: 16,
-    status: 'full',
-    wod: 'Snatch + Clean & Jerk\nTécnica + levantamientos máximos',
-    avatars: [
-      { initial: 'R', color: '#f95c00' },
-      { initial: 'J', color: '#22c55e' },
-      { initial: 'T', color: '#06b6d4' },
-    ],
-    attendees: [
-      { name: 'Roberto Díaz', initials: 'RD', color: '#f95c00' },
-      { name: 'Javier Molina', initials: 'JM', color: '#22c55e' },
-      { name: 'Tomás Iglesias', initials: 'TI', color: '#06b6d4' },
-      { name: 'Ana Pérez', initials: 'AP', color: '#ec4899' },
-      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
-      { name: 'Elena Gómez', initials: 'EG', color: '#8b5cf6' },
-      { name: 'Felipe Torres', initials: 'FT', color: '#f59e0b' },
-      { name: 'María López', initials: 'ML', color: '#3b82f6' },
-      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
-      { name: 'Sofía Navarro', initials: 'SN', color: '#ef4444' },
-      { name: 'Nuria Fernández', initials: 'NF', color: '#06b6d4' },
-      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
-      { name: 'Iván Ramos', initials: 'IR', color: '#f95c00' },
-      { name: 'Vera Castillo', initials: 'VC', color: '#22c55e' },
-      { name: 'David Ruiz', initials: 'DR', color: '#06b6d4' },
-      { name: 'Rosa Torres', initials: 'RT', color: '#ec4899' },
-    ],
-  },
-  {
-    id: '4',
-    name: 'WOD CrossFit',
-    time: '18:00',
-    coach: 'Sara Martínez',
-    duration: '60 min',
-    enrolled: 3,
-    capacity: 16,
-    status: 'open',
-    wod: 'AMRAP 20 min:\n5 Deadlifts @ 100kg\n10 Box Jumps\n15 KB Swings @ 24kg',
-    avatars: [
-      { initial: 'D', color: '#f59e0b' },
-      { initial: 'E', color: '#8b5cf6' },
-    ],
-    attendees: [
-      { name: 'David Ruiz', initials: 'DR', color: '#f59e0b' },
-      { name: 'Elena Gómez', initials: 'EG', color: '#8b5cf6' },
-      { name: 'Felipe Torres', initials: 'FT', color: '#22c55e' },
-    ],
-  },
-  {
-    id: '5',
-    name: 'Endurance',
-    time: '19:30',
-    coach: 'Marcos Díaz',
-    duration: '60 min',
-    enrolled: 8,
-    capacity: 12,
-    status: 'open',
-    wod: '4x800m @ ritmo 5K\n2 min descanso entre series',
-    avatars: [
-      { initial: 'G', color: '#22c55e' },
-      { initial: 'I', color: '#06b6d4' },
-      { initial: 'V', color: '#f95c00' },
-    ],
-    attendees: [
-      { name: 'Gonzalo Prieto', initials: 'GP', color: '#22c55e' },
-      { name: 'Iván Ramos', initials: 'IR', color: '#06b6d4' },
-      { name: 'Vera Castillo', initials: 'VC', color: '#f95c00' },
-      { name: 'Carlos Martínez', initials: 'CM', color: '#f95c00' },
-      { name: 'Laura García', initials: 'LG', color: '#8b5cf6' },
-      { name: 'Pablo Sánchez', initials: 'PS', color: '#22c55e' },
-      { name: 'Ana Pérez', initials: 'AP', color: '#ec4899' },
-      { name: 'Roberto Díaz', initials: 'RD', color: '#f59e0b' },
-    ],
-  },
-];
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
-export const DATE_PILLS = [
-  { day: 'LUN', num: '22' },
-  { day: 'MAR', num: '23' },
-  { day: 'MIÉ', num: '24', active: true },
-  { day: 'JUE', num: '25' },
-  { day: 'VIE', num: '26' },
-  { day: 'SÁB', num: '27' },
-  { day: 'DOM', num: '28' },
-];
+function buildWeekDays() {
+  const today = new Date();
+  const dow = today.getDay();
+  const daysFromMon = dow === 0 ? 6 : dow - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMon);
+  const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return { day: dayNames[d.getDay()], num: String(d.getDate()), isoDate: isoDate(d) };
+  });
+}
+
+export const TODAY_ISO = isoDate(new Date());
+export const DATE_PILLS = buildWeekDays();
+export const TODAY_IDX = DATE_PILLS.findIndex(d => d.isoDate === TODAY_ISO);
 
 export const MEMBERS: Member[] = [
   { id: '1', name: 'Carlos Martínez', initials: 'CM', color: '#f95c00', plan: 'Ilimitado · vence 31 jul', status: 'active' },

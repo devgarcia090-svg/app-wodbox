@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
-import { CLASSES_TODAY, MEMBERS, INVOICES, ADMIN_DMS } from '../../data/mockData';
+import { MEMBERS, INVOICES, ADMIN_DMS, TODAY_ISO } from '../../data/mockData';
+import { useClasses } from '../../hooks/useClasses';
 
 type AdminTab = 'clases' | 'miembros' | 'cobros' | 'facturas' | 'chat' | 'nueva';
 
@@ -64,10 +65,11 @@ export function AdminDashboard() {
 
 function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const timePills = ['Todas', ...CLASSES_TODAY.map(c => c.time)];
+  const { classes, loading } = useClasses(TODAY_ISO);
+  const timePills = ['Todas', ...classes.map(c => c.time)];
   const filtered = selectedTime && selectedTime !== 'Todas'
-    ? CLASSES_TODAY.filter(c => c.time === selectedTime)
-    : CLASSES_TODAY;
+    ? classes.filter(c => c.time === selectedTime)
+    : classes;
 
   return (
     <View style={panelStyles.panel}>
@@ -83,6 +85,11 @@ function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
         })}
       </ScrollView>
       <ScrollView contentContainerStyle={panelStyles.content}>
+      {loading ? (
+        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+      ) : filtered.length === 0 ? (
+        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para hoy</Text>
+      ) : null}
       {filtered.map(cls => {
         const pct = Math.round((cls.enrolled / cls.capacity) * 100);
         const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
