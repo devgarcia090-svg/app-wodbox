@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   adminTitle: { fontFamily: Fonts.headingXBold, fontSize: 26, color: Colors.white },
   adminSub: { color: Colors.muted, fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
   tabScroll: { flexGrow: 0 },
-  tabContent: { paddingHorizontal: 16, paddingBottom: 16, gap: 4, flexDirection: 'row' },
+  tabContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, gap: 4, flexDirection: 'row' },
   adminTab: {
     paddingHorizontal: 14,
     paddingVertical: 7,
