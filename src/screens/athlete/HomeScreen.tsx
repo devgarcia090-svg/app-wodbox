@@ -10,8 +10,14 @@ import { CLASSES_TODAY, DATE_PILLS, type ClassItem } from '../../data/mockData';
 
 export function HomeScreen() {
   const [activeDateIdx, setActiveDateIdx] = useState(2);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const { toast, showToast } = useToast();
+
+  const timePills = ['Todas', ...CLASSES_TODAY.map(c => c.time)];
+  const filteredClasses = selectedTime && selectedTime !== 'Todas'
+    ? CLASSES_TODAY.filter(c => c.time === selectedTime)
+    : CLASSES_TODAY;
 
   return (
     <View style={styles.container}>
@@ -41,11 +47,29 @@ export function HomeScreen() {
         </ScrollView>
       </View>
 
+      {/* Time filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll} contentContainerStyle={styles.timeContent}>
+        {timePills.map(t => {
+          const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
+          return (
+            <TouchableOpacity
+              key={t}
+              style={[styles.timePill, active && styles.timePillActive]}
+              onPress={() => setSelectedTime(t)}
+            >
+              <Text style={[styles.timePillText, active && styles.timePillTextActive]}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Clases de hoy</Text>
+          <Text style={styles.sectionTitle}>
+            {selectedTime && selectedTime !== 'Todas' ? `Clases · ${selectedTime}` : 'Clases de hoy'}
+          </Text>
         </View>
-        {CLASSES_TODAY.map(item => (
+        {filteredClasses.map(item => (
           <ClassCard key={item.id} item={item} onPress={setSelectedClass} />
         ))}
         <View style={{ height: 16 }} />
@@ -144,6 +168,36 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   dateNumActive: { color: '#fff' },
+  timeScroll: {
+    flexGrow: 0,
+    backgroundColor: Colors.black,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  timeContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  timePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
+  },
+  timePillActive: {
+    backgroundColor: Colors.orange,
+    borderColor: Colors.orange,
+  },
+  timePillText: {
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.muted,
+  },
+  timePillTextActive: { color: '#fff' },
   sectionHeader: {
     paddingHorizontal: 20,
     paddingTop: 20,
