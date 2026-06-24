@@ -63,9 +63,27 @@ export function AdminDashboard() {
 
 
 function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const timePills = ['Todas', ...CLASSES_TODAY.map(c => c.time)];
+  const filtered = selectedTime && selectedTime !== 'Todas'
+    ? CLASSES_TODAY.filter(c => c.time === selectedTime)
+    : CLASSES_TODAY;
+
   return (
-    <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
-      {CLASSES_TODAY.map(cls => {
+    <View style={panelStyles.panel}>
+      {/* Time filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminTimeStyles.scroll} contentContainerStyle={adminTimeStyles.content}>
+        {timePills.map(t => {
+          const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
+          return (
+            <TouchableOpacity key={t} style={[adminTimeStyles.pill, active && adminTimeStyles.pillActive]} onPress={() => setSelectedTime(t)}>
+              <Text style={[adminTimeStyles.pillText, active && adminTimeStyles.pillTextActive]}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+      <ScrollView contentContainerStyle={panelStyles.content}>
+      {filtered.map(cls => {
         const pct = Math.round((cls.enrolled / cls.capacity) * 100);
         const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
         const isFull = pct >= 100;
@@ -116,13 +134,87 @@ function ClasesPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
           </View>
         );
       })}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
+const TARIFFS = [
+  { id: '10clases', name: '10 CLASES', price: '45', unit: '€/bono', desc: 'Sin caducidad mensual.', features: ['10 clases de cualquier tipo', 'Validez 1 mes', 'Acceso a todas las disciplinas'] },
+  { id: '14clases', name: '14 CLASES', price: '55', unit: '€/bono', desc: 'Ideal para venir 3-4 veces por semana.', features: ['14 clases de cualquier tipo', 'Validez 1 mes', 'Acceso a todas las disciplinas', 'Reserva garantizada'], popular: true },
+  { id: 'ilimitado', name: 'ILIMITADO', price: '65', unit: '€/mes', desc: 'Sin límite de clases al mes.', features: ['Clases ilimitadas', 'Todas las disciplinas', 'Open Box incluido', 'Sin permanencia'] },
+  { id: 'menor20', name: 'MENOR DE 20', price: '30', unit: '€/mes', desc: 'Tarifa especial para menores de 20 años.', features: ['Clases ilimitadas', 'Todas las disciplinas', 'Válido con DNI'], badge: 'OFERTA JOVEN' },
+];
+
 function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [selectedTariff, setSelectedTariff] = useState<string | null>(null);
   const filtered = MEMBERS.filter(m => m.name.toLowerCase().includes(search.toLowerCase()));
+
+  const handleSend = () => {
+    if (!newName.trim() || !newEmail.trim() || !selectedTariff) {
+      showToast('Completa nombre, email y tarifa', 'error');
+      return;
+    }
+    showToast(`✉️ Invitación enviada a ${newEmail}`, 'success');
+    setShowForm(false);
+    setNewName(''); setNewEmail(''); setSelectedTariff(null);
+  };
+
+  if (showForm) {
+    return (
+      <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
+        <TouchableOpacity onPress={() => setShowForm(false)} style={addStyles.backRow}>
+          <Text style={addStyles.backText}>‹ Volver a miembros</Text>
+        </TouchableOpacity>
+        <Text style={addStyles.formTitle}>Nuevo atleta</Text>
+
+        <Text style={addStyles.label}>Nombre completo</Text>
+        <TextInput style={addStyles.input} placeholder="Nombre Apellido" placeholderTextColor={Colors.muted}
+          value={newName} onChangeText={setNewName} />
+
+        <Text style={addStyles.label}>Email</Text>
+        <TextInput style={addStyles.input} placeholder="atleta@email.com" placeholderTextColor={Colors.muted}
+          value={newEmail} onChangeText={setNewEmail} autoCapitalize="none" keyboardType="email-address" />
+
+        <Text style={[addStyles.label, { marginTop: 18 }]}>Selecciona tarifa</Text>
+        <View style={addStyles.tariffGrid}>
+          {TARIFFS.map(t => {
+            const sel = selectedTariff === t.id;
+            return (
+              <TouchableOpacity
+                key={t.id}
+                style={[addStyles.tariffCard, sel && addStyles.tariffCardSel]}
+                onPress={() => setSelectedTariff(t.id)}
+                activeOpacity={0.8}
+              >
+                {t.popular && <View style={addStyles.tariffBadge}><Text style={addStyles.tariffBadgeText}>MÁS POPULAR</Text></View>}
+                {t.badge && <View style={[addStyles.tariffBadge, { backgroundColor: Colors.surface3 }]}><Text style={[addStyles.tariffBadgeText, { color: Colors.muted }]}>{t.badge}</Text></View>}
+                <Text style={[addStyles.tariffName, sel && { color: Colors.orange }]}>{t.name}</Text>
+                <Text style={addStyles.tariffDesc}>{t.desc}</Text>
+                <View style={addStyles.tariffPriceRow}>
+                  <Text style={addStyles.tariffCurrency}>€</Text>
+                  <Text style={[addStyles.tariffPrice, sel && { color: Colors.orange }]}>{t.price}</Text>
+                  <Text style={addStyles.tariffUnit}>{t.unit}</Text>
+                </View>
+                {t.features.map((f, i) => (
+                  <Text key={i} style={[addStyles.tariffFeature, sel && { color: Colors.white }]}>✓ {f}</Text>
+                ))}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <TouchableOpacity style={addStyles.sendBtn} onPress={handleSend} activeOpacity={0.85}>
+          <Text style={addStyles.sendBtnText}>✉️ Enviar invitación</Text>
+        </TouchableOpacity>
+        <View style={{ height: 32 }} />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
@@ -150,7 +242,7 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
           />
         </View>
       ))}
-      <TouchableOpacity style={memStyles.addBtn} onPress={() => showToast('Formulario de nuevo atleta', 'info')}>
+      <TouchableOpacity style={memStyles.addBtn} onPress={() => setShowForm(true)}>
         <Text style={memStyles.addBtnText}>+ Añadir atleta</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -837,6 +929,47 @@ const chatStyles = StyleSheet.create({
   bubbleTheirs: { backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border, borderTopLeftRadius: 4 },
   bubbleText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.body, lineHeight: 19 },
   bubbleTextMine: { color: '#fff' },
+});
+
+const adminTimeStyles = StyleSheet.create({
+  scroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  content: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
+  pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2 },
+  pillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  pillText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
+  pillTextActive: { color: '#fff' },
+});
+
+const addStyles = StyleSheet.create({
+  backRow: { marginBottom: 16 },
+  backText: { color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 14 },
+  formTitle: { fontFamily: Fonts.headingXBold, fontSize: 22, color: Colors.white, marginBottom: 18 },
+  label: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  input: {
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 15, marginBottom: 4,
+  },
+  tariffGrid: { gap: 10, marginTop: 4 },
+  tariffCard: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 12, padding: 14,
+  },
+  tariffCardSel: { borderColor: Colors.orange, backgroundColor: Colors.orangeGlow },
+  tariffBadge: {
+    alignSelf: 'flex-end', backgroundColor: Colors.orange,
+    borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 6,
+  },
+  tariffBadgeText: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: '#fff' },
+  tariffName: { fontFamily: Fonts.headingXBold, fontSize: 18, color: Colors.white, marginBottom: 2 },
+  tariffDesc: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginBottom: 8 },
+  tariffPriceRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, marginBottom: 10 },
+  tariffCurrency: { fontSize: 16, color: Colors.muted, fontFamily: Fonts.heading, lineHeight: 32 },
+  tariffPrice: { fontSize: 36, fontFamily: Fonts.headingXBold, color: Colors.white, lineHeight: 38 },
+  tariffUnit: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, lineHeight: 24 },
+  tariffFeature: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginTop: 3 },
+  sendBtn: { backgroundColor: Colors.orange, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
+  sendBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: '#fff' },
 });
 
 const dmListStyles = StyleSheet.create({
