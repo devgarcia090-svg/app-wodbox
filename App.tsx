@@ -19,6 +19,7 @@ import { AdminNavigator } from './src/navigation/AdminNavigator';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { BoxConfigProvider, useBoxConfig } from './src/context/BoxConfigContext';
+import { BoxLogo } from './src/components/common/BoxLogo';
 import { usePushToken } from './src/hooks/usePushToken';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
@@ -31,8 +32,8 @@ function AppContent() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingLogo}>WOD<Text style={styles.loadingAccent}>BOX</Text></Text>
-        <ActivityIndicator color={Colors.orange} style={{ marginTop: 24 }} />
+        <BoxLogo size="large" />
+        <ActivityIndicator color={boxConfig.primary_color} style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -55,7 +56,7 @@ function AppContent() {
         <SafeAreaView style={styles.root} edges={['top']}>
           {/* Top Nav */}
           <View style={styles.nav}>
-            <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
+            <BoxLogo size="small" />
             <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
               <Text style={styles.logoutText}>Salir</Text>
             </TouchableOpacity>

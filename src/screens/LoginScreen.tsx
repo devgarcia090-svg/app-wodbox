@@ -7,6 +7,8 @@ import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useBoxConfig } from '../context/BoxConfigContext';
+import { BoxLogo } from '../components/common/BoxLogo';
 
 export function LoginScreen() {
   const { needsPasswordSetup } = useAuth();
@@ -19,6 +21,7 @@ function SignInScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const boxConfig = useBoxConfig();
 
   const handleLogin = async () => {
     setError('');
@@ -40,8 +43,10 @@ function SignInScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.inner}>
         <View style={styles.logoWrap}>
-          <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
-          <Text style={styles.tagline}>Gestión inteligente para tu box</Text>
+          <BoxLogo size="large" />
+          {boxConfig.tagline ? (
+            <Text style={styles.tagline}>{boxConfig.tagline}</Text>
+          ) : null}
         </View>
 
         <View style={styles.form}>
@@ -131,7 +136,7 @@ function SetPasswordScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.inner}>
         <View style={styles.logoWrap}>
-          <Text style={styles.logo}>WOD<Text style={styles.logoAccent}>BOX</Text></Text>
+          <BoxLogo size="large" />
           <Text style={styles.tagline}>Hola, <Text style={{ color: Colors.orange }}>{name}</Text> 👋</Text>
         </View>
 
