@@ -4,7 +4,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { HomeScreen } from '../screens/athlete/HomeScreen';
-import { CalendarScreen } from '../screens/athlete/CalendarScreen';
 import { ChatScreen } from '../screens/athlete/ChatScreen';
 import { ProfileScreen } from '../screens/athlete/ProfileScreen';
 
@@ -19,7 +18,6 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
         <Text style={[styles.iconSvg, { color }]}>⌂</Text>
       </View>
     ),
-    Calendar: <Text style={[styles.iconSvg, { color }]}>📅</Text>,
     Chat: (
       <View>
         <Text style={[styles.iconSvg, { color }]}>💬</Text>
@@ -46,11 +44,6 @@ export function AthleteNavigator() {
         name="Inicio"
         component={HomeScreen}
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Horario"
-        component={CalendarScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Calendar" focused={focused} /> }}
       />
       <Tab.Screen
         name="Chat"
