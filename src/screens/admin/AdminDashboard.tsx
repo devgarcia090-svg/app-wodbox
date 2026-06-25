@@ -134,29 +134,33 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
                   {isFull && <Text style={clsStyles.fullLabel}>LLENA</Text>}
                 </View>
               </View>
-              <View style={clsStyles.bar}>
-                <View style={[clsStyles.fill, { width: `${pct}%` as any, backgroundColor: fillColor }]} />
-              </View>
-              {cls.attendees.length > 0 && (
-                <View style={clsStyles.attendeesSection}>
-                  <Text style={clsStyles.attendeesLabel}>Inscritos</Text>
-                  <View style={clsStyles.attendeesGrid}>
-                    {cls.attendees.map((att, i) => (
-                      <View key={i} style={clsStyles.attendeeItem}>
-                        <Avatar
-                          url={att.url}
-                          initials={att.initials}
-                          color={att.color}
-                          size={40}
-                          square
-                          onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
-                        />
-                        <Text style={clsStyles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
+              <View style={clsStyles.slotsGrid}>
+                {Array.from({ length: cls.capacity }, (_, i) => {
+                  const att = cls.attendees[i];
+                  const isEnrolled = i < cls.enrolled;
+                  if (att) {
+                    return (
+                      <Avatar
+                        key={i}
+                        url={att.url}
+                        initials={att.initials}
+                        color={att.color}
+                        size={36}
+                        square
+                        onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
+                      />
+                    );
+                  }
+                  if (isEnrolled) {
+                    return (
+                      <View key={i} style={clsStyles.slotGhost}>
+                        <Text style={clsStyles.slotGhostText}>?</Text>
                       </View>
-                    ))}
-                  </View>
-                </View>
-              )}
+                    );
+                  }
+                  return <View key={i} style={clsStyles.slotEmpty} />;
+                })}
+              </View>
             </View>
           );
         })}
@@ -1065,7 +1069,7 @@ const clsStyles = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     borderRadius: 12, padding: 14, marginBottom: 10,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 10 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
   timeBlock: { alignItems: 'center', minWidth: 48 },
   cardTime: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.orange, lineHeight: 24 },
   cardDuration: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, marginTop: 2 },
@@ -1075,15 +1079,22 @@ const clsStyles = StyleSheet.create({
   rightCol: { alignItems: 'flex-end', gap: 2 },
   spotsText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
   fullLabel: { fontSize: 10, color: Colors.red, fontFamily: Fonts.bodySemiBold },
-  bar: { height: 4, backgroundColor: Colors.surface3, borderRadius: 2, marginBottom: 12, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 2 },
-  attendeesSection: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10 },
-  attendeesLabel: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  attendeesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  attendeeItem: { alignItems: 'center', width: 48 },
-  attendeeAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  attendeeInitials: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: '#fff' },
-  attendeeName: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, textAlign: 'center' },
+  slotsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 5,
+    borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12,
+  },
+  slotEmpty: {
+    width: 36, height: 36, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
+  },
+  slotGhost: {
+    width: 36, height: 36, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.orange,
+    backgroundColor: Colors.orangeGlow,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  slotGhostText: { fontSize: 13, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
 });
 
 const memStyles = StyleSheet.create({
