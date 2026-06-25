@@ -6,14 +6,15 @@ const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 serve(async (req) => {
   try {
-    // Verify caller is an admin
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const callerClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } });
-    const { data: { user } } = await callerClient.auth.getUser();
-    if (!user) return new Response('Unauthorized', { status: 401 });
-
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Verify caller is an admin via their JWT
+    const jwt = req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!jwt) return new Response('Unauthorized', { status: 401 });
+
+    const { data: { user }, error: userError } = await adminClient.auth.getUser(jwt);
+    if (userError || !user) return new Response('Unauthorized', { status: 401 });
+
     const { data: profile } = await adminClient
       .from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') return new Response('Forbidden', { status: 403 });
