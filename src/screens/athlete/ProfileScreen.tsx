@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
@@ -108,13 +109,16 @@ export function ProfileScreen() {
 
   const uploadAvatar = async (localUri: string, userId: string): Promise<string | null> => {
     try {
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-      const ext = localUri.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `${userId}/avatar.${ext}`;
+      const path = `${userId}/avatar.jpg`;
+      const base64 = await FileSystem.readAsStringAsync(localUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const { error } = await supabase.storage
         .from('avatars')
-        .upload(path, blob, { upsert: true, contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+        .upload(path, bytes, { upsert: true, contentType: 'image/jpeg' });
       if (error) return null;
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       return `${data.publicUrl}?t=${Date.now()}`;
