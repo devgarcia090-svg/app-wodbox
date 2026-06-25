@@ -10,6 +10,26 @@ import { useClasses } from '../../hooks/useClasses';
 import { useAuth } from '../../context/AuthContext';
 import { DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 
+const DAY_NAMES: Record<string, string> = {
+  LUN: 'Lunes', MAR: 'Martes', 'MIÉ': 'Miércoles',
+  JUE: 'Jueves', VIE: 'Viernes', 'SÁB': 'Sábado', DOM: 'Domingo',
+};
+
+function classesLabel(dateIdx: number): string {
+  const d = DATE_PILLS[dateIdx];
+  if (!d) return 'Clases';
+  if (dateIdx === TODAY_IDX) return 'Clases de hoy';
+  if (TODAY_IDX >= 0 && dateIdx === TODAY_IDX + 1) return 'Clases de mañana';
+  return `${DAY_NAMES[d.day] ?? d.day} ${d.num}`;
+}
+
+function shortExpiry(iso: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso + 'T00:00:00');
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
 export function HomeScreen() {
   const { profile } = useAuth();
   const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
@@ -35,10 +55,14 @@ export function HomeScreen() {
         <Text style={styles.sub}>
           {today ? `${today.day} ${today.num} · ` : ''}CrossFit Murcia
         </Text>
-        <View style={styles.memberBadge}>
-          <View style={styles.memberDot} />
-          <Text style={styles.memberText}>Ilimitado — activo hasta 31 jul</Text>
-        </View>
+        {profile?.plan && (
+          <View style={styles.memberBadge}>
+            <View style={styles.memberDot} />
+            <Text style={styles.memberText}>
+              {profile.plan}{profile.membership_expires ? ` — activo hasta ${shortExpiry(profile.membership_expires)}` : ''}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Date scroll */}
@@ -78,7 +102,9 @@ export function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            {selectedTime && selectedTime !== 'Todas' ? `Clases · ${selectedTime}` : 'Clases de hoy'}
+            {selectedTime && selectedTime !== 'Todas'
+              ? `${classesLabel(activeDateIdx)} · ${selectedTime}`
+              : classesLabel(activeDateIdx)}
           </Text>
         </View>
 
