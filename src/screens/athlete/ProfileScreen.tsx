@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
@@ -62,12 +63,64 @@ export function ProfileScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [editAvatarUri, setEditAvatarUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const openEdit = () => {
     setEditName(profile?.name ?? '');
     setEditColor(profile?.avatar_color ?? Colors.orange);
+    setEditAvatarUri(profile?.avatar_url ?? null);
     setEditOpen(true);
+  };
+
+  const pickFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('Permiso de galería denegado', 'error');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('Permiso de cámara denegado', 'error');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const uploadAvatar = async (localUri: string, userId: string): Promise<string | null> => {
+    try {
+      const response = await fetch(localUri);
+      const blob = await response.blob();
+      const ext = localUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${userId}/avatar.${ext}`;
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(path, blob, { upsert: true, contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+      if (error) return null;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      return `${data.publicUrl}?t=${Date.now()}`;
+    } catch {
+      return null;
+    }
   };
 
   const saveProfile = async () => {
@@ -78,9 +131,18 @@ export function ProfileScreen() {
     if (!session?.user.id) return;
     setSaving(true);
     const newInitials = initials(editName);
+
+    let avatarUrl = profile?.avatar_url ?? null;
+    const isNewPhoto = editAvatarUri && editAvatarUri !== profile?.avatar_url;
+    if (isNewPhoto) {
+      const uploaded = await uploadAvatar(editAvatarUri!, session.user.id);
+      if (uploaded) avatarUrl = uploaded;
+      else showToast('No se pudo subir la foto', 'error');
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ name: editName.trim(), avatar_initials: newInitials, avatar_color: editColor })
+      .update({ name: editName.trim(), avatar_initials: newInitials, avatar_color: editColor, avatar_url: avatarUrl })
       .eq('id', session.user.id);
     setSaving(false);
     if (error) {
@@ -89,7 +151,7 @@ export function ProfileScreen() {
     }
     await refreshProfile();
     setEditOpen(false);
-    showToast('✅ Perfil actualizado', 'success');
+    showToast('Perfil actualizado', 'success');
   };
 
   const fetchStats = useCallback(async () => {
@@ -147,7 +209,11 @@ export function ProfileScreen() {
         <View style={styles.hero}>
           <TouchableOpacity onPress={openEdit} activeOpacity={0.8}>
             <View style={[styles.avatarBig, { backgroundColor: profile?.avatar_color ?? Colors.orange }]}>
-              <Text style={styles.avatarText}>{profile?.avatar_initials ?? '?'}</Text>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : (
+                <Text style={styles.avatarText}>{profile?.avatar_initials ?? '?'}</Text>
+              )}
             </View>
             <View style={styles.editAvatarBadge}>
               <Text style={styles.editAvatarIcon}>✏️</Text>
@@ -252,11 +318,22 @@ export function ProfileScreen() {
             {/* Avatar preview */}
             <View style={editStyles.avatarRow}>
               <View style={[editStyles.avatarPreview, { backgroundColor: editColor }]}>
-                <Text style={editStyles.avatarPreviewText}>
-                  {editName.trim() ? initials(editName) : '?'}
-                </Text>
+                {editAvatarUri ? (
+                  <Image source={{ uri: editAvatarUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ) : (
+                  <Text style={editStyles.avatarPreviewText}>
+                    {editName.trim() ? initials(editName) : '?'}
+                  </Text>
+                )}
               </View>
-              <Text style={editStyles.avatarHint}>Así aparecerás en las reservas</Text>
+              <View style={{ flex: 1, gap: 8 }}>
+                <TouchableOpacity style={editStyles.photoBtn} onPress={pickFromGallery}>
+                  <Text style={editStyles.photoBtnText}>📷 Galería</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={editStyles.photoBtn} onPress={pickFromCamera}>
+                  <Text style={editStyles.photoBtnText}>📸 Cámara</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Name */}
@@ -455,6 +532,16 @@ const editStyles = StyleSheet.create({
   avatarPreview: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   avatarPreviewText: { fontFamily: Fonts.headingXBold, fontSize: 22, color: '#fff' },
   avatarHint: { flex: 1, fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
+  photoBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
+    alignItems: 'center',
+  },
+  photoBtnText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.bodySemiBold },
   label: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   input: {
     backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,

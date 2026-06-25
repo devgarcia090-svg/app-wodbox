@@ -7,7 +7,7 @@ interface RawBooking {
   id: string;
   athlete_id: string;
   status: string;
-  profiles: { name: string; avatar_initials: string; avatar_color: string } | null;
+  profiles: { name: string; avatar_initials: string; avatar_color: string; avatar_url: string | null } | null;
 }
 
 interface RawClass {
@@ -37,7 +37,7 @@ export function useClasses(date: string) {
         id, name, date, time, coach, duration, capacity, wod,
         bookings(
           id, athlete_id, status,
-          profiles(name, avatar_initials, avatar_color)
+          profiles(name, avatar_initials, avatar_color, avatar_url)
         )
       `)
       .eq('date', date)
@@ -65,6 +65,7 @@ export function useClasses(date: string) {
           name: b.profiles!.name,
           initials: b.profiles!.avatar_initials || b.profiles!.name.slice(0, 2).toUpperCase(),
           color: b.profiles!.avatar_color || '#f95c00',
+          url: b.profiles!.avatar_url || null,
         }));
 
       return {
@@ -77,7 +78,7 @@ export function useClasses(date: string) {
         capacity: cls.capacity,
         status,
         wod: cls.wod || '',
-        avatars: attendees.slice(0, 3).map(a => ({ initial: a.initials[0] || '?', color: a.color })),
+        avatars: attendees.slice(0, 3).map(a => ({ initial: a.initials[0] || '?', color: a.color, url: a.url })),
         attendees,
       };
     });

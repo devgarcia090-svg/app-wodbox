@@ -3,6 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../common/Badge';
+import { Avatar } from '../common/Avatar';
 import type { ClassItem } from '../../data/mockData';
 
 interface ClassCardProps {
@@ -41,8 +42,8 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
       <View style={styles.bottom}>
         <View style={styles.avatars}>
           {item.avatars.slice(0, 3).map((av, i) => (
-            <View key={i} style={[styles.avatar, { backgroundColor: av.color, marginLeft: i === 0 ? 0 : -6 }]}>
-              <Text style={styles.avatarText}>{av.initial}</Text>
+            <View key={i} style={{ marginLeft: i === 0 ? 0 : -6 }}>
+              <Avatar url={av.url} initials={av.initial} color={av.color} size={24} fontSize={10} borderColor={Colors.surface} borderWidth={2} />
             </View>
           ))}
           {item.enrolled > 3 && (
@@ -62,9 +63,7 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
           <View style={styles.attendeesGrid}>
             {item.attendees.map((att, i) => (
               <View key={i} style={styles.attendeeItem}>
-                <View style={[styles.attendeeAvatar, { backgroundColor: att.color }]}>
-                  <Text style={styles.attendeeInitials}>{att.initials}</Text>
-                </View>
+                <Avatar url={att.url} initials={att.initials} color={att.color} size={40} fontSize={13} />
                 <Text style={styles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
               </View>
             ))}

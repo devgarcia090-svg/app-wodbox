@@ -7,6 +7,7 @@ export interface Profile {
   role: 'athlete' | 'admin';
   avatar_initials: string;
   avatar_color: string;
+  avatar_url: string | null;
   plan: string;
   membership_status: 'active' | 'pending' | 'inactive';
   membership_expires: string | null;
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, role, avatar_initials, avatar_color, plan, membership_status, membership_expires')
+        .select('name, role, avatar_initials, avatar_color, avatar_url, plan, membership_status, membership_expires')
         .eq('id', userId)
         .single();
 

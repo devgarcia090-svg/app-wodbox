@@ -12,6 +12,15 @@
     "android": {
       "package": "com.wodbox.app"
     },
-    "scheme": "wodbox"
+    "scheme": "wodbox",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "WodBox necesita acceso a tu galería para cambiar tu foto de perfil.",
+          "cameraPermission": "WodBox necesita acceso a la cámara para hacerte una foto de perfil."
+        }
+      ]
+    ]
   }
 }

@@ -4,6 +4,7 @@ export interface Attendee {
   name: string;
   initials: string;
   color: string;
+  url?: string | null;
 }
 
 export interface ClassItem {
@@ -16,7 +17,7 @@ export interface ClassItem {
   capacity: number;
   status: ClassStatus;
   wod: string;
-  avatars: { initial: string; color: string }[];
+  avatars: { initial: string; color: string; url?: string | null }[];
   attendees: Attendee[];
 }
 
