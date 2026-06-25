@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +34,7 @@ function nowIso() {
 export function ChatScreen() {
   const { session, profile } = useAuth();
   const boxConfig = useBoxConfig();
+  const { primary_color } = boxConfig;
   const [activeTab, setActiveTab] = useState<Tab>('general');
 
   // Broadcast
@@ -160,23 +161,28 @@ export function ChatScreen() {
   };
 
   const isMyMsg = (msg: ChatMessage) => msg.sender_id === session?.user.id;
-  const isAdminMsg = (msg: ChatMessage) => msg.sender_id !== session?.user.id;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.tabBar}>
-        <TouchableOpacity style={[styles.tabBtn, activeTab === 'general' && styles.tabBtnActive]} onPress={() => setActiveTab('general')}>
-          <Text style={[styles.tabText, activeTab === 'general' && styles.tabTextActive]}>📢 General</Text>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'general' && { borderBottomColor: primary_color }]}
+          onPress={() => setActiveTab('general')}
+        >
+          <Text style={[styles.tabText, activeTab === 'general' && { color: primary_color }]}>📢 General</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabBtn, activeTab === 'dm' && styles.tabBtnActive]} onPress={() => setActiveTab('dm')}>
-          <Text style={[styles.tabText, activeTab === 'dm' && styles.tabTextActive]}>💬 Mensajes</Text>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'dm' && { borderBottomColor: primary_color }]}
+          onPress={() => setActiveTab('dm')}
+        >
+          <Text style={[styles.tabText, activeTab === 'dm' && { color: primary_color }]}>💬 Mensajes</Text>
         </TouchableOpacity>
       </View>
 
       {activeTab === 'general' && (
         <>
           {bcLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+            <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
           ) : (
             <ScrollView ref={bcScroll} style={styles.msgList} contentContainerStyle={styles.msgContent}>
               {broadcasts.map(msg => {
@@ -184,8 +190,8 @@ export function ChatScreen() {
                 if (!mine) {
                   return (
                     <View key={msg.id} style={msgStyles.broadcastWrap}>
-                      <Text style={msgStyles.broadcastLabel}>📢 {msg.sender_name}</Text>
-                      <View style={msgStyles.broadcastBubble}>
+                      <Text style={[msgStyles.broadcastLabel, { color: primary_color }]}>📢 {msg.sender_name}</Text>
+                      <View style={[msgStyles.broadcastBubble, { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.1) }]}>
                         <Text style={msgStyles.broadcastText}>{msg.text}</Text>
                       </View>
                       <Text style={msgStyles.time}>{fmtTime(msg.created_at)}</Text>
@@ -194,7 +200,7 @@ export function ChatScreen() {
                 }
                 return (
                   <View key={msg.id} style={[msgStyles.msg, msgStyles.mine]}>
-                    <View style={[msgStyles.bubble, msgStyles.bubbleMine]}>
+                    <View style={[msgStyles.bubble, { backgroundColor: primary_color, borderTopRightRadius: 4 }]}>
                       <Text style={[msgStyles.text, msgStyles.textMine]}>{msg.text}</Text>
                     </View>
                     <Text style={msgStyles.time}>{fmtTime(msg.created_at)}</Text>
@@ -213,7 +219,7 @@ export function ChatScreen() {
               onSubmitEditing={sendBroadcast}
               returnKeyType="send"
             />
-            <TouchableOpacity style={styles.sendBtn} onPress={sendBroadcast}>
+            <TouchableOpacity style={[styles.sendBtn, { backgroundColor: primary_color }]} onPress={sendBroadcast}>
               <Text style={styles.sendIcon}>↑</Text>
             </TouchableOpacity>
           </View>
@@ -223,7 +229,7 @@ export function ChatScreen() {
       {activeTab === 'dm' && (
         <>
           <View style={styles.dmConvHeader}>
-            <View style={[styles.dmConvAvatar, { backgroundColor: Colors.orange }]}>
+            <View style={[styles.dmConvAvatar, { backgroundColor: primary_color }]}>
               <Text style={styles.dmConvAvatarText}>CF</Text>
             </View>
             <View>
@@ -233,7 +239,7 @@ export function ChatScreen() {
           </View>
 
           {dmLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+            <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
           ) : (
             <ScrollView ref={dmScroll} style={styles.msgList} contentContainerStyle={styles.msgContent}>
               {dmMsgs.length === 0 && (
@@ -248,7 +254,7 @@ export function ChatScreen() {
                     {!mine && (
                       <Text style={msgStyles.sender}>{msg.sender_name}</Text>
                     )}
-                    <View style={[msgStyles.bubble, mine ? msgStyles.bubbleMine : msgStyles.bubbleTheirs]}>
+                    <View style={[msgStyles.bubble, mine ? { backgroundColor: primary_color, borderTopRightRadius: 4 } : msgStyles.bubbleTheirs]}>
                       <Text style={[msgStyles.text, mine && msgStyles.textMine]}>{msg.text}</Text>
                     </View>
                     <Text style={msgStyles.time}>{fmtTime(msg.created_at)}</Text>
@@ -268,7 +274,7 @@ export function ChatScreen() {
               onSubmitEditing={sendDM}
               returnKeyType="send"
             />
-            <TouchableOpacity style={styles.sendBtn} onPress={sendDM}>
+            <TouchableOpacity style={[styles.sendBtn, { backgroundColor: primary_color }]} onPress={sendDM}>
               <Text style={styles.sendIcon}>↑</Text>
             </TouchableOpacity>
           </View>
@@ -282,9 +288,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.black },
   tabBar: { flexDirection: 'row', backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border },
   tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabBtnActive: { borderBottomColor: Colors.orange },
   tabText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.muted },
-  tabTextActive: { color: Colors.orange },
   msgList: { flex: 1 },
   msgContent: { padding: 16, gap: 10 },
   inputBar: {
@@ -313,7 +317,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.orange,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -340,7 +343,6 @@ const msgStyles = StyleSheet.create({
   theirs: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   sender: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.bodySemiBold, paddingHorizontal: 4 },
   bubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16 },
-  bubbleMine: { backgroundColor: Colors.orange, borderTopRightRadius: 4 },
   bubbleTheirs: {
     backgroundColor: Colors.surface2,
     borderWidth: 1,
@@ -353,15 +355,12 @@ const msgStyles = StyleSheet.create({
   broadcastWrap: { gap: 3 },
   broadcastLabel: {
     fontSize: 10,
-    color: Colors.orange,
     fontFamily: Fonts.bodySemiBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   broadcastBubble: {
-    backgroundColor: '#1a0800',
     borderWidth: 1,
-    borderColor: Colors.orange,
     borderRadius: 12,
     padding: 14,
   },

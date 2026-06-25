@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
@@ -267,7 +267,7 @@ export function ProfileScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <TouchableOpacity onPress={openEdit} activeOpacity={0.8}>
-            <View style={[styles.avatarBig, { backgroundColor: profile?.avatar_color ?? Colors.orange }]}>
+            <View style={[styles.avatarBig, { backgroundColor: profile?.avatar_color ?? Colors.orange, borderColor: boxConfig.primary_color }]}>
               {profile?.avatar_url ? (
                 <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : (
@@ -282,7 +282,7 @@ export function ProfileScreen() {
             <Text style={styles.name}>{profile?.name ?? '—'}</Text>
             <Text style={styles.box}>{boxConfig.name}</Text>
             <TouchableOpacity onPress={openEdit} style={styles.editNameBtn}>
-              <Text style={styles.editNameText}>Editar perfil</Text>
+              <Text style={[styles.editNameText, { color: boxConfig.primary_color }]}>Editar perfil</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,19 +290,19 @@ export function ProfileScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {bookingsLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1, padding: 16 }} />
+            <ActivityIndicator color={boxConfig.primary_color} style={{ flex: 1, padding: 16 }} />
           ) : (
             <>
               <View style={styles.statCell}>
-                <Text style={styles.statValue}>{stats.total}</Text>
+                <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>{stats.total}</Text>
                 <Text style={styles.statLabel}>Clases</Text>
               </View>
               <View style={[styles.statCell, styles.statCellBorder]}>
-                <Text style={styles.statValue}>{stats.thisMonth}</Text>
+                <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>{stats.thisMonth}</Text>
                 <Text style={styles.statLabel}>Este mes</Text>
               </View>
               <View style={styles.statCell}>
-                <Text style={styles.statValue}>{profile?.plan ? '✓' : '—'}</Text>
+                <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>{profile?.plan ? '✓' : '—'}</Text>
                 <Text style={styles.statLabel}>Membresía</Text>
               </View>
             </>
@@ -310,8 +310,8 @@ export function ProfileScreen() {
         </View>
 
         {/* Membership card */}
-        <View style={styles.memberCard}>
-          <Text style={styles.mcLabel}>Mi membresía</Text>
+        <View style={[styles.memberCard, { borderColor: boxConfig.primary_color, backgroundColor: withAlpha(boxConfig.primary_color, 0.1) }]}>
+          <Text style={[styles.mcLabel, { color: boxConfig.primary_color }]}>Mi membresía</Text>
           <Text style={styles.mcPlan}>{profile?.plan ?? 'Sin plan'}</Text>
           <Text style={styles.mcMeta}>{boxConfig.name}</Text>
           <View style={styles.mcExpires}>
@@ -332,7 +332,7 @@ export function ProfileScreen() {
             {recentBookings.map(b => (
               <ActivityRow
                 key={b.id}
-                color={Colors.orange}
+                color={boxConfig.primary_color}
                 name={`${b.class_name} · ${b.class_time}`}
                 date={fmtDate(b.class_date)}
                 badge={<Badge label="Reservada" variant="orange" />}
@@ -347,7 +347,7 @@ export function ProfileScreen() {
         </View>
         <View style={{ paddingHorizontal: 16 }}>
           {invLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ marginTop: 8 }} />
+            <ActivityIndicator color={boxConfig.primary_color} style={{ marginTop: 8 }} />
           ) : invoices.length === 0 ? (
             <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, marginTop: 4 }}>Sin facturas aún</Text>
           ) : (
@@ -425,7 +425,7 @@ export function ProfileScreen() {
                 <Text style={editStyles.cancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[editStyles.saveBtn, saving && { opacity: 0.6 }]}
+                style={[editStyles.saveBtn, { backgroundColor: boxConfig.primary_color }, saving && { opacity: 0.6 }]}
                 onPress={saveProfile}
                 disabled={saving}
               >
@@ -457,6 +457,7 @@ function ActivityRow({ color, name, date, badge }: { color: string; name: string
 }
 
 function InvoiceCard({ num, date, amount, paid, onDownload }: { num: string; date: string; amount: string; paid: boolean; onDownload: () => void }) {
+  const { primary_color } = useBoxConfig();
   return (
     <TouchableOpacity style={invStyles.row} onPress={onDownload} activeOpacity={0.7}>
       <View style={invStyles.icon}><Text style={{ fontSize: 18 }}>🧾</Text></View>
@@ -469,7 +470,7 @@ function InvoiceCard({ num, date, amount, paid, onDownload }: { num: string; dat
         <Badge label={paid ? 'Pagada' : 'Pendiente'} variant={paid ? 'green' : 'yellow'} small />
       </View>
       <View style={invStyles.dlBtn}>
-        <Text style={invStyles.dlIcon}>↓</Text>
+        <Text style={[invStyles.dlIcon, { color: primary_color }]}>↓</Text>
       </View>
     </TouchableOpacity>
   );

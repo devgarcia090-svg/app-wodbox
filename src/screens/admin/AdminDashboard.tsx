@@ -15,6 +15,8 @@ import { useMembers, MemberRow } from '../../hooks/useMembers';
 import { useInvoices } from '../../hooks/useInvoices';
 import { useExpiringMembers } from '../../hooks/useExpiringMembers';
 import { useAuth } from '../../context/AuthContext';
+import { useBoxConfig } from '../../context/BoxConfigContext';
+import { withAlpha } from '../../theme/colors';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/common/Avatar';
 
@@ -41,6 +43,7 @@ export function AdminDashboard() {
   const [memberRefreshKey, setMemberRefreshKey] = useState(0);
   const { toast, showToast } = useToast();
   const insets = useSafeAreaInsets();
+  const { primary_color } = useBoxConfig();
 
   return (
     <View style={styles.container}>
@@ -62,9 +65,9 @@ export function AdminDashboard() {
           const active = activeTab === tab.key;
           return (
             <TouchableOpacity key={tab.key} style={styles.bottomItem} onPress={() => setActiveTab(tab.key)}>
-              {active && <View style={styles.bottomActiveLine} />}
+              {active && <View style={[styles.bottomActiveLine, { backgroundColor: primary_color }]} />}
               <Text style={styles.bottomIcon}>{tab.icon}</Text>
-              <Text style={[styles.bottomLabel, active && styles.bottomLabelActive]}>{tab.label}</Text>
+              <Text style={[styles.bottomLabel, active && styles.bottomLabelActive, active && { color: primary_color }]}>{tab.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -86,6 +89,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
   const [editingClass, setEditingClass] = useState<any | null>(null);
   const [editFields, setEditFields] = useState({ name: '', time: '', coach: '', capacity: '', duration: '', wod: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const { primary_color } = useBoxConfig();
 
   const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? TODAY_ISO;
   const { classes, loading, refetch } = useClasses(selectedDate);
@@ -153,7 +157,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
     <View style={panelStyles.panel}>
       <View style={clsHeaderStyles.row}>
         <Text style={clsHeaderStyles.title}>Clases</Text>
-        <TouchableOpacity style={clsHeaderStyles.nuevaBtn} onPress={() => setShowNueva(true)}>
+        <TouchableOpacity style={[clsHeaderStyles.nuevaBtn, { backgroundColor: primary_color }]} onPress={() => setShowNueva(true)}>
           <Text style={clsHeaderStyles.nuevaBtnText}>+ Nueva clase</Text>
         </TouchableOpacity>
       </View>
@@ -161,7 +165,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
         {DATE_PILLS.map((d, i) => (
           <TouchableOpacity
             key={i}
-            style={[adminDateStyles.pill, activeDateIdx === i && adminDateStyles.pillActive]}
+            style={[adminDateStyles.pill, activeDateIdx === i && adminDateStyles.pillActive, activeDateIdx === i && { backgroundColor: primary_color, borderColor: primary_color }]}
             onPress={() => { setActiveDateIdx(i); setSelectedTime(null); }}
           >
             <Text style={[adminDateStyles.pillDay, activeDateIdx === i && adminDateStyles.pillTextActive]}>{d.day}</Text>
@@ -174,7 +178,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
         {timePills.map(t => {
           const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
           return (
-            <TouchableOpacity key={t} style={[adminTimeStyles.pill, active && adminTimeStyles.pillActive]} onPress={() => setSelectedTime(t)}>
+            <TouchableOpacity key={t} style={[adminTimeStyles.pill, active && adminTimeStyles.pillActive, active && { backgroundColor: primary_color, borderColor: primary_color }]} onPress={() => setSelectedTime(t)}>
               <Text style={[adminTimeStyles.pillText, active && adminTimeStyles.pillTextActive]}>{t}</Text>
             </TouchableOpacity>
           );
@@ -182,7 +186,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
       </ScrollView>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={panelStyles.content}>
         {loading ? (
-          <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+          <ActivityIndicator color={primary_color} style={{ marginTop: 32 }} />
         ) : filtered.length === 0 ? (
           <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para este día</Text>
         ) : null}
@@ -195,7 +199,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
             <View key={cls.id} style={clsStyles.card}>
               <View style={clsStyles.cardHeader}>
                 <View style={clsStyles.timeBlock}>
-                  <Text style={clsStyles.cardTime}>{cls.time}</Text>
+                  <Text style={[clsStyles.cardTime, { color: primary_color }]}>{cls.time}</Text>
                   <Text style={clsStyles.cardDuration}>{cls.duration}</Text>
                 </View>
                 <View style={clsStyles.info}>
@@ -226,8 +230,8 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
                   }
                   if (isEnrolled) {
                     return (
-                      <View key={i} style={clsStyles.slotGhost}>
-                        <Text style={clsStyles.slotGhostText}>?</Text>
+                      <View key={i} style={[clsStyles.slotGhost, { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.15) }]}>
+                        <Text style={[clsStyles.slotGhostText, { color: primary_color }]}>?</Text>
                       </View>
                     );
                   }
@@ -313,7 +317,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
                 <TouchableOpacity style={editClsStyles.cancelBtn} onPress={() => setEditingClass(null)}>
                   <Text style={editClsStyles.cancelText}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[editClsStyles.saveBtn, savingEdit && { opacity: 0.6 }]} onPress={saveEdit} disabled={savingEdit}>
+                <TouchableOpacity style={[editClsStyles.saveBtn, { backgroundColor: primary_color }, savingEdit && { opacity: 0.6 }]} onPress={saveEdit} disabled={savingEdit}>
                   <Text style={editClsStyles.saveText}>{savingEdit ? 'Guardando...' : 'Guardar'}</Text>
                 </TouchableOpacity>
               </View>
@@ -349,6 +353,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
   const [newEmail, setNewEmail] = useState('');
   const [selectedTariff, setSelectedTariff] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
+  const { primary_color } = useBoxConfig();
 
   useEffect(() => {
     if (refreshKey > 0) refetch();
@@ -435,7 +440,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
     return (
       <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
         <TouchableOpacity onPress={() => setShowForm(false)} style={addStyles.backRow}>
-          <Text style={addStyles.backText}>‹ Volver a miembros</Text>
+          <Text style={[addStyles.backText, { color: primary_color }]}>‹ Volver a miembros</Text>
         </TouchableOpacity>
         <Text style={addStyles.formTitle}>Nuevo atleta</Text>
 
@@ -452,14 +457,14 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
           {TARIFFS.map(t => {
             const sel = selectedTariff === t.id;
             return (
-              <TouchableOpacity key={t.id} style={[addStyles.tariffCard, sel && addStyles.tariffCardSel]} onPress={() => setSelectedTariff(t.id)} activeOpacity={0.8}>
-                {t.popular && <View style={addStyles.tariffBadge}><Text style={addStyles.tariffBadgeText}>MÁS POPULAR</Text></View>}
+              <TouchableOpacity key={t.id} style={[addStyles.tariffCard, sel && addStyles.tariffCardSel, sel && { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.1) }]} onPress={() => setSelectedTariff(t.id)} activeOpacity={0.8}>
+                {t.popular && <View style={[addStyles.tariffBadge, { backgroundColor: primary_color }]}><Text style={addStyles.tariffBadgeText}>MÁS POPULAR</Text></View>}
                 {t.badge && <View style={[addStyles.tariffBadge, { backgroundColor: Colors.surface3 }]}><Text style={[addStyles.tariffBadgeText, { color: Colors.muted }]}>{t.badge}</Text></View>}
-                <Text style={[addStyles.tariffName, sel && { color: Colors.orange }]}>{t.name}</Text>
+                <Text style={[addStyles.tariffName, sel && { color: primary_color }]}>{t.name}</Text>
                 <Text style={addStyles.tariffDesc}>{t.desc}</Text>
                 <View style={addStyles.tariffPriceRow}>
                   <Text style={addStyles.tariffCurrency}>€</Text>
-                  <Text style={[addStyles.tariffPrice, sel && { color: Colors.orange }]}>{t.price}</Text>
+                  <Text style={[addStyles.tariffPrice, sel && { color: primary_color }]}>{t.price}</Text>
                   <Text style={addStyles.tariffUnit}>{t.unit}</Text>
                 </View>
                 {t.features.map((f, i) => (
@@ -470,7 +475,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
           })}
         </View>
 
-        <TouchableOpacity style={[addStyles.sendBtn, inviting && { opacity: 0.6 }]} onPress={handleInvite} activeOpacity={0.85} disabled={inviting}>
+        <TouchableOpacity style={[addStyles.sendBtn, { backgroundColor: primary_color }, inviting && { opacity: 0.6 }]} onPress={handleInvite} activeOpacity={0.85} disabled={inviting}>
           <Text style={addStyles.sendBtnText}>{inviting ? 'Creando...' : '+ Añadir atleta'}</Text>
         </TouchableOpacity>
         <View style={{ height: 32 }} />
@@ -492,7 +497,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
         {loading ? (
-          <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
+          <ActivityIndicator color={primary_color} style={{ marginTop: 32 }} />
         ) : filtered.length === 0 ? (
           <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>
             {search ? 'Sin resultados' : 'Sin miembros aún'}
@@ -551,11 +556,11 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                       return (
                         <TouchableOpacity
                           key={t.id}
-                          style={[expandStyles.tariffChip, sel && expandStyles.tariffChipSel]}
+                          style={[expandStyles.tariffChip, sel && expandStyles.tariffChipSel, sel && { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.15) }]}
                           onPress={() => setEditPlan(t.id)}
                         >
-                          <Text style={[expandStyles.tariffChipText, sel && expandStyles.tariffChipTextSel]}>{t.name}</Text>
-                          <Text style={[expandStyles.tariffChipPrice, sel && { color: Colors.orange }]}>€{t.price}</Text>
+                          <Text style={[expandStyles.tariffChipText, sel && expandStyles.tariffChipTextSel, sel && { color: primary_color }]}>{t.name}</Text>
+                          <Text style={[expandStyles.tariffChipPrice, sel && { color: primary_color }]}>€{t.price}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -578,7 +583,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
 
                   <View style={expandStyles.actions}>
                     <TouchableOpacity
-                      style={[expandStyles.saveBtn, savingId === m.id && { opacity: 0.6 }]}
+                      style={[expandStyles.saveBtn, { backgroundColor: primary_color }, savingId === m.id && { opacity: 0.6 }]}
                       onPress={() => editPlan && savePlan(m, editPlan)}
                       disabled={savingId === m.id || !editPlan}
                     >
@@ -597,7 +602,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
           );
         })}
 
-        <TouchableOpacity style={memStyles.addBtn} onPress={() => setShowForm(true)}>
+        <TouchableOpacity style={[memStyles.addBtn, { backgroundColor: primary_color }]} onPress={() => setShowForm(true)}>
           <Text style={memStyles.addBtnText}>+ Añadir atleta</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -618,6 +623,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
   const [nfPayMethod, setNfPayMethod] = useState<'efectivo' | 'tarjeta'>('efectivo');
   const [nfBusy, setNfBusy] = useState(false);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
+  const { primary_color } = useBoxConfig();
 
   const pending = invoices.filter(i => !i.paid);
   const paid = invoices.filter(i => i.paid);
@@ -706,14 +712,14 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
                 </Text>
               </View>
               <TouchableOpacity
-                style={cobroStyles.genBtn}
+                style={[cobroStyles.genBtn, { backgroundColor: withAlpha(primary_color, 0.15), borderColor: primary_color }]}
                 onPress={() => {
                   setNfMemberId(m.id);
                   setNfPlan(m.plan);
                   setShowNuevaFactura(true);
                 }}
               >
-                <Text style={cobroStyles.genBtnText}>+ Factura</Text>
+                <Text style={[cobroStyles.genBtnText, { color: primary_color }]}>+ Factura</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -722,10 +728,10 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
 
       {/* Nueva factura */}
       <TouchableOpacity
-        style={cobroStyles.nuevaBtn}
+        style={[cobroStyles.nuevaBtn, { borderColor: primary_color }]}
         onPress={() => setShowNuevaFactura(v => !v)}
       >
-        <Text style={cobroStyles.nuevaBtnText}>{showNuevaFactura ? '✕ Cancelar' : '+ Nueva factura'}</Text>
+        <Text style={[cobroStyles.nuevaBtnText, { color: primary_color }]}>{showNuevaFactura ? '✕ Cancelar' : '+ Nueva factura'}</Text>
       </TouchableOpacity>
 
       {showNuevaFactura && (
@@ -762,7 +768,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
             {(['efectivo', 'tarjeta'] as const).map(m => (
               <TouchableOpacity
                 key={m}
-                style={[cobroStyles.payChip, nfPayMethod === m && cobroStyles.payChipActive]}
+                style={[cobroStyles.payChip, nfPayMethod === m && cobroStyles.payChipActive, nfPayMethod === m && { backgroundColor: primary_color, borderColor: primary_color }]}
                 onPress={() => setNfPayMethod(m)}
               >
                 <Text style={[cobroStyles.payChipText, nfPayMethod === m && cobroStyles.payChipTextActive]}>
@@ -773,7 +779,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
           </View>
 
           <TouchableOpacity
-            style={[cobroStyles.createBtn, nfBusy && { opacity: 0.6 }]}
+            style={[cobroStyles.createBtn, { backgroundColor: primary_color }, nfBusy && { opacity: 0.6 }]}
             onPress={() => handleCreateInvoice()}
             disabled={nfBusy}
           >
@@ -896,6 +902,7 @@ interface ConvItem {
 
 function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   const { session } = useAuth();
+  const { primary_color } = useBoxConfig();
   const [chatTab, setChatTab] = useState<AdminChatTab>('broadcast');
   const [broadcasts, setBroadcasts] = useState<ChatMsg[]>([]);
   const [bInput, setBInput] = useState('');
@@ -1014,12 +1021,12 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
   return (
     <View style={styles.flex}>
       <View style={chatStyles.tabBar}>
-        <TouchableOpacity style={[chatStyles.tabBtn, chatTab === 'broadcast' && chatStyles.tabBtnActive]} onPress={() => setChatTab('broadcast')}>
-          <Text style={[chatStyles.tabText, chatTab === 'broadcast' && chatStyles.tabTextActive]}>📢 Anuncio general</Text>
+        <TouchableOpacity style={[chatStyles.tabBtn, chatTab === 'broadcast' && chatStyles.tabBtnActive, chatTab === 'broadcast' && { borderBottomColor: primary_color }]} onPress={() => setChatTab('broadcast')}>
+          <Text style={[chatStyles.tabText, chatTab === 'broadcast' && chatStyles.tabTextActive, chatTab === 'broadcast' && { color: primary_color }]}>📢 Anuncio general</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[chatStyles.tabBtn, chatTab === 'dms' && chatStyles.tabBtnActive]} onPress={() => setChatTab('dms')}>
-          <Text style={[chatStyles.tabText, chatTab === 'dms' && chatStyles.tabTextActive]}>
-            💬 Mensajes {totalUnread > 0 && <Text style={chatStyles.badge}> {totalUnread} </Text>}
+        <TouchableOpacity style={[chatStyles.tabBtn, chatTab === 'dms' && chatStyles.tabBtnActive, chatTab === 'dms' && { borderBottomColor: primary_color }]} onPress={() => setChatTab('dms')}>
+          <Text style={[chatStyles.tabText, chatTab === 'dms' && chatStyles.tabTextActive, chatTab === 'dms' && { color: primary_color }]}>
+            💬 Mensajes {totalUnread > 0 && <Text style={[chatStyles.badge, { backgroundColor: primary_color }]}> {totalUnread} </Text>}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1030,7 +1037,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
             <Text style={chatStyles.channelInfoText}>📢 Canal general — visible para todos los atletas</Text>
           </View>
           {bcLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+            <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
           ) : (
             <ScrollView ref={bcScroll} style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
               {broadcasts.map(msg => {
@@ -1038,8 +1045,8 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
                 if (mine) {
                   return (
                     <View key={msg.id} style={chatStyles.broadcastWrap}>
-                      <Text style={chatStyles.broadcastLabel}>📢 Tú (Admin)</Text>
-                      <View style={chatStyles.broadcastBubble}>
+                      <Text style={[chatStyles.broadcastLabel, { color: primary_color }]}>📢 Tú (Admin)</Text>
+                      <View style={[chatStyles.broadcastBubble, { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.1) }]}>
                         <Text style={chatStyles.broadcastText}>{msg.text}</Text>
                       </View>
                       <Text style={chatStyles.time}>{fmtTime(msg.created_at)}</Text>
@@ -1068,7 +1075,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
               onSubmitEditing={sendBroadcast}
               returnKeyType="send"
             />
-            <TouchableOpacity style={chatStyles.sendBtn} onPress={sendBroadcast}>
+            <TouchableOpacity style={[chatStyles.sendBtn, { backgroundColor: primary_color }]} onPress={sendBroadcast}>
               <Text style={chatStyles.sendIcon}>↑</Text>
             </TouchableOpacity>
           </View>
@@ -1078,7 +1085,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
       {chatTab === 'dms' && !activeDM && (
         <>
           {convLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+            <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
           ) : conversations.length === 0 ? (
             <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 40 }}>Sin conversaciones aún</Text>
           ) : (
@@ -1087,7 +1094,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
                 <TouchableOpacity key={conv.id} style={dmListStyles.item} onPress={() => openDM(conv)}>
                   <View style={[dmListStyles.avatar, { backgroundColor: conv.athlete_color }]}>
                     <Text style={dmListStyles.avatarText}>{conv.athlete_initials}</Text>
-                    {conv.unread_admin > 0 && <View style={dmListStyles.unreadDot} />}
+                    {conv.unread_admin > 0 && <View style={[dmListStyles.unreadDot, { backgroundColor: primary_color }]} />}
                   </View>
                   <View style={dmListStyles.info}>
                     <Text style={dmListStyles.name}>{conv.athlete_name}</Text>
@@ -1095,7 +1102,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
                   </View>
                   <View style={dmListStyles.meta}>
                     {conv.unread_admin > 0 && (
-                      <View style={dmListStyles.badge}>
+                      <View style={[dmListStyles.badge, { backgroundColor: primary_color }]}>
                         <Text style={dmListStyles.badgeText}>{conv.unread_admin}</Text>
                       </View>
                     )}
@@ -1111,7 +1118,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
         <>
           <View style={chatStyles.convHeader}>
             <TouchableOpacity onPress={() => { setActiveDM(null); fetchConversations(); }}>
-              <Text style={chatStyles.backBtn}>‹</Text>
+              <Text style={[chatStyles.backBtn, { color: primary_color }]}>‹</Text>
             </TouchableOpacity>
             <View style={[chatStyles.convAvatar, { backgroundColor: activeDM.athlete_color }]}>
               <Text style={chatStyles.convAvatarText}>{activeDM.athlete_initials}</Text>
@@ -1123,7 +1130,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
           </View>
 
           {dmLoading ? (
-            <ActivityIndicator color={Colors.orange} style={{ flex: 1 }} />
+            <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
           ) : (
             <ScrollView ref={dmScroll} style={chatStyles.msgList} contentContainerStyle={{ padding: 16, gap: 10 }}>
               {dmMsgs.length === 0 && (
@@ -1133,7 +1140,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
                 const mine = msg.sender_id === session?.user.id;
                 return (
                   <View key={msg.id} style={[chatStyles.msgRow, mine ? chatStyles.msgMine : chatStyles.msgTheirs]}>
-                    <View style={[chatStyles.bubble, mine ? chatStyles.bubbleMine : chatStyles.bubbleTheirs]}>
+                    <View style={[chatStyles.bubble, mine ? chatStyles.bubbleMine : chatStyles.bubbleTheirs, mine && { backgroundColor: primary_color }]}>
                       <Text style={[chatStyles.bubbleText, mine && chatStyles.bubbleTextMine]}>{msg.text}</Text>
                     </View>
                     <Text style={chatStyles.time}>{fmtTime(msg.created_at)}</Text>
@@ -1153,7 +1160,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
               onSubmitEditing={sendDM}
               returnKeyType="send"
             />
-            <TouchableOpacity style={chatStyles.sendBtn} onPress={sendDM}>
+            <TouchableOpacity style={[chatStyles.sendBtn, { backgroundColor: primary_color }]} onPress={sendDM}>
               <Text style={chatStyles.sendIcon}>↑</Text>
             </TouchableOpacity>
           </View>
@@ -1175,6 +1182,7 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
   const [date, setDate] = useState(TODAY_ISO);
   const [repeat, setRepeat] = useState<'once' | 'week'>('once');
   const [busy, setBusy] = useState(false);
+  const { primary_color } = useBoxConfig();
 
   const isoFromDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1240,7 +1248,7 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
       {onBack && (
         <TouchableOpacity onPress={onBack} style={{ marginBottom: 12 }}>
-          <Text style={{ color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 14 }}>‹ Volver a clases</Text>
+          <Text style={{ color: primary_color, fontFamily: Fonts.bodySemiBold, fontSize: 14 }}>‹ Volver a clases</Text>
         </TouchableOpacity>
       )}
       <View style={nuevaStyles.card}>
@@ -1251,7 +1259,7 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
             {CLASS_TYPES.map(ct => (
               <TouchableOpacity
                 key={ct}
-                style={[nuevaStyles.typeChip, name === ct && nuevaStyles.typeChipActive]}
+                style={[nuevaStyles.typeChip, name === ct && nuevaStyles.typeChipActive, name === ct && { backgroundColor: primary_color, borderColor: primary_color }]}
                 onPress={() => setName(ct)}
               >
                 <Text style={[nuevaStyles.typeChipText, name === ct && nuevaStyles.typeChipTextActive]}>{ct}</Text>
@@ -1296,11 +1304,11 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
             <Text style={nuevaStyles.label}>Fecha</Text>
             <View style={nuevaStyles.dateRow}>
               <TouchableOpacity style={nuevaStyles.dateBtn} onPress={() => adjustDate(-1)}>
-                <Text style={nuevaStyles.dateBtnText}>‹</Text>
+                <Text style={[nuevaStyles.dateBtnText, { color: primary_color }]}>‹</Text>
               </TouchableOpacity>
               <Text style={nuevaStyles.dateText}>{fmtDate(date)}</Text>
               <TouchableOpacity style={nuevaStyles.dateBtn} onPress={() => adjustDate(1)}>
-                <Text style={nuevaStyles.dateBtnText}>›</Text>
+                <Text style={[nuevaStyles.dateBtnText, { color: primary_color }]}>›</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1309,13 +1317,13 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
         <Text style={nuevaStyles.label}>Repetir</Text>
         <View style={nuevaStyles.repeatRow}>
           <TouchableOpacity
-            style={[nuevaStyles.repeatBtn, repeat === 'once' && nuevaStyles.repeatBtnActive]}
+            style={[nuevaStyles.repeatBtn, repeat === 'once' && nuevaStyles.repeatBtnActive, repeat === 'once' && { backgroundColor: primary_color, borderColor: primary_color }]}
             onPress={() => setRepeat('once')}
           >
             <Text style={[nuevaStyles.repeatBtnText, repeat === 'once' && nuevaStyles.repeatBtnTextActive]}>Solo esta fecha</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[nuevaStyles.repeatBtn, repeat === 'week' && nuevaStyles.repeatBtnActive]}
+            style={[nuevaStyles.repeatBtn, repeat === 'week' && nuevaStyles.repeatBtnActive, repeat === 'week' && { backgroundColor: primary_color, borderColor: primary_color }]}
             onPress={() => setRepeat('week')}
           >
             <Text style={[nuevaStyles.repeatBtnText, repeat === 'week' && nuevaStyles.repeatBtnTextActive]}>Lun–Vie (5 días)</Text>
@@ -1334,7 +1342,7 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
         } />
 
         <TouchableOpacity
-          style={[nuevaStyles.createBtn, busy && { opacity: 0.6 }]}
+          style={[nuevaStyles.createBtn, { backgroundColor: primary_color }, busy && { opacity: 0.6 }]}
           onPress={handleCreate}
           disabled={busy}
         >
@@ -1347,7 +1355,8 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
 
 function MemberInvoices({ memberId }: { memberId: string }) {
   const { invoices, loading } = useInvoices(memberId);
-  if (loading) return <ActivityIndicator color={Colors.orange} size="small" style={{ marginTop: 8 }} />;
+  const { primary_color } = useBoxConfig();
+  if (loading) return <ActivityIndicator color={primary_color} size="small" style={{ marginTop: 8 }} />;
   if (!invoices.length) return <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 12, marginTop: 4 }}>Sin facturas</Text>;
   return (
     <View style={{ gap: 6, marginTop: 4 }}>

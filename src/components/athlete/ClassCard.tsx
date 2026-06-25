@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Modal, Image, Dimensions } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../common/Badge';
 import { Avatar } from '../common/Avatar';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 import type { ClassItem } from '../../data/mockData';
 
 const SLOTS_PER_ROW = 6;
@@ -19,11 +20,12 @@ interface ClassCardProps {
 
 export function ClassCard({ item, onPress }: ClassCardProps) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const { primary_color } = useBoxConfig();
 
   const accentColor =
     item.status === 'reserved' ? Colors.green :
     item.status === 'full' ? Colors.red :
-    Colors.orange;
+    primary_color;
 
   const badgeVariant =
     item.status === 'reserved' ? 'orange' :
@@ -73,8 +75,8 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
             }
             if (isEnrolled) {
               return (
-                <View key={i} style={styles.slotGhost}>
-                  <Text style={styles.slotGhostText}>?</Text>
+                <View key={i} style={[styles.slotGhost, { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.15) }]}>
+                  <Text style={[styles.slotGhostText, { color: primary_color }]}>?</Text>
                 </View>
               );
             }

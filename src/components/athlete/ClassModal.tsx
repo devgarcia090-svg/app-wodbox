@@ -7,6 +7,7 @@ import { Fonts } from '../../theme/fonts';
 import { Button } from '../common/Button';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 import type { ClassItem } from '../../data/mockData';
 
 interface ClassModalProps {
@@ -18,6 +19,7 @@ interface ClassModalProps {
 
 export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalProps) {
   const { session } = useAuth();
+  const { primary_color } = useBoxConfig();
   const [busy, setBusy] = useState(false);
 
   if (!item) return null;
@@ -84,7 +86,7 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
             <Text style={styles.title}>{item.name} · {item.time}</Text>
             <Text style={styles.sub}>{meta}</Text>
             <View style={styles.wodBox}>
-              <Text style={styles.wodLabel}>WOD DE HOY</Text>
+              <Text style={[styles.wodLabel, { color: primary_color }]}>WOD DE HOY</Text>
               <Text style={styles.wodText}>{item.wod}</Text>
             </View>
             <View style={styles.actions}>

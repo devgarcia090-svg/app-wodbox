@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
+import { useBoxConfig } from '../context/BoxConfigContext';
 import { HomeScreen } from '../screens/athlete/HomeScreen';
 import { ChatScreen } from '../screens/athlete/ChatScreen';
 import { ProfileScreen } from '../screens/athlete/ProfileScreen';
@@ -18,6 +19,7 @@ const TABS: { key: AthleteTab; label: string; icon: string }[] = [
 export function AthleteNavigator() {
   const [active, setActive] = useState<AthleteTab>('inicio');
   const insets = useSafeAreaInsets();
+  const { primary_color } = useBoxConfig();
 
   return (
     <View style={styles.root}>
@@ -37,9 +39,9 @@ export function AthleteNavigator() {
               onPress={() => setActive(tab.key)}
               activeOpacity={0.7}
             >
-              {focused && <View style={styles.activeLine} />}
+              {focused && <View style={[styles.activeLine, { backgroundColor: primary_color }]} />}
               <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+              <Text style={[styles.tabLabel, focused && { color: primary_color }]}>
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -73,7 +75,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 2,
     borderRadius: 1,
-    backgroundColor: Colors.orange,
   },
   tabIcon: { fontSize: 18 },
   tabLabel: {
@@ -81,5 +82,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.muted,
   },
-  tabLabelActive: { color: Colors.orange },
 });

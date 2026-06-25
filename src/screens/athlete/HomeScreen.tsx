@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { withAlpha } from '../../theme/colors';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { ClassCard } from '../../components/athlete/ClassCard';
@@ -53,14 +54,14 @@ export function HomeScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hola, <Text style={styles.name}>{profile?.name ?? 'Atleta'}</Text> 💪</Text>
+        <Text style={styles.greeting}>Hola, <Text style={[styles.name, { color: boxConfig.primary_color }]}>{profile?.name ?? 'Atleta'}</Text> 💪</Text>
         <Text style={styles.sub}>
           {today ? `${today.day} ${today.num} · ` : ''}{boxConfig.name}
         </Text>
         {profile?.plan && (
-          <View style={styles.memberBadge}>
-            <View style={styles.memberDot} />
-            <Text style={styles.memberText}>
+          <View style={[styles.memberBadge, { backgroundColor: withAlpha(boxConfig.primary_color, 0.15), borderColor: boxConfig.primary_color }]}>
+            <View style={[styles.memberDot, { backgroundColor: boxConfig.primary_color }]} />
+            <Text style={[styles.memberText, { color: boxConfig.primary_color }]}>
               {profile.plan}
               {profile.classes_remaining != null ? ` · ${profile.classes_remaining} restantes` : ''}
               {profile.membership_expires ? ` — vence ${shortExpiry(profile.membership_expires)}` : ''}
@@ -75,7 +76,7 @@ export function HomeScreen() {
           {DATE_PILLS.map((d, i) => (
             <TouchableOpacity
               key={i}
-              style={[styles.datePill, activeDateIdx === i && styles.datePillActive]}
+              style={[styles.datePill, activeDateIdx === i && { backgroundColor: boxConfig.primary_color, borderColor: boxConfig.primary_color }]}
               onPress={() => { setActiveDateIdx(i); setSelectedTime(null); }}
             >
               <Text style={[styles.dateDay, activeDateIdx === i && styles.dateDayActive]}>{d.day}</Text>
@@ -93,7 +94,7 @@ export function HomeScreen() {
             return (
               <TouchableOpacity
                 key={t}
-                style={[styles.timePill, active && styles.timePillActive]}
+                style={[styles.timePill, active && { backgroundColor: boxConfig.primary_color, borderColor: boxConfig.primary_color }]}
                 onPress={() => setSelectedTime(t)}
               >
                 <Text style={[styles.timePillText, active && styles.timePillTextActive]}>{t}</Text>
@@ -113,7 +114,7 @@ export function HomeScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.orange} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={boxConfig.primary_color} style={{ marginTop: 40 }} />
         ) : filteredClasses.length === 0 ? (
           <Text style={styles.emptyText}>No hay clases para este día</Text>
         ) : (

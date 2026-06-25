@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 
 const DAY_HEADERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -77,6 +78,7 @@ const WEEK_DATA: SlotData[][] = [
 ];
 
 export function CalendarScreen() {
+  const { primary_color } = useBoxConfig();
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Month header */}
@@ -100,7 +102,7 @@ export function CalendarScreen() {
             key={i}
             style={[
               styles.calDay,
-              d.today && styles.calDayToday,
+              d.today && { backgroundColor: primary_color },
               d.reserved && !d.today && styles.calDayReserved,
             ]}
           >
@@ -113,7 +115,7 @@ export function CalendarScreen() {
               {d.num}
             </Text>
             {d.hasClass && (
-              <View style={[styles.calDot, d.today && styles.calDotToday]} />
+              <View style={[styles.calDot, { backgroundColor: primary_color }, d.today && styles.calDotToday]} />
             )}
           </TouchableOpacity>
         ))}
@@ -122,7 +124,7 @@ export function CalendarScreen() {
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: Colors.orange }]} />
+          <View style={[styles.legendDot, { backgroundColor: primary_color }]} />
           <Text style={styles.legendText}>Disponible</Text>
         </View>
         <View style={styles.legendItem}>
@@ -145,7 +147,7 @@ export function CalendarScreen() {
             <View style={styles.weekTimeCell} />
             {WEEK_COLS.map((col, i) => (
               <View key={i} style={styles.weekColHeader}>
-                <Text style={[styles.weekColHeaderText, col.today && styles.weekColHeaderToday]}>{col.label}</Text>
+                <Text style={[styles.weekColHeaderText, col.today && { color: primary_color }]}>{col.label}</Text>
               </View>
             ))}
           </View>
@@ -160,7 +162,7 @@ export function CalendarScreen() {
                   key={colIdx}
                   style={[
                     styles.weekSlot,
-                    slot.status === 'reserved' && styles.weekSlotReserved,
+                    slot.status === 'reserved' && { backgroundColor: withAlpha(primary_color, 0.15), borderColor: primary_color },
                     slot.status === 'full' && styles.weekSlotFull,
                     slot.status === 'empty' && styles.weekSlotEmpty,
                   ]}
@@ -266,7 +268,7 @@ const styles = StyleSheet.create({
   weekTimeCell: { width: 52, alignItems: 'flex-end', paddingRight: 8, paddingTop: 4 },
   weekColHeader: { width: 80, alignItems: 'center', paddingVertical: 4 },
   weekColHeaderText: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
-  weekColHeaderToday: { color: Colors.orange },
+  weekColHeaderToday: { color: Colors.orange }, // overridden inline via primary_color
   weekRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
   weekTimeText: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.body },
   weekSlot: {

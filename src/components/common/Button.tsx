@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -15,13 +16,23 @@ interface ButtonProps {
 }
 
 export function Button({ label, variant = 'primary', small, full, onPress, style }: ButtonProps) {
+  const { primary_color } = useBoxConfig();
+
+  const dynamicBtnStyle =
+    variant === 'primary' ? { backgroundColor: primary_color } :
+    variant === 'ghost'   ? { borderColor: primary_color } :
+    null;
+
+  const dynamicTextStyle =
+    variant === 'ghost' ? { color: primary_color } : null;
+
   return (
     <TouchableOpacity
-      style={[styles.base, styles[variant], small && styles.smallBtn, full && styles.full, style]}
+      style={[styles.base, styles[variant], dynamicBtnStyle, small && styles.smallBtn, full && styles.full, style]}
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <Text style={[styles.text, styles[`${variant}Text` as keyof typeof styles], small && styles.smallText]}>
+      <Text style={[styles.text, styles[`${variant}Text` as keyof typeof styles], dynamicTextStyle, small && styles.smallText]}>
         {label}
       </Text>
     </TouchableOpacity>

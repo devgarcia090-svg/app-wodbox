@@ -1,7 +1,8 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 
 type BadgeVariant = 'green' | 'red' | 'yellow' | 'orange' | 'blue';
 
@@ -20,10 +21,14 @@ const BADGE_STYLES: Record<BadgeVariant, { bg: string; color: string }> = {
 };
 
 export function Badge({ label, variant, small }: BadgeProps) {
-  const s = BADGE_STYLES[variant];
+  const { primary_color } = useBoxConfig();
+  const base = BADGE_STYLES[variant];
+  const bg = variant === 'orange' ? withAlpha(primary_color, 0.15) : base.bg;
+  const color = variant === 'orange' ? primary_color : base.color;
+
   return (
-    <View style={[styles.badge, { backgroundColor: s.bg }]}>
-      <Text style={[styles.text, { color: s.color }, small && styles.small]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <Text style={[styles.text, { color }, small && styles.small]}>{label}</Text>
     </View>
   );
 }

@@ -18,3 +18,10 @@ export const Colors = {
   yellowBg: 'rgba(245,158,11,0.15)',
   blueBg: 'rgba(59,130,246,0.15)',
 };
+
+export function withAlpha(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
