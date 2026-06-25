@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal,
 } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
@@ -14,6 +14,7 @@ import { useMembers, MemberRow } from '../../hooks/useMembers';
 import { useInvoices } from '../../hooks/useInvoices';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { Avatar } from '../../components/common/Avatar';
 
 type AdminTab = 'clases' | 'miembros' | 'cobros' | 'facturas' | 'chat' | 'nueva';
 
@@ -82,6 +83,7 @@ export function AdminDashboard() {
 
 function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const { classes, loading, refetch } = useClasses(TODAY_ISO);
 
   useEffect(() => {
@@ -112,6 +114,7 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
           <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para hoy</Text>
         ) : null}
         {filtered.map(cls => {
+
           const pct = Math.round((cls.enrolled / cls.capacity) * 100);
           const fillColor = pct >= 90 ? Colors.red : pct >= 60 ? Colors.yellow : Colors.green;
           const isFull = pct >= 100;
@@ -140,9 +143,14 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
                   <View style={clsStyles.attendeesGrid}>
                     {cls.attendees.map((att, i) => (
                       <View key={i} style={clsStyles.attendeeItem}>
-                        <View style={[clsStyles.attendeeAvatar, { backgroundColor: att.color }]}>
-                          <Text style={clsStyles.attendeeInitials}>{att.initials}</Text>
-                        </View>
+                        <Avatar
+                          url={att.url}
+                          initials={att.initials}
+                          color={att.color}
+                          size={40}
+                          square
+                          onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
+                        />
                         <Text style={clsStyles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
                       </View>
                     ))}
@@ -153,6 +161,13 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
           );
         })}
       </ScrollView>
+
+      <Modal visible={!!lightboxUrl} transparent animationType="fade" onRequestClose={() => setLightboxUrl(null)}>
+        <TouchableOpacity style={lbStyles.overlay} activeOpacity={1} onPress={() => setLightboxUrl(null)}>
+          {lightboxUrl && <Image source={{ uri: lightboxUrl }} style={lbStyles.img} resizeMode="contain" />}
+          <Text style={lbStyles.hint}>Toca para cerrar</Text>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -1313,6 +1328,12 @@ const addStyles = StyleSheet.create({
   tariffFeature: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginTop: 3 },
   sendBtn: { backgroundColor: Colors.orange, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
   sendBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: '#fff' },
+});
+
+const lbStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+  img: { width: 280, height: 280, borderRadius: 10 },
+  hint: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 16, fontFamily: Fonts.body },
 });
 
 const dmListStyles = StyleSheet.create({
