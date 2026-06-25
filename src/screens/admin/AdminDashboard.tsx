@@ -8,7 +8,7 @@ import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
-import { TODAY_ISO } from '../../data/mockData';
+import { TODAY_ISO, DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 import { useClasses } from '../../hooks/useClasses';
 import { useMembers, MemberRow } from '../../hooks/useMembers';
 import { useInvoices } from '../../hooks/useInvoices';
@@ -90,13 +90,16 @@ export function AdminDashboard() {
 // ─── Clases Panel ─────────────────────────────────────────────────────────────
 
 function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
+  const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingClass, setEditingClass] = useState<any | null>(null);
   const [editFields, setEditFields] = useState({ name: '', time: '', coach: '', capacity: '', duration: '', wod: '' });
   const [savingEdit, setSavingEdit] = useState(false);
-  const { classes, loading, refetch } = useClasses(TODAY_ISO);
+
+  const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? TODAY_ISO;
+  const { classes, loading, refetch } = useClasses(selectedDate);
 
   useEffect(() => {
     if (refreshKey > 0) refetch();
@@ -149,6 +152,19 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
 
   return (
     <View style={panelStyles.panel}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminDateStyles.scroll} contentContainerStyle={adminDateStyles.content}>
+        {DATE_PILLS.map((d, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[adminDateStyles.pill, activeDateIdx === i && adminDateStyles.pillActive]}
+            onPress={() => { setActiveDateIdx(i); setSelectedTime(null); }}
+          >
+            <Text style={[adminDateStyles.pillDay, activeDateIdx === i && adminDateStyles.pillTextActive]}>{d.day}</Text>
+            <Text style={[adminDateStyles.pillNum, activeDateIdx === i && adminDateStyles.pillTextActive]}>{d.num}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminTimeStyles.scroll} contentContainerStyle={adminTimeStyles.content}>
         {timePills.map(t => {
           const active = t === 'Todas' ? !selectedTime || selectedTime === 'Todas' : selectedTime === t;
@@ -1453,6 +1469,19 @@ const chatStyles = StyleSheet.create({
   bubbleTheirs: { backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border, borderTopLeftRadius: 4 },
   bubbleText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.body, lineHeight: 19 },
   bubbleTextMine: { color: '#fff' },
+});
+
+const adminDateStyles = StyleSheet.create({
+  scroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface },
+  content: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, flexDirection: 'row' },
+  pill: {
+    alignItems: 'center', minWidth: 48, paddingHorizontal: 4, paddingVertical: 7,
+    borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
+  },
+  pillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  pillDay: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  pillNum: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.white, lineHeight: 22 },
+  pillTextActive: { color: '#fff' },
 });
 
 const adminTimeStyles = StyleSheet.create({
