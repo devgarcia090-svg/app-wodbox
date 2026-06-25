@@ -407,17 +407,23 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
       return;
     }
     setInviting(true);
-    const { error } = await supabase.from('pending_invites').insert({
-      name: newName.trim(),
-      email: newEmail.trim().toLowerCase(),
-      plan: selectedTariff,
+    const { error } = await supabase.functions.invoke('invite-athlete', {
+      body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff },
     });
+    if (!error) {
+      // Keep pending_invites for display until athlete accepts
+      await supabase.from('pending_invites').insert({
+        name: newName.trim(),
+        email: newEmail.trim().toLowerCase(),
+        plan: selectedTariff,
+      });
+    }
     setInviting(false);
     if (error) {
-      showToast(error.message.includes('unique') ? 'Ese email ya existe' : 'Error al crear atleta', 'error');
+      showToast('Error al enviar invitación', 'error');
       return;
     }
-    showToast(`✅ Atleta añadido (${newEmail})`, 'success');
+    showToast(`📧 Invitación enviada a ${newEmail}`, 'success');
     setShowForm(false);
     setNewName(''); setNewEmail(''); setSelectedTariff(null);
     refetch();
