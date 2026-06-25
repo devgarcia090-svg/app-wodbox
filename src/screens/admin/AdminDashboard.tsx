@@ -661,51 +661,6 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
   );
 }
 
-// ─── Facturas Panel ───────────────────────────────────────────────────────────
-
-function FacturasPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
-  const { invoices, loading } = useInvoices();
-
-  return (
-    <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
-      <View style={factStyles.diffBox}>
-        <Text style={factStyles.diffTitle}>✨ Diferencial WodBox</Text>
-        <Text style={factStyles.diffSub}>Genera facturas legales automáticamente. Cumplimiento VeriFactu incluido.</Text>
-      </View>
-      <View style={factStyles.actions}>
-        <TouchableOpacity style={[factStyles.btn, factStyles.btnPrimary]} onPress={() => showToast('Generando factura...', 'info')}>
-          <Text style={factStyles.btnPrimaryText}>+ Generar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[factStyles.btn, factStyles.btnSecondary]} onPress={() => showToast('Exportando...', 'info')}>
-          <Text style={factStyles.btnSecondaryText}>📥 Exportar</Text>
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
-      ) : invoices.length === 0 ? (
-        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>Sin facturas</Text>
-      ) : null}
-
-      {invoices.map(inv => (
-        <View key={inv.id} style={invRowStyles.row}>
-          <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>🧾</Text></View>
-          <View style={invRowStyles.info}>
-            <Text style={invRowStyles.num}>{inv.number}</Text>
-            <Text style={invRowStyles.meta}>{inv.member_name} · {inv.date}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={invRowStyles.amount}>{inv.amount.toFixed(2).replace('.', ',')}€</Text>
-            <Badge label={inv.paid ? 'Pagada' : 'Pendiente'} variant={inv.paid ? 'green' : 'yellow'} small />
-          </View>
-        </View>
-      ))}
-
-      <Text style={factStyles.footer}>Numeración correlativa automática · IVA incluido · VeriFactu</Text>
-    </ScrollView>
-  );
-}
-
 // ─── Admin Chat Panel ─────────────────────────────────────────────────────────
 
 type AdminChatTab = 'broadcast' | 'dms';
@@ -1410,22 +1365,6 @@ const invRowStyles = StyleSheet.create({
   num: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white, marginBottom: 2 },
   meta: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   amount: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.white },
-});
-
-const factStyles = StyleSheet.create({
-  diffBox: {
-    backgroundColor: Colors.orangeGlow, borderWidth: 1, borderColor: Colors.orange,
-    borderRadius: 10, padding: 12, marginBottom: 14,
-  },
-  diffTitle: { color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 13, marginBottom: 4 },
-  diffSub: { color: Colors.muted, fontSize: 12, fontFamily: Fonts.body },
-  actions: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  btn: { flex: 1, padding: 8, borderRadius: 6, alignItems: 'center' },
-  btnPrimary: { backgroundColor: Colors.orange },
-  btnPrimaryText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 12 },
-  btnSecondary: { backgroundColor: Colors.surface3, borderWidth: 1, borderColor: Colors.border },
-  btnSecondaryText: { fontFamily: Fonts.bodySemiBold, color: Colors.white, fontSize: 12 },
-  footer: { textAlign: 'center', color: Colors.muted, fontSize: 12, fontFamily: Fonts.body, marginTop: 8 },
 });
 
 const nuevaStyles = StyleSheet.create({
