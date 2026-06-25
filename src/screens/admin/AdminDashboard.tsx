@@ -12,6 +12,7 @@ import { TODAY_ISO, DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 import { useClasses } from '../../hooks/useClasses';
 import { useMembers, MemberRow } from '../../hooks/useMembers';
 import { useInvoices } from '../../hooks/useInvoices';
+import { useExpiringMembers } from '../../hooks/useExpiringMembers';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/common/Avatar';
@@ -599,64 +600,240 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
 // ─── Cobros Panel ─────────────────────────────────────────────────────────────
 
 function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
-  const { invoices, loading } = useInvoices();
+  const { invoices, loading, markAsPaid, createInvoice } = useInvoices();
+  const { members: expiring, loading: expiringLoading, refetch: refetchExpiring } = useExpiringMembers();
+  const { members: allMembers } = useMembers();
+  const [showNuevaFactura, setShowNuevaFactura] = useState(false);
+  const [nfMemberId, setNfMemberId] = useState('');
+  const [nfPlan, setNfPlan] = useState('');
+  const [nfAmount, setNfAmount] = useState('');
+  const [nfBusy, setNfBusy] = useState(false);
+  const [showMemberPicker, setShowMemberPicker] = useState(false);
+
   const pending = invoices.filter(i => !i.paid);
-  const recent = invoices.filter(i => i.paid).slice(0, 5);
+  const paid = invoices.filter(i => i.paid);
+
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const cobradoMes = paid.filter(i => i.date.startsWith(thisMonth)).reduce((s, i) => s + i.amount, 0);
+  const pendienteTotal = pending.reduce((s, i) => s + i.amount, 0);
+
+  const todayIso = now.toISOString().slice(0, 10);
+
+  const selectedMember = allMembers.find(m => m.id === nfMemberId);
+
+  const handleMarkPaid = async (id: string, name: string) => {
+    await markAsPaid(id);
+    refetchExpiring();
+    showToast(`✅ Factura de ${name} marcada como pagada`, 'success');
+  };
+
+  const handleCreateInvoice = async (memberId?: string) => {
+    const mid = memberId ?? nfMemberId;
+    if (!mid || !nfPlan || !nfAmount) {
+      showToast('Rellena todos los campos', 'error');
+      return;
+    }
+    setNfBusy(true);
+    const { error } = await createInvoice({
+      member_id: mid,
+      plan_name: nfPlan,
+      amount: parseFloat(nfAmount.replace(',', '.')),
+      date: todayIso,
+    });
+    setNfBusy(false);
+    if (!error) {
+      showToast('Factura creada', 'success');
+      setShowNuevaFactura(false);
+      setNfMemberId(''); setNfPlan(''); setNfAmount('');
+    } else {
+      showToast('Error al crear factura', 'error');
+    }
+  };
+
+  const expiryLabel = (m: typeof expiring[0]) => {
+    if (m.reason === 'expired') return `Venció ${m.membership_expires}`;
+    if (m.reason === 'expiring_soon') return `Vence ${m.membership_expires}`;
+    return 'Sin clases restantes';
+  };
+
+  const expiryColor = (reason: string) =>
+    reason === 'expired' ? Colors.red : reason === 'expiring_soon' ? Colors.yellow : Colors.muted;
 
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
-      {loading ? (
-        <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
-      ) : (
+
+      {/* Stats del mes */}
+      <View style={cobroStyles.statsRow}>
+        <View style={[cobroStyles.statCard, { borderColor: Colors.green }]}>
+          <Text style={cobroStyles.statLabel}>Cobrado este mes</Text>
+          <Text style={[cobroStyles.statValue, { color: Colors.green }]}>{cobradoMes.toFixed(2).replace('.', ',')}€</Text>
+        </View>
+        <View style={[cobroStyles.statCard, { borderColor: pending.length > 0 ? Colors.yellow : Colors.border }]}>
+          <Text style={cobroStyles.statLabel}>Pendiente</Text>
+          <Text style={[cobroStyles.statValue, { color: pending.length > 0 ? Colors.yellow : Colors.muted }]}>
+            {pendienteTotal.toFixed(2).replace('.', ',')}€
+          </Text>
+        </View>
+      </View>
+
+      {/* Alertas de vencimiento */}
+      {!expiringLoading && expiring.length > 0 && (
         <>
-          {pending.length > 0 && (
-            <View style={cobroStyles.pendingBox}>
-              <Text style={cobroStyles.pendingTitle}>⚠️ Pagos pendientes ({pending.length})</Text>
-              {pending.map((p, i) => (
-                <View key={p.id} style={[cobroStyles.pendingRow, i < pending.length - 1 && cobroStyles.pendingRowBorder]}>
-                  <View>
-                    <Text style={cobroStyles.pendingName}>{p.member_name}</Text>
-                    <Text style={cobroStyles.pendingPlan}>{p.plan_name} · {p.date}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={cobroStyles.pendingAmount}>{p.amount.toFixed(2).replace('.', ',')}€</Text>
-                    <TouchableOpacity style={cobroStyles.avisarBtn} onPress={() => showToast('Recordatorio enviado', 'success')}>
-                      <Text style={cobroStyles.avisarText}>Avisar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {pending.length === 0 && (
-            <View style={[cobroStyles.pendingBox, { borderColor: Colors.green }]}>
-              <Text style={[cobroStyles.pendingTitle, { color: Colors.green }]}>✅ Sin pagos pendientes</Text>
-            </View>
-          )}
-
-          {recent.length > 0 && (
-            <>
-              <View style={panelStyles.sectionHeader}>
-                <Text style={panelStyles.sectionTitle}>Cobros recientes</Text>
+          <View style={panelStyles.sectionHeader}>
+            <Text style={panelStyles.sectionTitle}>⚠️ Requieren atención ({expiring.length})</Text>
+          </View>
+          {expiring.map(m => (
+            <View key={m.id} style={cobroStyles.alertCard}>
+              <View style={[cobroStyles.alertAvatar, { backgroundColor: m.avatar_color }]}>
+                <Text style={cobroStyles.alertAvatarText}>{m.avatar_initials}</Text>
               </View>
-              {recent.map(c => (
-                <View key={c.id} style={invRowStyles.row}>
-                  <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>💳</Text></View>
-                  <View style={invRowStyles.info}>
-                    <Text style={invRowStyles.num}>{c.member_name}</Text>
-                    <Text style={invRowStyles.meta}>{c.date} · {c.plan_name}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={invRowStyles.amount}>{c.amount.toFixed(2).replace('.', ',')}€</Text>
-                    <Badge label="Cobrado" variant="green" small />
-                  </View>
-                </View>
-              ))}
-            </>
-          )}
+              <View style={{ flex: 1 }}>
+                <Text style={cobroStyles.alertName}>{m.name}</Text>
+                <Text style={cobroStyles.alertPlan}>{m.plan}</Text>
+                <Text style={[cobroStyles.alertReason, { color: expiryColor(m.reason) }]}>
+                  {expiryLabel(m)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={cobroStyles.genBtn}
+                onPress={() => {
+                  setNfMemberId(m.id);
+                  setNfPlan(m.plan);
+                  setShowNuevaFactura(true);
+                }}
+              >
+                <Text style={cobroStyles.genBtnText}>+ Factura</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
         </>
       )}
+
+      {/* Nueva factura */}
+      <TouchableOpacity
+        style={cobroStyles.nuevaBtn}
+        onPress={() => setShowNuevaFactura(v => !v)}
+      >
+        <Text style={cobroStyles.nuevaBtnText}>{showNuevaFactura ? '✕ Cancelar' : '+ Nueva factura'}</Text>
+      </TouchableOpacity>
+
+      {showNuevaFactura && (
+        <View style={cobroStyles.nuevaCard}>
+          <Text style={cobroStyles.nuevaLabel}>MIEMBRO</Text>
+          <TouchableOpacity style={cobroStyles.pickerBtn} onPress={() => setShowMemberPicker(true)}>
+            <Text style={[cobroStyles.pickerText, !selectedMember && { color: Colors.muted }]}>
+              {selectedMember ? selectedMember.name : 'Seleccionar miembro...'}
+            </Text>
+            <Text style={{ color: Colors.muted }}>▾</Text>
+          </TouchableOpacity>
+
+          <Text style={[cobroStyles.nuevaLabel, { marginTop: 10 }]}>CONCEPTO / PLAN</Text>
+          <TextInput
+            style={cobroStyles.input}
+            placeholder="Ej: Cuota mensual"
+            placeholderTextColor={Colors.muted}
+            value={nfPlan}
+            onChangeText={setNfPlan}
+          />
+
+          <Text style={[cobroStyles.nuevaLabel, { marginTop: 10 }]}>IMPORTE (€)</Text>
+          <TextInput
+            style={cobroStyles.input}
+            placeholder="0,00"
+            placeholderTextColor={Colors.muted}
+            keyboardType="decimal-pad"
+            value={nfAmount}
+            onChangeText={setNfAmount}
+          />
+
+          <TouchableOpacity
+            style={[cobroStyles.createBtn, nfBusy && { opacity: 0.6 }]}
+            onPress={() => handleCreateInvoice()}
+            disabled={nfBusy}
+          >
+            <Text style={cobroStyles.createBtnText}>{nfBusy ? 'Creando...' : 'Crear factura'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Pendientes */}
+      {pending.length > 0 && (
+        <>
+          <View style={panelStyles.sectionHeader}>
+            <Text style={panelStyles.sectionTitle}>Pendientes de cobro ({pending.length})</Text>
+          </View>
+          {pending.map(p => (
+            <View key={p.id} style={invRowStyles.row}>
+              <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>🕐</Text></View>
+              <View style={invRowStyles.info}>
+                <Text style={invRowStyles.num}>{p.member_name}</Text>
+                <Text style={invRowStyles.meta}>{p.plan_name} · {p.date}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                <Text style={invRowStyles.amount}>{p.amount.toFixed(2).replace('.', ',')}€</Text>
+                <TouchableOpacity style={cobroStyles.pagarBtn} onPress={() => handleMarkPaid(p.id, p.member_name)}>
+                  <Text style={cobroStyles.pagarText}>Cobrada ✓</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Historial cobros */}
+      {paid.length > 0 && (
+        <>
+          <View style={panelStyles.sectionHeader}>
+            <Text style={panelStyles.sectionTitle}>Historial</Text>
+          </View>
+          {paid.map(c => (
+            <View key={c.id} style={invRowStyles.row}>
+              <View style={invRowStyles.icon}><Text style={{ fontSize: 18 }}>✅</Text></View>
+              <View style={invRowStyles.info}>
+                <Text style={invRowStyles.num}>{c.member_name}</Text>
+                <Text style={invRowStyles.meta}>{c.plan_name} · {c.date}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={invRowStyles.amount}>{c.amount.toFixed(2).replace('.', ',')}€</Text>
+                <Badge label="Cobrada" variant="green" small />
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+
+      {pending.length === 0 && paid.length === 0 && !loading && (
+        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>
+          Sin facturas aún
+        </Text>
+      )}
+
+      {/* Member picker modal */}
+      <Modal visible={showMemberPicker} transparent animationType="slide">
+        <TouchableOpacity style={cobroStyles.modalOverlay} activeOpacity={1} onPress={() => setShowMemberPicker(false)}>
+          <View style={cobroStyles.modalSheet}>
+            <Text style={cobroStyles.modalTitle}>Seleccionar miembro</Text>
+            <ScrollView>
+              {allMembers.filter(m => !m.isPendingInvite).map(m => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={cobroStyles.memberItem}
+                  onPress={() => { setNfMemberId(m.id); setNfPlan(m.plan); setShowMemberPicker(false); }}
+                >
+                  <View style={[cobroStyles.memberAvatar, { backgroundColor: m.avatar_color }]}>
+                    <Text style={cobroStyles.memberAvatarText}>{m.avatar_initials}</Text>
+                  </View>
+                  <View>
+                    <Text style={cobroStyles.memberName}>{m.name}</Text>
+                    <Text style={cobroStyles.memberPlan}>{m.plan}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1334,21 +1511,70 @@ const expandStyles = StyleSheet.create({
 });
 
 const cobroStyles = StyleSheet.create({
-  pendingBox: {
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  statCard: {
+    flex: 1, backgroundColor: Colors.surface, borderWidth: 1,
+    borderRadius: 12, padding: 14,
+  },
+  statLabel: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.bodySemiBold, textTransform: 'uppercase', marginBottom: 4 },
+  statValue: { fontFamily: Fonts.heading, fontSize: 22 },
+  alertCard: {
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.yellow,
-    borderRadius: 12, padding: 14, marginBottom: 12,
+    borderRadius: 10, padding: 12, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
   },
-  pendingTitle: { fontSize: 12, color: Colors.yellow, fontFamily: Fonts.bodySemiBold, marginBottom: 8 },
-  pendingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-  pendingRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  pendingName: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
-  pendingPlan: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
-  pendingAmount: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.white },
-  avisarBtn: {
+  alertAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  alertAvatarText: { fontFamily: Fonts.headingXBold, fontSize: 12, color: '#fff' },
+  alertName: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
+  alertPlan: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.body },
+  alertReason: { fontSize: 11, fontFamily: Fonts.bodySemiBold, marginTop: 1 },
+  genBtn: {
     backgroundColor: Colors.orangeGlow, borderWidth: 1, borderColor: Colors.orange,
-    borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, marginTop: 4,
+    borderRadius: 7, paddingHorizontal: 10, paddingVertical: 7,
   },
-  avisarText: { fontSize: 12, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
+  genBtnText: { fontSize: 12, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
+  nuevaBtn: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.orange,
+    borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 12,
+  },
+  nuevaBtnText: { color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 13 },
+  nuevaCard: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 12, padding: 14, marginBottom: 14,
+  },
+  nuevaLabel: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.bodySemiBold, textTransform: 'uppercase', marginBottom: 6 },
+  input: {
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, padding: 10, paddingHorizontal: 12,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 14,
+  },
+  pickerBtn: {
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, padding: 10, paddingHorizontal: 12,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  pickerText: { color: Colors.white, fontFamily: Fonts.body, fontSize: 14 },
+  createBtn: { backgroundColor: Colors.orange, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 12 },
+  createBtnText: { color: '#fff', fontFamily: Fonts.bodySemiBold, fontSize: 14 },
+  pagarBtn: {
+    backgroundColor: '#052e16', borderWidth: 1, borderColor: Colors.green,
+    borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  pagarText: { fontSize: 11, color: Colors.green, fontFamily: Fonts.bodySemiBold },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: Colors.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    padding: 20, maxHeight: '70%',
+  },
+  modalTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 15, color: Colors.white, marginBottom: 14 },
+  memberItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  memberAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  memberAvatarText: { fontFamily: Fonts.headingXBold, fontSize: 12, color: '#fff' },
+  memberName: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
+  memberPlan: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.body },
 });
 
 const invRowStyles = StyleSheet.create({

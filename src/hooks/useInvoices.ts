@@ -49,5 +49,36 @@ export function useInvoices(memberId?: string | null) {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
-  return { invoices, loading, refetch: fetchInvoices };
+  const markAsPaid = async (id: string) => {
+    await supabase.from('invoices').update({ paid: true }).eq('id', id);
+    await fetchInvoices();
+  };
+
+  const createInvoice = async (data: {
+    member_id: string;
+    plan_name: string;
+    amount: number;
+    date: string;
+  }) => {
+    // Generate correlative number: F-YYYYMM-XXX
+    const { count } = await supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true });
+    const n = String((count ?? 0) + 1).padStart(3, '0');
+    const ym = data.date.slice(0, 7).replace('-', '');
+    const number = `F-${ym}-${n}`;
+
+    const { error } = await supabase.from('invoices').insert({
+      member_id: data.member_id,
+      plan_name: data.plan_name,
+      amount: data.amount,
+      date: data.date,
+      paid: false,
+      number,
+    });
+    if (!error) await fetchInvoices();
+    return { error };
+  };
+
+  return { invoices, loading, refetch: fetchInvoices, markAsPaid, createInvoice };
 }
