@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
@@ -12,6 +14,7 @@ import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../context/AuthContext';
 import { useInvoices } from '../../hooks/useInvoices';
+import type { InvoiceRow } from '../../hooks/useInvoices';
 import { supabase } from '../../lib/supabase';
 
 interface RecentBooking {
@@ -202,6 +205,56 @@ export function ProfileScreen() {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
+  const downloadInvoice = async (inv: InvoiceRow) => {
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; background: #fff; color: #111; }
+  .hdr { background: #f95c00; padding: 40px 48px; }
+  .hdr h1 { color: #fff; font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
+  .hdr p { color: rgba(255,255,255,0.75); font-size: 13px; margin-top: 4px; }
+  .body { padding: 40px 48px; }
+  .inv-num { font-size: 13px; color: #999; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .inv-title { font-size: 28px; font-weight: 700; margin-bottom: 36px; }
+  .field { margin-bottom: 24px; }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; margin-bottom: 4px; }
+  .val { font-size: 15px; font-weight: 500; }
+  hr { border: none; border-top: 1px solid #eee; margin: 32px 0; }
+  .total-row { display: flex; justify-content: space-between; align-items: flex-end; }
+  .total-amount { font-size: 36px; font-weight: 700; color: #f95c00; }
+  .badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .paid { background: #dcfce7; color: #16a34a; }
+  .pending { background: #fef9c3; color: #ca8a04; }
+  .footer { padding: 20px 48px; background: #f8f8f8; border-top: 1px solid #eee; font-size: 11px; color: #aaa; }
+</style></head><body>
+  <div class="hdr"><h1>CrossFit Murcia</h1><p>Factura oficial</p></div>
+  <div class="body">
+    <div class="inv-num">${inv.number}</div>
+    <div class="inv-title">Factura</div>
+    <div class="field"><div class="lbl">Atleta</div><div class="val">${inv.member_name}</div></div>
+    <div class="field"><div class="lbl">Fecha</div><div class="val">${fmtDate(inv.date)}</div></div>
+    <div class="field"><div class="lbl">Plan / Servicio</div><div class="val">${inv.plan_name}</div></div>
+    <hr>
+    <div class="total-row">
+      <div><div class="lbl">Total</div><div class="total-amount">${fmtAmount(inv.amount)}</div></div>
+      <span class="badge ${inv.paid ? 'paid' : 'pending'}">${inv.paid ? 'Pagada' : 'Pendiente de pago'}</span>
+    </div>
+  </div>
+  <div class="footer">CrossFit Murcia &nbsp;·&nbsp; ${inv.number}</div>
+</body></html>`;
+    try {
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const available = await Sharing.isAvailableAsync();
+      if (available) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Guardar factura' });
+      } else {
+        showToast('Compartir no disponible en este dispositivo', 'error');
+      }
+    } catch {
+      showToast('No se pudo generar la factura', 'error');
+    }
+  };
+
   const statusBadge = profile?.membership_status === 'active' ? 'orange' : profile?.membership_status === 'pending' ? 'yellow' : 'red';
   const statusLabel = profile?.membership_status === 'active' ? 'Activa' : profile?.membership_status === 'pending' ? 'Pendiente' : 'Inactiva';
 
@@ -297,12 +350,13 @@ export function ProfileScreen() {
             <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, marginTop: 4 }}>Sin facturas aún</Text>
           ) : (
             invoices.slice(0, 5).map(inv => (
-              <InvoiceRow
+              <InvoiceCard
                 key={inv.id}
                 num={inv.number}
                 date={`${fmtDate(inv.date)} · ${inv.plan_name}`}
                 amount={fmtAmount(inv.amount)}
                 paid={inv.paid}
+                onDownload={() => downloadInvoice(inv)}
               />
             ))
           )}
@@ -400,19 +454,22 @@ function ActivityRow({ color, name, date, badge }: { color: string; name: string
   );
 }
 
-function InvoiceRow({ num, date, amount, paid }: { num: string; date: string; amount: string; paid: boolean }) {
+function InvoiceCard({ num, date, amount, paid, onDownload }: { num: string; date: string; amount: string; paid: boolean; onDownload: () => void }) {
   return (
-    <View style={invStyles.row}>
+    <TouchableOpacity style={invStyles.row} onPress={onDownload} activeOpacity={0.7}>
       <View style={invStyles.icon}><Text style={{ fontSize: 18 }}>🧾</Text></View>
       <View style={invStyles.info}>
         <Text style={invStyles.num}>{num}</Text>
         <Text style={invStyles.meta}>{date}</Text>
       </View>
-      <View style={{ alignItems: 'flex-end' }}>
+      <View style={{ alignItems: 'flex-end', gap: 4 }}>
         <Text style={invStyles.amount}>{amount}</Text>
         <Badge label={paid ? 'Pagada' : 'Pendiente'} variant={paid ? 'green' : 'yellow'} small />
       </View>
-    </View>
+      <View style={invStyles.dlBtn}>
+        <Text style={invStyles.dlIcon}>↓</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -515,6 +572,12 @@ const invStyles = StyleSheet.create({
   num: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white, marginBottom: 2 },
   meta: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   amount: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.white },
+  dlBtn: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 4,
+  },
+  dlIcon: { fontSize: 16, color: Colors.orange, fontWeight: '700' },
 });
 
 const editStyles = StyleSheet.create({
