@@ -17,7 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/common/Avatar';
 
 // 60px = card horizontal margins (16×2) + card horizontal padding (14×2)
-const SLOTS_PER_ROW = 8;
+const SLOTS_PER_ROW = 6;
 const SLOT_GAP = 5;
 const SLOT_SIZE = Math.floor(
   (Dimensions.get('window').width - 60 - (SLOTS_PER_ROW - 1) * SLOT_GAP) / SLOTS_PER_ROW,
