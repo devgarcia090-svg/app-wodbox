@@ -10,6 +10,7 @@ export interface MemberRow {
   plan: string;
   membership_status: 'active' | 'pending' | 'inactive';
   membership_expires: string | null;
+  classes_remaining: number | null;
   isPendingInvite: boolean;
 }
 
@@ -23,7 +24,7 @@ export function useMembers() {
     const [profilesRes, invitesRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, name, avatar_initials, avatar_color, plan, membership_status, membership_expires')
+        .select('id, name, avatar_initials, avatar_color, plan, membership_status, membership_expires, classes_remaining')
         .eq('role', 'athlete')
         .order('name'),
       supabase
@@ -40,6 +41,7 @@ export function useMembers() {
       plan: r.plan || 'Sin plan',
       membership_status: r.membership_status || 'inactive',
       membership_expires: r.membership_expires ?? null,
+      classes_remaining: r.classes_remaining ?? null,
       isPendingInvite: false,
     }));
 
@@ -52,6 +54,7 @@ export function useMembers() {
       plan: r.plan || 'Sin plan',
       membership_status: 'pending' as const,
       membership_expires: null,
+      classes_remaining: null,
       isPendingInvite: true,
     }));
 

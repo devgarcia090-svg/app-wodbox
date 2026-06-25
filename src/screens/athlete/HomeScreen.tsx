@@ -59,7 +59,9 @@ export function HomeScreen() {
           <View style={styles.memberBadge}>
             <View style={styles.memberDot} />
             <Text style={styles.memberText}>
-              {profile.plan}{profile.membership_expires ? ` — activo hasta ${shortExpiry(profile.membership_expires)}` : ''}
+              {profile.plan}
+              {profile.classes_remaining != null ? ` · ${profile.classes_remaining} restantes` : ''}
+              {profile.membership_expires ? ` — vence ${shortExpiry(profile.membership_expires)}` : ''}
             </Text>
           </View>
         )}

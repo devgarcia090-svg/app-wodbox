@@ -173,6 +173,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editPlan, setEditPlan] = useState<string | null>(null);
+  const [editRemaining, setEditRemaining] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState('');
@@ -189,6 +190,9 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
     (m.email ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
+  const isClassPack = (plan: string | null) =>
+    plan === '10 Clases' || plan === '14 Clases';
+
   const savePlan = async (member: MemberRow, plan: string) => {
     if (member.isPendingInvite) {
       setSavingId(member.id);
@@ -202,9 +206,12 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
       return;
     }
     setSavingId(member.id);
+    const remaining = isClassPack(plan)
+      ? (parseInt(editRemaining) >= 0 ? parseInt(editRemaining) : null)
+      : null;
     const { error } = await supabase
       .from('profiles')
-      .update({ plan, membership_status: 'active' })
+      .update({ plan, membership_status: 'active', classes_remaining: remaining })
       .eq('id', member.id);
     setSavingId(null);
     if (!error) { showToast('✅ Tarifa actualizada', 'success'); refetch(); setExpandedId(null); }
@@ -329,6 +336,7 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                 onPress={() => {
                   setExpandedId(isExpanded ? null : m.id);
                   setEditPlan(m.plan);
+                  setEditRemaining(m.classes_remaining?.toString() ?? '');
                 }}
                 activeOpacity={0.8}
               >
@@ -370,6 +378,21 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                       );
                     })}
                   </View>
+
+                  {isClassPack(editPlan) && (
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={expandStyles.sectionLabel}>Clases restantes</Text>
+                      <TextInput
+                        style={expandStyles.remainingInput}
+                        placeholder="Ej: 7"
+                        placeholderTextColor={Colors.muted}
+                        value={editRemaining}
+                        onChangeText={setEditRemaining}
+                        keyboardType="numeric"
+                        maxLength={3}
+                      />
+                    </View>
+                  )}
 
                   <View style={expandStyles.actions}>
                     <TouchableOpacity
@@ -1088,6 +1111,12 @@ const expandStyles = StyleSheet.create({
   tariffChipText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.muted },
   tariffChipTextSel: { color: Colors.orange },
   tariffChipPrice: { fontFamily: Fonts.heading, fontSize: 16, color: Colors.white, marginTop: 2 },
+  remainingInput: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 16,
+    marginTop: 6, width: 100,
+  },
   actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   saveBtn: {
     flex: 1, backgroundColor: Colors.orange, borderRadius: 8,
