@@ -15,6 +15,10 @@ export interface BoxConfig {
   fiscal_city: string | null;
 }
 
+interface BoxConfigContextValue extends BoxConfig {
+  configLoaded: boolean;
+}
+
 const DEFAULT_CONFIG: BoxConfig = {
   name: 'WodBox',
   tagline: null,
@@ -29,19 +33,21 @@ const DEFAULT_CONFIG: BoxConfig = {
   fiscal_city: null,
 };
 
-const BoxConfigContext = createContext<BoxConfig>(DEFAULT_CONFIG);
+const BoxConfigContext = createContext<BoxConfigContextValue>({ ...DEFAULT_CONFIG, configLoaded: false });
 
 export function BoxConfigProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<BoxConfig>(DEFAULT_CONFIG);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   useEffect(() => {
     supabase.from('box_config').select('*').single().then(({ data }) => {
       if (data) setConfig(data as BoxConfig);
+      setConfigLoaded(true);
     });
   }, []);
 
   return (
-    <BoxConfigContext.Provider value={config}>
+    <BoxConfigContext.Provider value={{ ...config, configLoaded }}>
       {children}
     </BoxConfigContext.Provider>
   );

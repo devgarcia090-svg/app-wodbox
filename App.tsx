@@ -29,11 +29,11 @@ function AppContent() {
   const boxConfig = useBoxConfig();
   usePushToken(session?.user.id, boxConfig.name);
 
-  if (loading) {
+  if (!boxConfig.configLoaded || loading) {
     return (
       <View style={styles.loadingContainer}>
-        <BoxLogo size="large" />
-        <ActivityIndicator color={boxConfig.primary_color} style={{ marginTop: 24 }} />
+        {boxConfig.configLoaded && <BoxLogo size="large" />}
+        <ActivityIndicator color={boxConfig.configLoaded ? boxConfig.primary_color : Colors.black} style={{ marginTop: 24 }} />
       </View>
     );
   }
