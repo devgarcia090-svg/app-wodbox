@@ -145,7 +145,7 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
     else { showToast('Clase eliminada', 'success'); refetch(); }
   };
 
-  const timePills = ['Todas', ...classes.map(c => c.time)];
+  const timePills = ['Todas', ...[...new Set(classes.map(c => c.time))].sort()];
   const filtered = selectedTime && selectedTime !== 'Todas'
     ? classes.filter(c => c.time === selectedTime)
     : classes;
