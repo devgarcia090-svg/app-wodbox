@@ -1,16 +1,26 @@
 {
   "expo": {
-    "name": "WodBox",
+    "name": "La Trinxera",
     "slug": "wodbox",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111111"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wodbox.app"
     },
     "android": {
       "package": "com.wodbox.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#111111"
+      },
       "navigationBar": {
         "backgroundColor": "#0A0A0A",
         "barStyle": "dark-content"
