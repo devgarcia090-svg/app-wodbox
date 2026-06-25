@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { HomeScreen } from '../screens/athlete/HomeScreen';
@@ -16,6 +17,7 @@ const TABS: { key: AthleteTab; label: string; icon: string }[] = [
 
 export function AthleteNavigator() {
   const [active, setActive] = useState<AthleteTab>('inicio');
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
@@ -25,7 +27,7 @@ export function AthleteNavigator() {
         {active === 'perfil' && <ProfileScreen />}
       </View>
 
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
         {TABS.map(tab => {
           const focused = active === tab.key;
           return (

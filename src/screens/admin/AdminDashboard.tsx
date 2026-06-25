@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal, Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
@@ -39,6 +40,7 @@ export function AdminDashboard() {
   const [classRefreshKey, setClassRefreshKey] = useState(0);
   const [memberRefreshKey, setMemberRefreshKey] = useState(0);
   const { toast, showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
@@ -55,7 +57,7 @@ export function AdminDashboard() {
         {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
       </KeyboardAvoidingView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 8 }]}>
         {BOTTOM_TABS.map(tab => {
           const active = activeTab === tab.key;
           return (
@@ -1383,7 +1385,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
   },
   bottomItem: { flex: 1, alignItems: 'center', gap: 3 },
   bottomActiveLine: {

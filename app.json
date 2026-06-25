@@ -10,7 +10,11 @@
       "bundleIdentifier": "com.wodbox.app"
     },
     "android": {
-      "package": "com.wodbox.app"
+      "package": "com.wodbox.app",
+      "navigationBar": {
+        "backgroundColor": "#0A0A0A",
+        "barStyle": "dark-content"
+      }
     },
     "scheme": "wodbox",
     "plugins": [
