@@ -69,6 +69,12 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
     `${free} plaza${free !== 1 ? 's' : ''} libre${free !== 1 ? 's' : ''}`
   }`;
 
+  const isPast = (() => {
+    const classEnd = new Date(`${item.date}T${item.time}:00`);
+    classEnd.setHours(classEnd.getHours() + 1);
+    return classEnd < new Date();
+  })();
+
   return (
     <Modal visible={!!item} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
@@ -82,7 +88,14 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
               <Text style={styles.wodText}>{item.wod}</Text>
             </View>
             <View style={styles.actions}>
-              {item.status === 'reserved' ? (
+              {isPast ? (
+                <>
+                  <View style={[styles.flex1, styles.pastBox]}>
+                    <Text style={styles.pastText}>Esta clase ya ha pasado</Text>
+                  </View>
+                  <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
+                </>
+              ) : item.status === 'reserved' ? (
                 <>
                   <Button label={busy ? '...' : 'Cancelar reserva'} variant="danger" onPress={handleAction} style={styles.flex1} />
                   <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
@@ -135,4 +148,10 @@ const styles = StyleSheet.create({
   wodText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.body, lineHeight: 20 },
   actions: { flexDirection: 'row', gap: 10 },
   flex1: { flex: 1 },
+  pastBox: {
+    borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface2, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  pastText: { fontSize: 13, color: Colors.muted, fontFamily: Fonts.bodySemiBold },
 });

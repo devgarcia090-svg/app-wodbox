@@ -71,6 +71,7 @@ export function useClasses(date: string) {
       return {
         id: cls.id,
         name: cls.name,
+        date: cls.date,
         time: cls.time,
         coach: cls.coach,
         duration: cls.duration,

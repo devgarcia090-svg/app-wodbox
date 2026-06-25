@@ -40,7 +40,7 @@ export function HomeScreen() {
   const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? DATE_PILLS[0].isoDate;
   const { classes, loading, refetch } = useClasses(selectedDate);
 
-  const timePills = ['Todas', ...classes.map(c => c.time)];
+  const timePills = ['Todas', ...[...new Set(classes.map(c => c.time))].sort()];
   const filteredClasses = selectedTime && selectedTime !== 'Todas'
     ? classes.filter(c => c.time === selectedTime)
     : classes;
