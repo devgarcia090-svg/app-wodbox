@@ -18,11 +18,13 @@ import { AthleteNavigator } from './src/navigation/AthleteNavigator';
 import { AdminNavigator } from './src/navigation/AdminNavigator';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { usePushToken } from './src/hooks/usePushToken';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
 
 function AppContent() {
   const { session, profile, loading, signOut } = useAuth();
+  usePushToken(session?.user.id);
 
   if (loading) {
     return (
