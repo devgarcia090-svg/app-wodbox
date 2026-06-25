@@ -31,8 +31,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "WodBox necesita acceso a tu galería para cambiar tu foto de perfil.",
-          "cameraPermission": "WodBox necesita acceso a la cámara para hacerte una foto de perfil."
+          "photosPermission": "La Trinxera necesita acceso a tu galería para cambiar tu foto de perfil.",
+          "cameraPermission": "La Trinxera necesita acceso a la cámara para hacerte una foto de perfil."
         }
       ]
     ]

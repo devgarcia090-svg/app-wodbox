@@ -72,6 +72,24 @@ export function ProfileScreen() {
   const [editAvatarUri, setEditAvatarUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Delete account
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!session) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+      await supabase.auth.signOut();
+    } catch {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      showToast('Error al eliminar la cuenta. Inténtalo de nuevo.', 'error');
+    }
+  };
+
   const openEdit = () => {
     setEditName(profile?.name ?? '');
     setEditColor(profile?.avatar_color ?? Colors.orange);
@@ -364,8 +382,37 @@ export function ProfileScreen() {
           )}
         </View>
 
+        {/* Delete account */}
+        <View style={styles.deleteSection}>
+          <TouchableOpacity style={styles.deleteBtn} onPress={() => setDeleteConfirmOpen(true)}>
+            <Text style={styles.deleteBtnText}>Eliminar mi cuenta</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Delete account confirmation modal */}
+      <Modal visible={deleteConfirmOpen} transparent animationType="fade" onRequestClose={() => setDeleteConfirmOpen(false)}>
+        <View style={deleteStyles.overlay}>
+          <View style={deleteStyles.card}>
+            <Text style={deleteStyles.title}>¿Eliminar cuenta?</Text>
+            <Text style={deleteStyles.body}>
+              Se borrarán permanentemente tu perfil, reservas y todos tus datos. Esta acción no se puede deshacer.
+            </Text>
+            <TouchableOpacity
+              style={[deleteStyles.confirmBtn, deleting && { opacity: 0.6 }]}
+              onPress={handleDeleteAccount}
+              disabled={deleting}
+            >
+              <Text style={deleteStyles.confirmText}>{deleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={deleteStyles.cancelBtn} onPress={() => setDeleteConfirmOpen(false)} disabled={deleting}>
+              <Text style={deleteStyles.cancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Profile Modal */}
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
@@ -550,6 +597,13 @@ const styles = StyleSheet.create({
   mcExpiresDate: { fontFamily: Fonts.bodySemiBold, color: Colors.white, fontSize: 13 },
   sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 18, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.muted },
+  deleteSection: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 },
+  deleteBtn: {
+    paddingVertical: 14, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.red,
+    alignItems: 'center',
+  },
+  deleteBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 14, color: Colors.red },
 });
 
 const actStyles = StyleSheet.create({
@@ -581,6 +635,29 @@ const invStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginLeft: 4,
   },
   dlIcon: { fontSize: 16, color: Colors.orange, fontWeight: '700' },
+});
+
+const deleteStyles = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.8)',
+    alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  card: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 16, padding: 24, width: '100%',
+  },
+  title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.white, marginBottom: 12 },
+  body: { fontSize: 14, color: Colors.muted, fontFamily: Fonts.body, lineHeight: 21, marginBottom: 24 },
+  confirmBtn: {
+    backgroundColor: Colors.red, borderRadius: 10,
+    paddingVertical: 14, alignItems: 'center', marginBottom: 10,
+  },
+  confirmText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 15 },
+  cancelBtn: {
+    borderRadius: 10, paddingVertical: 14, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  cancelText: { fontFamily: Fonts.bodySemiBold, color: Colors.muted, fontSize: 15 },
 });
 
 const editStyles = StyleSheet.create({
