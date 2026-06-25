@@ -24,7 +24,14 @@ const SLOT_SIZE = Math.floor(
 );
 const SLOT_RADIUS = Math.round(SLOT_SIZE * 0.22);
 
-type AdminTab = 'clases' | 'miembros' | 'cobros' | 'facturas' | 'chat' | 'nueva';
+type AdminTab = 'clases' | 'miembros' | 'cobros' | 'chat';
+
+const BOTTOM_TABS: { key: AdminTab; label: string; icon: string }[] = [
+  { key: 'clases',   label: 'Clases',   icon: '📅' },
+  { key: 'miembros', label: 'Miembros', icon: '👥' },
+  { key: 'cobros',   label: 'Cobros',   icon: '💳' },
+  { key: 'chat',     label: 'Chat',     icon: '💬' },
+];
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('clases');
@@ -32,55 +39,33 @@ export function AdminDashboard() {
   const [memberRefreshKey, setMemberRefreshKey] = useState(0);
   const { toast, showToast } = useToast();
 
-  const TABS: { key: AdminTab; label: string }[] = [
-    { key: 'clases', label: 'Clases hoy' },
-    { key: 'miembros', label: 'Miembros' },
-    { key: 'cobros', label: 'Cobros' },
-    { key: 'facturas', label: 'Facturas' },
-    { key: 'chat', label: 'Chat' },
-    { key: 'nueva', label: '+ Nueva clase' },
-  ];
-
-  const today = new Date();
-  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const todayStr = `${dayNames[today.getDay()]} ${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-
   return (
     <View style={styles.container}>
-      <View style={styles.adminHeader}>
-        <Text style={styles.adminTitle}>CrossFit Murcia 🔥</Text>
-        <Text style={styles.adminSub}>Panel de gestión · {todayStr}</Text>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabContent}>
-        {TABS.map(t => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.adminTab, activeTab === t.key && styles.adminTabActive]}
-            onPress={() => setActiveTab(t.key)}
-          >
-            <Text style={[styles.adminTabText, activeTab === t.key && styles.adminTabTextActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {activeTab === 'clases' && <ClasesPanel showToast={showToast} refreshKey={classRefreshKey} />}
-        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={memberRefreshKey} />}
-        {activeTab === 'cobros' && <CobrosPanel showToast={showToast} />}
-        {activeTab === 'facturas' && <FacturasPanel showToast={showToast} />}
-        {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
-        {activeTab === 'nueva' && (
-          <NuevaClasePanel
+        {activeTab === 'clases' && (
+          <ClasesPanel
             showToast={showToast}
-            onCreated={() => {
-              setClassRefreshKey(k => k + 1);
-              setActiveTab('clases');
-            }}
+            refreshKey={classRefreshKey}
+            onCreated={() => setClassRefreshKey(k => k + 1)}
           />
         )}
+        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={memberRefreshKey} />}
+        {activeTab === 'cobros' && <CobrosPanel showToast={showToast} />}
+        {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
       </KeyboardAvoidingView>
+
+      <View style={styles.bottomBar}>
+        {BOTTOM_TABS.map(tab => {
+          const active = activeTab === tab.key;
+          return (
+            <TouchableOpacity key={tab.key} style={styles.bottomItem} onPress={() => setActiveTab(tab.key)}>
+              {active && <View style={styles.bottomActiveLine} />}
+              <Text style={styles.bottomIcon}>{tab.icon}</Text>
+              <Text style={[styles.bottomLabel, active && styles.bottomLabelActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <Toast {...toast} />
     </View>
@@ -89,7 +74,8 @@ export function AdminDashboard() {
 
 // ─── Clases Panel ─────────────────────────────────────────────────────────────
 
-function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
+function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: string, t: any) => void; refreshKey: number; onCreated: () => void }) {
+  const [showNueva, setShowNueva] = useState(false);
   const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -150,8 +136,24 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
     ? classes.filter(c => c.time === selectedTime)
     : classes;
 
+  if (showNueva) {
+    return (
+      <NuevaClasePanel
+        showToast={showToast}
+        onCreated={() => { onCreated(); setShowNueva(false); refetch(); }}
+        onBack={() => setShowNueva(false)}
+      />
+    );
+  }
+
   return (
     <View style={panelStyles.panel}>
+      <View style={clsHeaderStyles.row}>
+        <Text style={clsHeaderStyles.title}>Clases</Text>
+        <TouchableOpacity style={clsHeaderStyles.nuevaBtn} onPress={() => setShowNueva(true)}>
+          <Text style={clsHeaderStyles.nuevaBtnText}>+ Nueva clase</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminDateStyles.scroll} contentContainerStyle={adminDateStyles.content}>
         {DATE_PILLS.map((d, i) => (
           <TouchableOpacity
@@ -524,6 +526,13 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                   )}
                   {m.email && (
                     <Text style={expandStyles.detail}>Email: {m.email}</Text>
+                  )}
+
+                  {!m.isPendingInvite && (
+                    <>
+                      <Text style={expandStyles.sectionLabel}>Facturas</Text>
+                      <MemberInvoices memberId={m.id} />
+                    </>
                   )}
 
                   <Text style={expandStyles.sectionLabel}>Cambiar tarifa</Text>
@@ -993,7 +1002,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
 
 // ─── Nueva Clase Panel ────────────────────────────────────────────────────────
 
-function NuevaClasePanel({ showToast, onCreated }: { showToast: (m: string, t: any) => void; onCreated: () => void }) {
+function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: string, t: any) => void; onCreated: () => void; onBack?: () => void }) {
   const [name, setName] = useState('WOD CrossFit');
   const [time, setTime] = useState('07:00');
   const [duration, setDuration] = useState('60 min');
@@ -1066,6 +1075,11 @@ function NuevaClasePanel({ showToast, onCreated }: { showToast: (m: string, t: a
 
   return (
     <ScrollView style={panelStyles.panel} contentContainerStyle={panelStyles.content}>
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={{ marginBottom: 12 }}>
+          <Text style={{ color: Colors.orange, fontFamily: Fonts.bodySemiBold, fontSize: 14 }}>‹ Volver a clases</Text>
+        </TouchableOpacity>
+      )}
       <View style={nuevaStyles.card}>
 
         <Text style={nuevaStyles.sectionLabel}>Tipo de clase</Text>
@@ -1168,6 +1182,26 @@ function NuevaClasePanel({ showToast, onCreated }: { showToast: (m: string, t: a
   );
 }
 
+function MemberInvoices({ memberId }: { memberId: string }) {
+  const { invoices, loading } = useInvoices(memberId);
+  if (loading) return <ActivityIndicator color={Colors.orange} size="small" style={{ marginTop: 8 }} />;
+  if (!invoices.length) return <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 12, marginTop: 4 }}>Sin facturas</Text>;
+  return (
+    <View style={{ gap: 6, marginTop: 4 }}>
+      {invoices.slice(0, 4).map(inv => (
+        <View key={inv.id} style={memInvStyles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={memInvStyles.num}>{inv.number}</Text>
+            <Text style={memInvStyles.meta}>{inv.date} · {inv.plan_name}</Text>
+          </View>
+          <Text style={memInvStyles.amount}>{inv.amount.toFixed(2).replace('.', ',')}€</Text>
+          <Badge label={inv.paid ? 'Pagada' : 'Pendiente'} variant={inv.paid ? 'green' : 'yellow'} small />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function FormField({ label, input }: { label: string; input: React.ReactNode }) {
   return (
     <View style={{ marginBottom: 14 }}>
@@ -1182,24 +1216,47 @@ function FormField({ label, input }: { label: string; input: React.ReactNode }) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.black },
   flex: { flex: 1 },
-  adminHeader: {
+  bottomBar: {
+    flexDirection: 'row',
     backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    padding: 16,
-    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
   },
-  adminTitle: { fontFamily: Fonts.headingXBold, fontSize: 26, color: Colors.white },
-  adminSub: { color: Colors.muted, fontSize: 13, fontFamily: Fonts.body, marginTop: 2 },
-  tabScroll: { flexGrow: 0 },
-  tabContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, gap: 4, flexDirection: 'row' },
-  adminTab: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
+  bottomItem: { flex: 1, alignItems: 'center', gap: 3 },
+  bottomActiveLine: {
+    position: 'absolute', top: -8, width: 24, height: 3,
+    borderRadius: 2, backgroundColor: Colors.orange,
   },
-  adminTabActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
-  adminTabText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
-  adminTabTextActive: { color: '#fff' },
+  bottomIcon: { fontSize: 22 },
+  bottomLabel: { fontSize: 10, fontFamily: Fonts.body, color: Colors.muted },
+  bottomLabelActive: { color: Colors.orange, fontFamily: Fonts.bodySemiBold },
+});
+
+const clsHeaderStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10,
+    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  title: { fontFamily: Fonts.headingXBold, fontSize: 20, color: Colors.white },
+  nuevaBtn: {
+    backgroundColor: Colors.orange, paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 8,
+  },
+  nuevaBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: '#fff' },
+});
+
+const memInvStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.surface, borderRadius: 8, padding: 8,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  num: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white },
+  meta: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, marginTop: 1 },
+  amount: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.white },
 });
 
 const panelStyles = StyleSheet.create({
