@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function registerToken(): Promise<string | null> {
+async function registerToken(channelName: string): Promise<string | null> {
   if (!Device.isDevice) return null;
 
   const { status: existing } = await Notifications.getPermissionsAsync();
@@ -29,7 +29,7 @@ async function registerToken(): Promise<string | null> {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'WodBox',
+      name: channelName,
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#F97316',
@@ -40,12 +40,12 @@ async function registerToken(): Promise<string | null> {
   return data;
 }
 
-export function usePushToken(userId: string | undefined) {
+export function usePushToken(userId: string | undefined, channelName = 'WodBox') {
   useEffect(() => {
     if (!userId) return;
-    registerToken().then(async (token) => {
+    registerToken(channelName).then(async (token) => {
       if (!token) return;
       await supabase.from('profiles').update({ push_token: token }).eq('id', userId);
     });
-  }, [userId]);
+  }, [userId, channelName]);
 }

@@ -13,6 +13,7 @@ import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../context/AuthContext';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 import { useInvoices } from '../../hooks/useInvoices';
 import type { InvoiceRow } from '../../hooks/useInvoices';
 import { supabase } from '../../lib/supabase';
@@ -57,6 +58,7 @@ function fmtAmount(n: number) {
 export function ProfileScreen() {
   const { toast, showToast } = useToast();
   const { profile, session, refreshProfile } = useAuth();
+  const boxConfig = useBoxConfig();
   const { invoices, loading: invLoading } = useInvoices(session?.user.id);
 
   const [stats, setStats] = useState({ total: 0, thisMonth: 0 });
@@ -227,7 +229,7 @@ export function ProfileScreen() {
   .pending { background: #fef9c3; color: #ca8a04; }
   .footer { padding: 20px 48px; background: #f8f8f8; border-top: 1px solid #eee; font-size: 11px; color: #aaa; }
 </style></head><body>
-  <div class="hdr"><h1>CrossFit Murcia</h1><p>Factura oficial</p></div>
+  <div class="hdr"><h1>${boxConfig.fiscal_name ?? boxConfig.name}</h1><p>Factura oficial</p></div>
   <div class="body">
     <div class="inv-num">${inv.number}</div>
     <div class="inv-title">Factura</div>
@@ -240,7 +242,7 @@ export function ProfileScreen() {
       <span class="badge ${inv.paid ? 'paid' : 'pending'}">${inv.paid ? 'Pagada' : 'Pendiente de pago'}</span>
     </div>
   </div>
-  <div class="footer">CrossFit Murcia &nbsp;·&nbsp; ${inv.number}</div>
+  <div class="footer">${boxConfig.fiscal_name ?? boxConfig.name} &nbsp;·&nbsp; ${inv.number}</div>
 </body></html>`;
     try {
       const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -278,7 +280,7 @@ export function ProfileScreen() {
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{profile?.name ?? '—'}</Text>
-            <Text style={styles.box}>CrossFit Murcia</Text>
+            <Text style={styles.box}>{boxConfig.name}</Text>
             <TouchableOpacity onPress={openEdit} style={styles.editNameBtn}>
               <Text style={styles.editNameText}>Editar perfil</Text>
             </TouchableOpacity>
@@ -311,7 +313,7 @@ export function ProfileScreen() {
         <View style={styles.memberCard}>
           <Text style={styles.mcLabel}>Mi membresía</Text>
           <Text style={styles.mcPlan}>{profile?.plan ?? 'Sin plan'}</Text>
-          <Text style={styles.mcMeta}>CrossFit Murcia</Text>
+          <Text style={styles.mcMeta}>{boxConfig.name}</Text>
           <View style={styles.mcExpires}>
             <View>
               <Text style={styles.mcExpiresLabel}>Válida hasta</Text>

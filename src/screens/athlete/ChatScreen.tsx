@@ -7,6 +7,7 @@ import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 
 type Tab = 'general' | 'dm';
 
@@ -32,6 +33,7 @@ function nowIso() {
 
 export function ChatScreen() {
   const { session, profile } = useAuth();
+  const boxConfig = useBoxConfig();
   const [activeTab, setActiveTab] = useState<Tab>('general');
 
   // Broadcast
@@ -60,7 +62,7 @@ export function ChatScreen() {
         id: m.id,
         text: m.text,
         sender_id: m.sender_id,
-        sender_name: m.profiles?.name ?? 'CrossFit Murcia',
+        sender_name: m.profiles?.name ?? boxConfig.name,
         sender_initials: m.profiles?.avatar_initials ?? 'CF',
         sender_color: m.profiles?.avatar_color ?? Colors.orange,
         is_broadcast: true,
@@ -225,7 +227,7 @@ export function ChatScreen() {
               <Text style={styles.dmConvAvatarText}>CF</Text>
             </View>
             <View>
-              <Text style={styles.dmConvName}>CrossFit Murcia</Text>
+              <Text style={styles.dmConvName}>{boxConfig.name}</Text>
               <Text style={styles.dmConvSub}>Administración del box</Text>
             </View>
           </View>

@@ -18,13 +18,15 @@ import { AthleteNavigator } from './src/navigation/AthleteNavigator';
 import { AdminNavigator } from './src/navigation/AdminNavigator';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { BoxConfigProvider, useBoxConfig } from './src/context/BoxConfigContext';
 import { usePushToken } from './src/hooks/usePushToken';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
 
 function AppContent() {
   const { session, profile, loading, signOut } = useAuth();
-  usePushToken(session?.user.id);
+  const boxConfig = useBoxConfig();
+  usePushToken(session?.user.id, boxConfig.name);
 
   if (loading) {
     return (
@@ -84,9 +86,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <BoxConfigProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BoxConfigProvider>
     </SafeAreaProvider>
   );
 }

@@ -8,6 +8,7 @@ import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useClasses } from '../../hooks/useClasses';
 import { useAuth } from '../../context/AuthContext';
+import { useBoxConfig } from '../../context/BoxConfigContext';
 import { DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 
 const DAY_NAMES: Record<string, string> = {
@@ -32,6 +33,7 @@ function shortExpiry(iso: string | null) {
 
 export function HomeScreen() {
   const { profile } = useAuth();
+  const boxConfig = useBoxConfig();
   const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<any>(null);
@@ -53,7 +55,7 @@ export function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.greeting}>Hola, <Text style={styles.name}>{profile?.name ?? 'Atleta'}</Text> 💪</Text>
         <Text style={styles.sub}>
-          {today ? `${today.day} ${today.num} · ` : ''}CrossFit Murcia
+          {today ? `${today.day} ${today.num} · ` : ''}{boxConfig.name}
         </Text>
         {profile?.plan && (
           <View style={styles.memberBadge}>
