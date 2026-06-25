@@ -101,7 +101,7 @@ export function HomeScreen() {
         </ScrollView>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {selectedTime && selectedTime !== 'Todas'

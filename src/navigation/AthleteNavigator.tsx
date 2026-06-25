@@ -1,77 +1,84 @@
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { HomeScreen } from '../screens/athlete/HomeScreen';
 import { ChatScreen } from '../screens/athlete/ChatScreen';
 import { ProfileScreen } from '../screens/athlete/ProfileScreen';
 
-const Tab = createBottomTabNavigator();
+type AthleteTab = 'inicio' | 'chat' | 'perfil';
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const color = focused ? Colors.orange : Colors.muted;
-
-  const icons: Record<string, React.ReactNode> = {
-    Home: (
-      <View style={[styles.iconWrap, { borderColor: 'transparent' }]}>
-        <Text style={[styles.iconSvg, { color }]}>⌂</Text>
-      </View>
-    ),
-    Chat: (
-      <View>
-        <Text style={[styles.iconSvg, { color }]}>💬</Text>
-      </View>
-    ),
-    Profile: <Text style={[styles.iconSvg, { color }]}>👤</Text>,
-  };
-
-  return icons[name] ?? null;
-}
+const TABS: { key: AthleteTab; label: string; icon: string }[] = [
+  { key: 'inicio', label: 'Inicio', icon: '🏠' },
+  { key: 'chat',   label: 'Chat',   icon: '💬' },
+  { key: 'perfil', label: 'Perfil', icon: '👤' },
+];
 
 export function AthleteNavigator() {
+  const [active, setActive] = useState<AthleteTab>('inicio');
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.orange,
-        tabBarInactiveTintColor: Colors.muted,
-        tabBarLabelStyle: styles.tabLabel,
-      }}
-    >
-      <Tab.Screen
-        name="Inicio"
-        component={HomeScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Chat" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Perfil"
-        component={ProfileScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
-      />
-    </Tab.Navigator>
+    <View style={styles.root}>
+      <View style={styles.content}>
+        {active === 'inicio' && <HomeScreen />}
+        {active === 'chat'   && <ChatScreen />}
+        {active === 'perfil' && <ProfileScreen />}
+      </View>
+
+      <View style={styles.tabBar}>
+        {TABS.map(tab => {
+          const focused = active === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tabBtn}
+              onPress={() => setActive(tab.key)}
+              activeOpacity={0.7}
+            >
+              {focused && <View style={styles.activeLine} />}
+              <Text style={styles.tabIcon}>{tab.icon}</Text>
+              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.black },
+  content: { flex: 1 },
   tabBar: {
+    flexDirection: 'row',
     backgroundColor: Colors.surface,
-    borderTopColor: Colors.border,
     borderTopWidth: 1,
-    paddingBottom: 8,
-    paddingTop: 6,
+    borderTopColor: Colors.border,
     height: 62,
   },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 6,
+    paddingBottom: 8,
+    gap: 2,
+  },
+  activeLine: {
+    position: 'absolute',
+    top: 0,
+    width: 28,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: Colors.orange,
+  },
+  tabIcon: { fontSize: 18 },
   tabLabel: {
     fontFamily: Fonts.bodyMedium,
     fontSize: 10,
+    color: Colors.muted,
   },
-  iconWrap: { alignItems: 'center', justifyContent: 'center' },
-  iconSvg: { fontSize: 20 },
+  tabLabelActive: { color: Colors.orange },
 });
