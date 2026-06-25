@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Fonts } from '../../theme/fonts';
 
 interface AvatarProps {
@@ -10,15 +10,21 @@ interface AvatarProps {
   fontSize?: number;
   borderColor?: string;
   borderWidth?: number;
+  square?: boolean;
+  onPress?: () => void;
 }
 
-export function Avatar({ url, initials, color, size = 40, fontSize = 13, borderColor, borderWidth }: AvatarProps) {
+export function Avatar({
+  url, initials, color, size = 40, fontSize = 13,
+  borderColor, borderWidth, square = false, onPress,
+}: AvatarProps) {
   const [imgError, setImgError] = useState(false);
+  const radius = square ? Math.floor(size * 0.22) : size / 2;
 
   const containerStyle = {
     width: size,
     height: size,
-    borderRadius: size / 2,
+    borderRadius: radius,
     backgroundColor: color,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -26,24 +32,26 @@ export function Avatar({ url, initials, color, size = 40, fontSize = 13, borderC
     ...(borderColor ? { borderWidth: borderWidth ?? 2, borderColor } : {}),
   };
 
-  if (url && !imgError) {
+  const inner = url && !imgError ? (
+    <Image
+      source={{ uri: url }}
+      style={StyleSheet.absoluteFill}
+      resizeMode="cover"
+      onError={() => setImgError(true)}
+    />
+  ) : (
+    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize, color: '#fff' }}>
+      {initials}
+    </Text>
+  );
+
+  if (onPress) {
     return (
-      <View style={containerStyle}>
-        <Image
-          source={{ uri: url }}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-          onError={() => setImgError(true)}
-        />
-      </View>
+      <TouchableOpacity style={containerStyle} onPress={onPress} activeOpacity={0.8}>
+        {inner}
+      </TouchableOpacity>
     );
   }
 
-  return (
-    <View style={containerStyle}>
-      <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize, color: '#fff' }}>
-        {initials}
-      </Text>
-    </View>
-  );
+  return <View style={containerStyle}>{inner}</View>;
 }
