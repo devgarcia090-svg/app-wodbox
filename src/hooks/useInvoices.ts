@@ -10,6 +10,7 @@ export interface InvoiceRow {
   plan_name: string;
   amount: number;
   paid: boolean;
+  payment_method: 'efectivo' | 'tarjeta' | null;
 }
 
 export function useInvoices(memberId?: string | null) {
@@ -25,7 +26,7 @@ export function useInvoices(memberId?: string | null) {
 
     let q = supabase
       .from('invoices')
-      .select('id, member_id, number, date, plan_name, amount, paid, profiles(name)')
+      .select('id, member_id, number, date, plan_name, amount, paid, payment_method, profiles(name)')
       .order('date', { ascending: false });
 
     if (memberId !== undefined) {
@@ -43,6 +44,7 @@ export function useInvoices(memberId?: string | null) {
       plan_name: r.plan_name,
       amount: r.amount,
       paid: r.paid,
+      payment_method: r.payment_method ?? null,
     })));
     setLoading(false);
   }, [memberId]);
@@ -59,6 +61,7 @@ export function useInvoices(memberId?: string | null) {
     plan_name: string;
     amount: number;
     date: string;
+    payment_method: 'efectivo' | 'tarjeta';
   }) => {
     // Generate correlative number: F-YYYYMM-XXX
     const { count } = await supabase
@@ -75,6 +78,7 @@ export function useInvoices(memberId?: string | null) {
       date: data.date,
       paid: false,
       number,
+      payment_method: data.payment_method,
     });
     if (!error) await fetchInvoices();
     return { error };

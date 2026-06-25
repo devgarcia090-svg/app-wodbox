@@ -607,6 +607,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
   const [nfMemberId, setNfMemberId] = useState('');
   const [nfPlan, setNfPlan] = useState('');
   const [nfAmount, setNfAmount] = useState('');
+  const [nfPayMethod, setNfPayMethod] = useState<'efectivo' | 'tarjeta'>('efectivo');
   const [nfBusy, setNfBusy] = useState(false);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
 
@@ -640,12 +641,13 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
       plan_name: nfPlan,
       amount: parseFloat(nfAmount.replace(',', '.')),
       date: todayIso,
+      payment_method: nfPayMethod,
     });
     setNfBusy(false);
     if (!error) {
       showToast('Factura creada', 'success');
       setShowNuevaFactura(false);
-      setNfMemberId(''); setNfPlan(''); setNfAmount('');
+      setNfMemberId(''); setNfPlan(''); setNfAmount(''); setNfPayMethod('efectivo');
     } else {
       showToast('Error al crear factura', 'error');
     }
@@ -747,6 +749,21 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
             onChangeText={setNfAmount}
           />
 
+          <Text style={[cobroStyles.nuevaLabel, { marginTop: 10 }]}>MÉTODO DE PAGO</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {(['efectivo', 'tarjeta'] as const).map(m => (
+              <TouchableOpacity
+                key={m}
+                style={[cobroStyles.payChip, nfPayMethod === m && cobroStyles.payChipActive]}
+                onPress={() => setNfPayMethod(m)}
+              >
+                <Text style={[cobroStyles.payChipText, nfPayMethod === m && cobroStyles.payChipTextActive]}>
+                  {m === 'efectivo' ? '💵 Efectivo' : '💳 Tarjeta'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <TouchableOpacity
             style={[cobroStyles.createBtn, nfBusy && { opacity: 0.6 }]}
             onPress={() => handleCreateInvoice()}
@@ -769,6 +786,9 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
               <View style={invRowStyles.info}>
                 <Text style={invRowStyles.num}>{p.member_name}</Text>
                 <Text style={invRowStyles.meta}>{p.plan_name} · {p.date}</Text>
+                {p.payment_method && (
+                  <Text style={invRowStyles.meta}>{p.payment_method === 'efectivo' ? '💵 Efectivo' : '💳 Tarjeta'}</Text>
+                )}
               </View>
               <View style={{ alignItems: 'flex-end', gap: 6 }}>
                 <Text style={invRowStyles.amount}>{p.amount.toFixed(2).replace('.', ',')}€</Text>
@@ -793,6 +813,9 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
               <View style={invRowStyles.info}>
                 <Text style={invRowStyles.num}>{c.member_name}</Text>
                 <Text style={invRowStyles.meta}>{c.plan_name} · {c.date}</Text>
+                {c.payment_method && (
+                  <Text style={invRowStyles.meta}>{c.payment_method === 'efectivo' ? '💵 Efectivo' : '💳 Tarjeta'}</Text>
+                )}
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={invRowStyles.amount}>{c.amount.toFixed(2).replace('.', ',')}€</Text>
@@ -1393,7 +1416,7 @@ const memInvStyles = StyleSheet.create({
 
 const panelStyles = StyleSheet.create({
   panel: { flex: 1 },
-  content: { padding: 16, paddingTop: 0 },
+  content: { padding: 16, paddingTop: 20 },
   sectionHeader: { paddingVertical: 12 },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.muted },
 });
@@ -1561,6 +1584,13 @@ const cobroStyles = StyleSheet.create({
     borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5,
   },
   pagarText: { fontSize: 11, color: Colors.green, fontFamily: Fonts.bodySemiBold },
+  payChip: {
+    flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface2,
+  },
+  payChipActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
+  payChipText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.muted },
+  payChipTextActive: { color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: Colors.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16,
