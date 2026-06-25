@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Modal, Image } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Modal, Image, Dimensions } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { Badge } from '../common/Badge';
 import { Avatar } from '../common/Avatar';
 import type { ClassItem } from '../../data/mockData';
+
+const SLOTS_PER_ROW = 6;
+const SLOT_GAP = 5;
+const CARD_H_PADDING = 16 + 19 + 32; // paddingLeft + padding + 2*marginHorizontal
+const SLOT_SIZE = Math.floor((Dimensions.get('window').width - CARD_H_PADDING - (SLOTS_PER_ROW - 1) * SLOT_GAP) / SLOTS_PER_ROW);
+const SLOT_RADIUS = Math.round(SLOT_SIZE * 0.22);
 
 interface ClassCardProps {
   item: ClassItem;
@@ -42,54 +48,39 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
           <Text style={styles.metaText}>👤 {item.coach}</Text>
           <Text style={styles.metaText}>⏱ {item.duration}</Text>
         </View>
-        <View style={styles.bottom}>
-          <View style={styles.avatars}>
-            {item.avatars.slice(0, 3).map((av, i) => (
-              <View key={i} style={{ marginLeft: i === 0 ? 0 : -6 }}>
-                <Avatar
-                  url={av.url}
-                  initials={av.initial}
-                  color={av.color}
-                  size={24}
-                  fontSize={10}
-                  borderColor={Colors.surface}
-                  borderWidth={2}
-                  square
-                />
-              </View>
-            ))}
-            {item.enrolled > 3 && (
-              <Text style={styles.moreText}>+{item.enrolled - 3} más</Text>
-            )}
-          </View>
-          {item.status === 'full' ? (
-            <Text style={styles.fullText}>Clase completa</Text>
-          ) : (
-            <Text style={styles.freeText}><Text style={styles.freeNum}>{free}</Text> libres</Text>
-          )}
+        <View style={styles.slotsRow}>
+          <Text style={[styles.spotsText, item.status === 'full' && { color: Colors.red }]}>
+            {item.enrolled}/{item.capacity}
+          </Text>
+          {item.status === 'full' && <Text style={styles.fullLabel}>LLENA</Text>}
         </View>
-
-        {item.attendees.length > 0 && (
-          <View style={styles.attendeesSection}>
-            <Text style={styles.attendeesLabel}>Quién viene</Text>
-            <View style={styles.attendeesGrid}>
-              {item.attendees.map((att, i) => (
-                <View key={i} style={styles.attendeeItem}>
-                  <Avatar
-                    url={att.url}
-                    initials={att.initials}
-                    color={att.color}
-                    size={40}
-                    fontSize={13}
-                    square
-                    onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
-                  />
-                  <Text style={styles.attendeeName} numberOfLines={1}>{att.name.split(' ')[0]}</Text>
+        <View style={styles.slotsGrid}>
+          {Array.from({ length: item.capacity }, (_, i) => {
+            const att = item.attendees[i];
+            const isEnrolled = i < item.enrolled;
+            if (att) {
+              return (
+                <Avatar
+                  key={i}
+                  url={att.url}
+                  initials={att.initials}
+                  color={att.color}
+                  size={SLOT_SIZE}
+                  square
+                  onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
+                />
+              );
+            }
+            if (isEnrolled) {
+              return (
+                <View key={i} style={styles.slotGhost}>
+                  <Text style={styles.slotGhostText}>?</Text>
                 </View>
-              ))}
-            </View>
-          </View>
-        )}
+              );
+            }
+            return <View key={i} style={styles.slotEmpty} />;
+          })}
+        </View>
       </TouchableOpacity>
 
       <Modal visible={!!lightboxUrl} transparent animationType="fade" onRequestClose={() => setLightboxUrl(null)}>
@@ -158,69 +149,35 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     fontFamily: Fonts.body,
   },
-  bottom: {
+  slotsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-  },
-  avatars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  moreText: {
-    fontSize: 11,
-    color: Colors.muted,
-    fontFamily: Fonts.body,
-    marginLeft: 8,
-  },
-  freeText: {
-    fontSize: 12,
-    color: Colors.muted,
-    fontFamily: Fonts.body,
-  },
-  freeNum: {
-    color: Colors.white,
-    fontFamily: Fonts.bodySemiBold,
-  },
-  fullText: {
-    fontSize: 12,
-    color: Colors.red,
-    fontFamily: Fonts.bodySemiBold,
-  },
-  attendeesSection: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    marginTop: 12,
-    paddingTop: 10,
-  },
-  attendeesLabel: {
-    fontSize: 10,
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 10,
   },
-  attendeesGrid: {
+  spotsText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
+  fullLabel: { fontSize: 10, color: Colors.red, fontFamily: Fonts.bodySemiBold },
+  slotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: SLOT_GAP,
   },
-  attendeeItem: {
-    alignItems: 'center',
-    width: 48,
+  slotEmpty: {
+    width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: SLOT_RADIUS,
+    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface2,
   },
-  attendeeName: {
-    fontSize: 10,
-    color: Colors.muted,
-    fontFamily: Fonts.body,
-    textAlign: 'center',
-    marginTop: 4,
+  slotGhost: {
+    width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: SLOT_RADIUS,
+    borderWidth: 1, borderColor: Colors.orange,
+    backgroundColor: Colors.orangeGlow,
+    alignItems: 'center', justifyContent: 'center',
   },
+  slotGhostText: { color: Colors.orange, fontSize: SLOT_SIZE * 0.45, fontFamily: Fonts.bodySemiBold },
 });
 
 const lightboxStyles = StyleSheet.create({
