@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal, Dimensions,
 } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
@@ -15,6 +15,14 @@ import { useInvoices } from '../../hooks/useInvoices';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/common/Avatar';
+
+// 60px = card horizontal margins (16×2) + card horizontal padding (14×2)
+const SLOTS_PER_ROW = 8;
+const SLOT_GAP = 5;
+const SLOT_SIZE = Math.floor(
+  (Dimensions.get('window').width - 60 - (SLOTS_PER_ROW - 1) * SLOT_GAP) / SLOTS_PER_ROW,
+);
+const SLOT_RADIUS = Math.round(SLOT_SIZE * 0.22);
 
 type AdminTab = 'clases' | 'miembros' | 'cobros' | 'facturas' | 'chat' | 'nueva';
 
@@ -145,7 +153,7 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
                         url={att.url}
                         initials={att.initials}
                         color={att.color}
-                        size={52}
+                        size={SLOT_SIZE}
                         square
                         onPress={att.url ? () => setLightboxUrl(att.url!) : undefined}
                       />
@@ -1080,21 +1088,21 @@ const clsStyles = StyleSheet.create({
   spotsText: { fontFamily: Fonts.bodySemiBold, fontSize: 13, color: Colors.white },
   fullLabel: { fontSize: 10, color: Colors.red, fontFamily: Fonts.bodySemiBold },
   slotsGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 6,
+    flexDirection: 'row', flexWrap: 'wrap', gap: SLOT_GAP,
     borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12,
   },
   slotEmpty: {
-    width: 52, height: 52, borderRadius: 11,
+    width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: SLOT_RADIUS,
     borderWidth: 1, borderColor: Colors.border,
     backgroundColor: Colors.surface2,
   },
   slotGhost: {
-    width: 52, height: 52, borderRadius: 11,
+    width: SLOT_SIZE, height: SLOT_SIZE, borderRadius: SLOT_RADIUS,
     borderWidth: 1, borderColor: Colors.orange,
     backgroundColor: Colors.orangeGlow,
     alignItems: 'center', justifyContent: 'center',
   },
-  slotGhostText: { fontSize: 15, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
+  slotGhostText: { fontSize: 13, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
 });
 
 const memStyles = StyleSheet.create({
