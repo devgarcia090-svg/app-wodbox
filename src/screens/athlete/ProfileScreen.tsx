@@ -429,13 +429,14 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   avatarBig: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 12,
     borderWidth: 3,
     borderColor: Colors.orangeDim,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   avatarText: { fontFamily: Fonts.headingXBold, fontSize: 28, color: '#fff' },
   editAvatarBadge: {
@@ -533,7 +534,7 @@ const editStyles = StyleSheet.create({
   },
   title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.white, marginBottom: 20 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
-  avatarPreview: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  avatarPreview: { width: 56, height: 56, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarPreviewText: { fontFamily: Fonts.headingXBold, fontSize: 22, color: '#fff' },
   avatarHint: { flex: 1, fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   photoBtn: {
