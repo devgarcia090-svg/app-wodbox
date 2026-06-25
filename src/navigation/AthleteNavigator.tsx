@@ -58,14 +58,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    height: 62,
   },
   tabBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 6,
-    paddingBottom: 8,
+    paddingTop: 10,
+    paddingBottom: 10,
     gap: 2,
   },
   activeLine: {
