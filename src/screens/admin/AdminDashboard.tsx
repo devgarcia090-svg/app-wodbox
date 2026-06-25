@@ -92,11 +92,55 @@ export function AdminDashboard() {
 function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingClass, setEditingClass] = useState<any | null>(null);
+  const [editFields, setEditFields] = useState({ name: '', time: '', coach: '', capacity: '', duration: '', wod: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
   const { classes, loading, refetch } = useClasses(TODAY_ISO);
 
   useEffect(() => {
     if (refreshKey > 0) refetch();
   }, [refreshKey]);
+
+  const openEdit = (cls: any) => {
+    setEditFields({
+      name: cls.name,
+      time: cls.time,
+      coach: cls.coach,
+      capacity: String(cls.capacity),
+      duration: cls.duration,
+      wod: cls.wod ?? '',
+    });
+    setEditingClass(cls);
+  };
+
+  const saveEdit = async () => {
+    if (!editingClass) return;
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from('classes')
+      .update({
+        name: editFields.name.trim(),
+        time: editFields.time.trim(),
+        coach: editFields.coach.trim(),
+        capacity: parseInt(editFields.capacity, 10) || editingClass.capacity,
+        duration: editFields.duration.trim(),
+        wod: editFields.wod.trim() || null,
+      })
+      .eq('id', editingClass.id);
+    setSavingEdit(false);
+    if (error) { showToast('Error al guardar', 'error'); return; }
+    showToast('✅ Clase actualizada', 'success');
+    setEditingClass(null);
+    refetch();
+  };
+
+  const deleteClass = async (id: string) => {
+    const { error } = await supabase.from('classes').delete().eq('id', id);
+    setConfirmDeleteId(null);
+    if (error) showToast('Error al eliminar', 'error');
+    else { showToast('Clase eliminada', 'success'); refetch(); }
+  };
 
   const timePills = ['Todas', ...classes.map(c => c.time)];
   const filtered = selectedTime && selectedTime !== 'Todas'
@@ -169,6 +213,27 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
                   return <View key={i} style={clsStyles.slotEmpty} />;
                 })}
               </View>
+
+              <View style={clsStyles.cardActions}>
+                <TouchableOpacity style={clsStyles.editBtn} onPress={() => { setConfirmDeleteId(null); openEdit(cls); }}>
+                  <Text style={clsStyles.editBtnText}>✏️  Editar</Text>
+                </TouchableOpacity>
+                {confirmDeleteId === cls.id ? (
+                  <View style={clsStyles.confirmRow}>
+                    <Text style={clsStyles.confirmText}>¿Eliminar?</Text>
+                    <TouchableOpacity style={clsStyles.confirmYes} onPress={() => deleteClass(cls.id)}>
+                      <Text style={clsStyles.confirmYesText}>Sí</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={clsStyles.confirmNo} onPress={() => setConfirmDeleteId(null)}>
+                      <Text style={clsStyles.confirmNoText}>No</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={clsStyles.deleteBtn} onPress={() => setConfirmDeleteId(cls.id)}>
+                    <Text style={clsStyles.deleteBtnText}>🗑  Eliminar</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           );
         })}
@@ -179,6 +244,62 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
           {lightboxUrl && <Image source={{ uri: lightboxUrl }} style={lbStyles.img} resizeMode="contain" />}
           <Text style={lbStyles.hint}>Toca para cerrar</Text>
         </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={!!editingClass} transparent animationType="slide" onRequestClose={() => setEditingClass(null)}>
+        <KeyboardAvoidingView style={editClsStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setEditingClass(null)} />
+          <View style={editClsStyles.sheet}>
+            <View style={editClsStyles.handle} />
+            <Text style={editClsStyles.title}>Editar clase</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={editClsStyles.label}>Nombre</Text>
+              <TextInput style={editClsStyles.input} value={editFields.name} onChangeText={v => setEditFields(f => ({ ...f, name: v }))} placeholderTextColor={Colors.muted} />
+
+              <View style={editClsStyles.row}>
+                <View style={editClsStyles.half}>
+                  <Text style={editClsStyles.label}>Hora</Text>
+                  <TextInput style={editClsStyles.input} value={editFields.time} onChangeText={v => setEditFields(f => ({ ...f, time: v }))} placeholderTextColor={Colors.muted} />
+                </View>
+                <View style={editClsStyles.half}>
+                  <Text style={editClsStyles.label}>Duración</Text>
+                  <TextInput style={editClsStyles.input} value={editFields.duration} onChangeText={v => setEditFields(f => ({ ...f, duration: v }))} placeholderTextColor={Colors.muted} />
+                </View>
+              </View>
+
+              <View style={editClsStyles.row}>
+                <View style={editClsStyles.half}>
+                  <Text style={editClsStyles.label}>Coach</Text>
+                  <TextInput style={editClsStyles.input} value={editFields.coach} onChangeText={v => setEditFields(f => ({ ...f, coach: v }))} placeholderTextColor={Colors.muted} />
+                </View>
+                <View style={editClsStyles.half}>
+                  <Text style={editClsStyles.label}>Plazas máx.</Text>
+                  <TextInput style={editClsStyles.input} value={editFields.capacity} onChangeText={v => setEditFields(f => ({ ...f, capacity: v }))} keyboardType="numeric" placeholderTextColor={Colors.muted} />
+                </View>
+              </View>
+
+              <Text style={editClsStyles.label}>WOD</Text>
+              <TextInput
+                style={[editClsStyles.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+                value={editFields.wod}
+                onChangeText={v => setEditFields(f => ({ ...f, wod: v }))}
+                multiline
+                placeholderTextColor={Colors.muted}
+                placeholder="Describe el entrenamiento..."
+              />
+
+              <View style={editClsStyles.btnRow}>
+                <TouchableOpacity style={editClsStyles.cancelBtn} onPress={() => setEditingClass(null)}>
+                  <Text style={editClsStyles.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[editClsStyles.saveBtn, savingEdit && { opacity: 0.6 }]} onPress={saveEdit} disabled={savingEdit}>
+                  <Text style={editClsStyles.saveText}>{savingEdit ? 'Guardando...' : 'Guardar'}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -1103,6 +1224,26 @@ const clsStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   slotGhostText: { fontSize: 13, color: Colors.orange, fontFamily: Fonts.bodySemiBold },
+  cardActions: {
+    flexDirection: 'row', gap: 8, marginTop: 12,
+    borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10,
+  },
+  editBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+  },
+  editBtnText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.white },
+  deleteBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.red,
+  },
+  deleteBtnText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.red },
+  confirmRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  confirmText: { flex: 1, fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
+  confirmYes: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: Colors.red },
+  confirmYesText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: '#fff' },
+  confirmNo: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border },
+  confirmNoText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
 });
 
 const memStyles = StyleSheet.create({
@@ -1347,6 +1488,30 @@ const addStyles = StyleSheet.create({
   tariffFeature: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginTop: 3 },
   sendBtn: { backgroundColor: Colors.orange, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
   sendBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: '#fff' },
+});
+
+const editClsStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderWidth: 1, borderColor: Colors.border, padding: 24, paddingBottom: 40,
+    maxHeight: '85%',
+  },
+  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.white, marginBottom: 20 },
+  label: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  input: {
+    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+    color: Colors.white, fontFamily: Fonts.body, fontSize: 15, marginBottom: 16,
+  },
+  row: { flexDirection: 'row', gap: 12 },
+  half: { flex: 1 },
+  btnRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  cancelText: { fontFamily: Fonts.bodySemiBold, color: Colors.muted, fontSize: 14 },
+  saveBtn: { flex: 2, paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.orange, alignItems: 'center' },
+  saveText: { fontFamily: Fonts.bodySemiBold, color: '#fff', fontSize: 14 },
 });
 
 const lbStyles = StyleSheet.create({
