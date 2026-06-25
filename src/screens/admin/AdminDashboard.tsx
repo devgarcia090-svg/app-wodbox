@@ -175,11 +175,11 @@ function ClasesPanel({ showToast, refreshKey }: { showToast: (m: string, t: any)
           );
         })}
       </ScrollView>
-      <ScrollView contentContainerStyle={panelStyles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={panelStyles.content}>
         {loading ? (
           <ActivityIndicator color={Colors.orange} style={{ marginTop: 32 }} />
         ) : filtered.length === 0 ? (
-          <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para hoy</Text>
+          <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 32 }}>No hay clases para este día</Text>
         ) : null}
         {filtered.map(cls => {
 
