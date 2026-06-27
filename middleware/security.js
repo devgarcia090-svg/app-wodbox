@@ -69,9 +69,10 @@ function helmetMiddleware() {
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'",       // needed for inline admin scripts
+          "'unsafe-inline'",       // needed for inline admin scripts + onclick handlers
           'cdnjs.cloudflare.com'   // CodeMirror CDN
         ],
+        scriptSrcAttr: ["'unsafe-inline'"],  // allow onclick= attributes
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
