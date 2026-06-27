@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 10, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3, fontFamily: Fonts.body },
   memberCard: {
     margin: 16,
-    backgroundColor: '#1a0800',
+    backgroundColor: '#1a2235',
     borderWidth: 1,
     borderColor: Colors.orange,
     borderRadius: 14,
