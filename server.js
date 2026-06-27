@@ -99,9 +99,10 @@ function buildAdminApp(config) {
     index: false
   }));
 
-  // API routes (stricter rate limit)
-  app.use('/api', apiLimiter, apiRouter);
+  // API routes — domains must be mounted BEFORE the generic /api router
+  // to avoid the /api prefix match consuming /api/domains first
   app.use('/api/domains', apiLimiter, domainsRouter);
+  app.use('/api', apiLimiter, apiRouter);
   app.use('/auth', authRouter);
 
   // Admin SPA
