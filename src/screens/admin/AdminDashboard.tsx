@@ -900,6 +900,17 @@ interface ConvItem {
   unread_admin: number;
 }
 
+interface AthleteListItem {
+  athlete_id: string;
+  athlete_name: string;
+  athlete_initials: string;
+  athlete_color: string;
+  conv_id: string | null;
+  last_preview: string;
+  last_at: string | null;
+  unread_admin: number;
+}
+
 function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   const { session } = useAuth();
   const { primary_color } = useBoxConfig();
@@ -907,7 +918,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
   const [broadcasts, setBroadcasts] = useState<ChatMsg[]>([]);
   const [bInput, setBInput] = useState('');
   const [bcLoading, setBcLoading] = useState(true);
-  const [conversations, setConversations] = useState<ConvItem[]>([]);
+  const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
   const [convLoading, setConvLoading] = useState(true);
   const [activeDM, setActiveDM] = useState<ConvItem | null>(null);
   const [dmMsgs, setDmMsgs] = useState<ChatMsg[]>([]);
@@ -933,22 +944,33 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
     setBcLoading(false);
   }, []);
 
-  const fetchConversations = useCallback(async () => {
+  const fetchAthletes = useCallback(async () => {
     setConvLoading(true);
-    const { data } = await supabase
-      .from('conversations')
-      .select('id, athlete_id, last_preview, last_at, unread_admin, profiles!conversations_athlete_id_fkey(name, avatar_initials, avatar_color)')
-      .order('last_at', { ascending: false });
-    setConversations(((data || []) as any[]).map(c => ({
-      id: c.id,
-      athlete_id: c.athlete_id,
-      athlete_name: c.profiles?.name ?? '—',
-      athlete_initials: c.profiles?.avatar_initials ?? '?',
-      athlete_color: c.profiles?.avatar_color ?? Colors.muted,
-      last_preview: c.last_preview ?? '',
-      last_at: c.last_at,
-      unread_admin: c.unread_admin ?? 0,
-    })));
+    const [{ data: profiles }, { data: convs }] = await Promise.all([
+      supabase.from('profiles').select('id, name, avatar_initials, avatar_color').eq('role', 'athlete').order('name'),
+      supabase.from('conversations').select('id, athlete_id, last_preview, last_at, unread_admin'),
+    ]);
+    const convMap = new Map(((convs || []) as any[]).map((c: any) => [c.athlete_id, c]));
+    const items: AthleteListItem[] = ((profiles || []) as any[]).map((p: any) => {
+      const conv = convMap.get(p.id) as any;
+      return {
+        athlete_id: p.id,
+        athlete_name: p.name ?? '—',
+        athlete_initials: p.avatar_initials ?? '?',
+        athlete_color: p.avatar_color ?? Colors.muted,
+        conv_id: conv?.id ?? null,
+        last_preview: conv?.last_preview ?? '',
+        last_at: conv?.last_at ?? null,
+        unread_admin: conv?.unread_admin ?? 0,
+      };
+    });
+    items.sort((a, b) => {
+      if (a.last_at && b.last_at) return new Date(b.last_at).getTime() - new Date(a.last_at).getTime();
+      if (a.last_at) return -1;
+      if (b.last_at) return 1;
+      return a.athlete_name.localeCompare(b.athlete_name);
+    });
+    setAthletes(items);
     setConvLoading(false);
   }, []);
 
@@ -971,7 +993,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
   }, []);
 
   useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
-  useEffect(() => { if (chatTab === 'dms') fetchConversations(); }, [chatTab, fetchConversations]);
+  useEffect(() => { if (chatTab === 'dms') fetchAthletes(); }, [chatTab, fetchAthletes]);
 
   const fmtTime = (iso: string) => {
     const d = new Date(iso);
@@ -1011,12 +1033,31 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
     }
   };
 
-  const openDM = (conv: ConvItem) => {
-    setActiveDM(conv);
-    fetchDMMessages(conv.id);
+  const openDMWithAthlete = async (item: AthleteListItem) => {
+    let convId = item.conv_id;
+    if (!convId) {
+      const { data } = await supabase
+        .from('conversations')
+        .insert({ athlete_id: item.athlete_id })
+        .select('id')
+        .single();
+      convId = data?.id ?? null;
+      if (!convId) return;
+    }
+    setActiveDM({
+      id: convId,
+      athlete_id: item.athlete_id,
+      athlete_name: item.athlete_name,
+      athlete_initials: item.athlete_initials,
+      athlete_color: item.athlete_color,
+      last_preview: item.last_preview,
+      last_at: item.last_at ?? '',
+      unread_admin: item.unread_admin,
+    });
+    fetchDMMessages(convId);
   };
 
-  const totalUnread = conversations.reduce((s, c) => s + c.unread_admin, 0);
+  const totalUnread = athletes.reduce((s, a) => s + a.unread_admin, 0);
 
   return (
     <View style={styles.flex}>
@@ -1086,24 +1127,26 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
         <>
           {convLoading ? (
             <ActivityIndicator color={primary_color} style={{ flex: 1 }} />
-          ) : conversations.length === 0 ? (
-            <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 40 }}>Sin conversaciones aún</Text>
+          ) : athletes.length === 0 ? (
+            <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginTop: 40 }}>Sin atletas registrados</Text>
           ) : (
             <ScrollView>
-              {conversations.map(conv => (
-                <TouchableOpacity key={conv.id} style={dmListStyles.item} onPress={() => openDM(conv)}>
-                  <View style={[dmListStyles.avatar, { backgroundColor: conv.athlete_color }]}>
-                    <Text style={dmListStyles.avatarText}>{conv.athlete_initials}</Text>
-                    {conv.unread_admin > 0 && <View style={[dmListStyles.unreadDot, { backgroundColor: primary_color }]} />}
+              {athletes.map(item => (
+                <TouchableOpacity key={item.athlete_id} style={dmListStyles.item} onPress={() => openDMWithAthlete(item)}>
+                  <View style={[dmListStyles.avatar, { backgroundColor: item.athlete_color }]}>
+                    <Text style={dmListStyles.avatarText}>{item.athlete_initials}</Text>
+                    {item.unread_admin > 0 && <View style={[dmListStyles.unreadDot, { backgroundColor: primary_color }]} />}
                   </View>
                   <View style={dmListStyles.info}>
-                    <Text style={dmListStyles.name}>{conv.athlete_name}</Text>
-                    <Text style={dmListStyles.preview} numberOfLines={1}>{conv.last_preview}</Text>
+                    <Text style={dmListStyles.name}>{item.athlete_name}</Text>
+                    <Text style={dmListStyles.preview} numberOfLines={1}>
+                      {item.last_preview || 'Iniciar conversación'}
+                    </Text>
                   </View>
                   <View style={dmListStyles.meta}>
-                    {conv.unread_admin > 0 && (
+                    {item.unread_admin > 0 && (
                       <View style={[dmListStyles.badge, { backgroundColor: primary_color }]}>
-                        <Text style={dmListStyles.badgeText}>{conv.unread_admin}</Text>
+                        <Text style={dmListStyles.badgeText}>{item.unread_admin}</Text>
                       </View>
                     )}
                   </View>
@@ -1117,7 +1160,7 @@ function AdminChatPanel({ showToast }: { showToast: (m: string, t: any) => void 
       {chatTab === 'dms' && activeDM && (
         <>
           <View style={chatStyles.convHeader}>
-            <TouchableOpacity onPress={() => { setActiveDM(null); fetchConversations(); }}>
+            <TouchableOpacity onPress={() => { setActiveDM(null); fetchAthletes(); }}>
               <Text style={[chatStyles.backBtn, { color: primary_color }]}>‹</Text>
             </TouchableOpacity>
             <View style={[chatStyles.convAvatar, { backgroundColor: activeDM.athlete_color }]}>
