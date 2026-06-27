@@ -2,36 +2,94 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  Dimensions, Image,
 } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Colors, withAlpha } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useBoxConfig } from '../context/BoxConfigContext';
 import { BoxLogo } from '../components/common/BoxLogo';
 
+const { width: W, height: H } = Dimensions.get('window');
+
+// ── Decorative rings behind the hero ────────────────────────────────────────
+function BgRings({ color }: { color: string }) {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <View style={[ring.c, {
+        width: W * 1.5, height: W * 1.5,
+        top: -W * 0.85, left: -W * 0.25,
+        borderRadius: W * 0.75, borderWidth: 1,
+        borderColor: withAlpha(color, 0.05),
+      }]} />
+      <View style={[ring.c, {
+        width: W * 1.05, height: W * 1.05,
+        top: -W * 0.58, left: W * -0.025,
+        borderRadius: W * 0.525, borderWidth: 1,
+        borderColor: withAlpha(color, 0.09),
+      }]} />
+      <View style={[ring.c, {
+        width: W * 0.68, height: W * 0.68,
+        top: -W * 0.28, left: W * 0.16,
+        borderRadius: W * 0.34, borderWidth: 1.5,
+        borderColor: withAlpha(color, 0.14),
+      }]} />
+      <View style={[ring.c, {
+        width: W * 0.36, height: W * 0.36,
+        top: -W * 0.06, left: W * 0.32,
+        borderRadius: W * 0.18,
+        backgroundColor: withAlpha(color, 0.06),
+      }]} />
+      {/* Bottom corner accent */}
+      <View style={[ring.c, {
+        width: W * 0.8, height: W * 0.8,
+        bottom: -W * 0.5, right: -W * 0.35,
+        borderRadius: W * 0.4, borderWidth: 1,
+        borderColor: withAlpha(color, 0.05),
+      }]} />
+    </View>
+  );
+}
+const ring = StyleSheet.create({ c: { position: 'absolute' } });
+
+// ── Shared back button ───────────────────────────────────────────────────────
+function BackBtn({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={back.btn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+      <Text style={back.arrow}>←</Text>
+    </TouchableOpacity>
+  );
+}
+const back = StyleSheet.create({
+  btn: { position: 'absolute', top: 52, left: 24, zIndex: 10 },
+  arrow: { color: Colors.white, fontSize: 24 },
+});
+
+// ── Main export ──────────────────────────────────────────────────────────────
 export function LoginScreen() {
   const { needsPasswordSetup } = useAuth();
   return needsPasswordSetup ? <SetPasswordScreen /> : <SignInScreen />;
 }
 
+// ── Sign In ──────────────────────────────────────────────────────────────────
 function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
-  const boxConfig = useBoxConfig();
+  const { primary_color, tagline } = useBoxConfig();
 
   const handleLogin = async () => {
     setError('');
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: err } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
-      if (error) setError('Email o contraseña incorrectos');
+      if (err) setError('Email o contraseña incorrectos');
     } catch {
       setError('Error de conexión. Inténtalo de nuevo.');
     } finally {
@@ -39,158 +97,163 @@ function SignInScreen() {
     }
   };
 
-  if (showForgot) {
-    return <ForgotPasswordScreen onBack={() => setShowForgot(false)} />;
-  }
+  if (showForgot) return <ForgotPasswordScreen onBack={() => setShowForgot(false)} />;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.inner}>
-        <View style={styles.logoWrap}>
-          <BoxLogo size="large" />
-          {boxConfig.tagline ? (
-            <Text style={styles.tagline}>{boxConfig.tagline}</Text>
-          ) : null}
-        </View>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <BgRings color={primary_color} />
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="tu@email.com"
-            placeholderTextColor={Colors.muted}
-            value={email}
-            onChangeText={t => { setEmail(t); setError(''); }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoCorrect={false}
-          />
+      {/* Hero */}
+      <View style={styles.hero}>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
+        <BoxLogo size="large" />
+        <Text style={styles.tagline}>
+          {tagline ?? 'Entrena · Compite · Mejora'}
+        </Text>
+      </View>
 
-          <Text style={[styles.label, { marginTop: 14 }]}>Contraseña</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor={Colors.muted}
-            value={password}
-            onChangeText={t => { setPassword(t); setError(''); }}
-            secureTextEntry
-          />
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: withAlpha(primary_color, 0.25) }]} />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+      {/* Form */}
+      <View style={styles.form}>
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="tu@email.com"
+          placeholderTextColor={Colors.muted}
+          value={email}
+          onChangeText={t => { setEmail(t); setError(''); }}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+        />
 
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: boxConfig.primary_color }, loading && styles.btnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>Entrar</Text>
-            }
-          </TouchableOpacity>
+        <Text style={[styles.label, { marginTop: 18 }]}>Contraseña</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="••••••••"
+          placeholderTextColor={Colors.muted}
+          value={password}
+          onChangeText={t => { setPassword(t); setError(''); }}
+          secureTextEntry
+        />
 
-          <TouchableOpacity onPress={() => setShowForgot(true)} style={styles.forgotBtn}>
-            <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-          </TouchableOpacity>
-        </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: primary_color }, loading && styles.btnOff]}
+          onPress={handleLogin}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnText}>Entrar</Text>
+          }
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setShowForgot(true)} style={styles.forgotBtn}>
+          <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
+// ── Forgot Password ──────────────────────────────────────────────────────────
 function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const boxConfig = useBoxConfig();
+  const { primary_color } = useBoxConfig();
 
   const handleReset = async () => {
     if (!email.trim()) { setError('Introduce tu email'); return; }
     setError('');
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: 'wodbox://auth/callback',
     });
     setLoading(false);
-    if (error) {
-      setError('Error al enviar el email. Inténtalo de nuevo.');
-    } else {
-      setSent(true);
-    }
+    if (err) setError('Error al enviar el email. Inténtalo de nuevo.');
+    else setSent(true);
   };
 
   if (sent) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }]}>
-        <Text style={{ fontSize: 48, marginBottom: 20 }}>📬</Text>
-        <Text style={[styles.btnText, { fontSize: 20, marginBottom: 8, color: Colors.white }]}>Email enviado</Text>
-        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, textAlign: 'center', marginBottom: 32 }}>
+      <View style={[styles.root, { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }]}>
+        <BgRings color={primary_color} />
+        <Text style={{ fontSize: 52, marginBottom: 20 }}>📬</Text>
+        <Text style={styles.sentTitle}>Email enviado</Text>
+        <Text style={styles.sentSub}>
           Revisa tu bandeja de entrada y sigue el enlace para restablecer tu contraseña.
         </Text>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={[styles.forgotText, { color: boxConfig.primary_color }]}>Volver al login</Text>
+        <TouchableOpacity onPress={onBack} style={{ marginTop: 32 }}>
+          <Text style={[styles.forgotText, { color: primary_color, fontSize: 15 }]}>← Volver al login</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.inner}>
-        <View style={styles.logoWrap}>
-          <BoxLogo size="large" />
-        </View>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <BgRings color={primary_color} />
+      <BackBtn onPress={onBack} />
 
-        <View style={styles.form}>
-          <Text style={[styles.welcomeTitle, { marginBottom: 4 }]}>Restablecer contraseña</Text>
-          <Text style={styles.welcomeSub}>Te enviaremos un enlace a tu email.</Text>
+      <View style={styles.subHero}>
+        <Text style={styles.subTitle}>Recuperar contraseña</Text>
+        <Text style={styles.subSub}>Te enviaremos un enlace a tu email.</Text>
+      </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="tu@email.com"
-            placeholderTextColor={Colors.muted}
-            value={email}
-            onChangeText={t => { setEmail(t); setError(''); }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoCorrect={false}
-            autoFocus
-          />
+      <View style={styles.form}>
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="tu@email.com"
+          placeholderTextColor={Colors.muted}
+          value={email}
+          onChangeText={t => { setEmail(t); setError(''); }}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+          autoFocus
+        />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: boxConfig.primary_color }, loading && styles.btnDisabled]}
-            onPress={handleReset}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>Enviar enlace</Text>
-            }
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onBack} style={styles.forgotBtn}>
-            <Text style={styles.forgotText}>Volver al login</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: primary_color }, loading && styles.btnOff]}
+          onPress={handleReset}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnText}>Enviar enlace</Text>
+          }
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
+// ── Set Password (invited users) ─────────────────────────────────────────────
 function SetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const boxConfig = useBoxConfig();
-
+  const { primary_color } = useBoxConfig();
   const { session } = useAuth();
   const name = session?.user?.user_metadata?.name ?? 'Atleta';
 
@@ -198,109 +261,188 @@ function SetPasswordScreen() {
     setError('');
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
     if (password !== confirm) { setError('Las contraseñas no coinciden'); return; }
-
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({
-      password,
-      data: { invited: false },
-    });
+    const { error: err } = await supabase.auth.updateUser({ password, data: { invited: false } });
     setLoading(false);
-
-    if (error) {
-      setError('Error al guardar la contraseña. Inténtalo de nuevo.');
-    } else {
-      setDone(true);
-    }
+    if (err) setError('Error al guardar la contraseña. Inténtalo de nuevo.');
+    else setDone(true);
   };
 
   if (done) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ fontSize: 48, marginBottom: 20 }}>💪</Text>
-        <Text style={[styles.welcomeTitle, { fontSize: 28, marginBottom: 8 }]}>¡Bienvenido/a!</Text>
-        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 15, textAlign: 'center', paddingHorizontal: 32 }}>
-          Tu cuenta está lista. Ya puedes empezar a reservar clases.
-        </Text>
+      <View style={[styles.root, { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }]}>
+        <BgRings color={primary_color} />
+        <Text style={{ fontSize: 52, marginBottom: 20 }}>💪</Text>
+        <Text style={styles.sentTitle}>¡Bienvenido/a!</Text>
+        <Text style={styles.sentSub}>Tu cuenta está lista. Ya puedes empezar a reservar clases.</Text>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.inner}>
-        <View style={styles.logoWrap}>
-          <BoxLogo size="large" />
-          <Text style={styles.tagline}>Hola, <Text style={{ color: boxConfig.primary_color }}>{name}</Text> 👋</Text>
-        </View>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <BgRings color={primary_color} />
 
-        <View style={styles.form}>
-          <Text style={styles.welcomeTitle}>Crea tu contraseña</Text>
-          <Text style={styles.welcomeSub}>Es la última vez que necesitas hacer esto.</Text>
+      <View style={styles.subHero}>
+        <Image source={require('../../assets/icon.png')} style={[styles.logoImg, { width: 72, height: 72 }]} resizeMode="contain" />
+        <Text style={styles.subTitle}>
+          Hola, <Text style={{ color: primary_color }}>{name}</Text> 👋
+        </Text>
+        <Text style={styles.subSub}>Crea tu contraseña para continuar.</Text>
+      </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Nueva contraseña</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mínimo 6 caracteres"
-            placeholderTextColor={Colors.muted}
-            value={password}
-            onChangeText={t => { setPassword(t); setError(''); }}
-            secureTextEntry
-            autoFocus
-          />
+      <View style={styles.form}>
+        <Text style={styles.label}>Nueva contraseña</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Mínimo 6 caracteres"
+          placeholderTextColor={Colors.muted}
+          value={password}
+          onChangeText={t => { setPassword(t); setError(''); }}
+          secureTextEntry
+          autoFocus
+        />
 
-          <Text style={[styles.label, { marginTop: 14 }]}>Confirmar contraseña</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Repite la contraseña"
-            placeholderTextColor={Colors.muted}
-            value={confirm}
-            onChangeText={t => { setConfirm(t); setError(''); }}
-            secureTextEntry
-          />
+        <Text style={[styles.label, { marginTop: 18 }]}>Confirmar contraseña</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Repite la contraseña"
+          placeholderTextColor={Colors.muted}
+          value={confirm}
+          onChangeText={t => { setConfirm(t); setError(''); }}
+          secureTextEntry
+        />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: boxConfig.primary_color }, loading && styles.btnDisabled]}
-            onPress={handleSetPassword}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>Guardar y entrar</Text>
-            }
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: primary_color }, loading && styles.btnOff]}
+          onPress={handleSetPassword}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnText}>Guardar y entrar</Text>
+          }
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.black },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 32 },
-  logoWrap: { alignItems: 'center', marginBottom: 40 },
-  tagline: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, marginTop: 8 },
-  form: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 16, padding: 20, marginBottom: 24,
+  root: {
+    flex: 1,
+    backgroundColor: '#080c14',
   },
-  welcomeTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.white, marginBottom: 4 },
-  welcomeSub: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, marginBottom: 4 },
+  // SignIn hero
+  hero: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
+  },
+  logoImg: {
+    width: 90,
+    height: 90,
+    marginBottom: 14,
+  },
+  tagline: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.muted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 8,
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 28,
+    marginBottom: 28,
+  },
+  // Sub-screens hero
+  subHero: {
+    alignItems: 'center',
+    paddingTop: H * 0.18,
+    paddingBottom: 32,
+    paddingHorizontal: 28,
+  },
+  subTitle: {
+    fontFamily: Fonts.headingXBold,
+    fontSize: 28,
+    color: Colors.white,
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subSub: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.muted,
+    textAlign: 'center',
+  },
+  // Form
+  form: {
+    paddingHorizontal: 28,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
+  },
   label: {
-    fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
+    fontSize: 11,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12,
-    color: Colors.white, fontFamily: Fonts.body, fontSize: 15,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    color: Colors.white,
+    fontFamily: Fonts.body,
+    fontSize: 15,
   },
-  error: { color: Colors.red, fontSize: 13, fontFamily: Fonts.body, marginTop: 10, textAlign: 'center' },
-  btn: { borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { fontFamily: Fonts.bodySemiBold, fontSize: 16, color: '#fff' },
-  forgotBtn: { alignItems: 'center', marginTop: 14 },
+  error: {
+    color: Colors.red,
+    fontSize: 13,
+    fontFamily: Fonts.body,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  btn: {
+    borderRadius: 12,
+    paddingVertical: 17,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  btnOff: { opacity: 0.6 },
+  btnText: {
+    fontFamily: Fonts.headingBold,
+    fontSize: 16,
+    color: '#fff',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  forgotBtn: { alignItems: 'center', marginTop: 20 },
   forgotText: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13 },
+  // Sent confirmation
+  sentTitle: {
+    fontFamily: Fonts.headingXBold,
+    fontSize: 26,
+    color: Colors.white,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  sentSub: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.muted,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });
