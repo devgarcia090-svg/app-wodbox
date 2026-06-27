@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Dimensions, Animated,
+  Dimensions, Animated, Image,
 } from 'react-native';
 import { Colors, withAlpha } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
@@ -12,194 +12,186 @@ import { useBoxConfig } from '../context/BoxConfigContext';
 
 const { width: W, height: H } = Dimensions.get('window');
 
-// ─── Ambient glow blob behind the logo ──────────────────────────────────────
+// ── Ambient blob ─────────────────────────────────────────────────────────────
 function AmbientBlob({ color }: { color: string }) {
-  const pulse = useRef(new Animated.Value(0.7)).current;
+  const opacity = useRef(new Animated.Value(0.6)).current;
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 3200, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.7, duration: 3200, useNativeDriver: true }),
-      ])
-    ).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 1, duration: 3000, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.6, duration: 3000, useNativeDriver: true }),
+    ])).start();
   }, []);
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        width: W * 1.1, height: W * 1.1,
-        borderRadius: W * 0.55,
-        top: -W * 0.42,
-        alignSelf: 'center',
-        backgroundColor: withAlpha(color, 0.07),
-        opacity: pulse,
-      }}
-    />
+    <Animated.View pointerEvents="none" style={{
+      position: 'absolute', width: W * 0.9, height: W * 0.9,
+      borderRadius: W * 0.45, top: -W * 0.25, alignSelf: 'center',
+      backgroundColor: withAlpha(color, 0.06), opacity,
+    }} />
   );
 }
 
-// ─── Hero logo — two-line brand wordmark ────────────────────────────────────
-function HeroLogo() {
+// ── Hero ─────────────────────────────────────────────────────────────────────
+function Hero() {
   const { name, primary_color, tagline, logo_prefix, logo_highlight } = useBoxConfig();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(16)).current;
-
+  const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 700, delay: 100, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 600, delay: 100, useNativeDriver: true }),
-    ]).start();
+    Animated.timing(anim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, []);
 
-  let top: string, bottom: string;
+  // Split name for two-color display
+  let first: string, second: string;
   if (logo_highlight && name.includes(logo_highlight)) {
-    const before = name.replace(logo_highlight, '').trim();
-    top = (before || name.slice(0, Math.ceil(name.length / 2))).toUpperCase();
-    bottom = logo_highlight.toUpperCase();
+    const idx = name.indexOf(logo_highlight);
+    first = name.slice(0, idx);
+    second = name.slice(idx);
   } else {
     const half = Math.ceil(name.length / 2);
-    top = name.slice(0, half).toUpperCase();
-    bottom = name.slice(half).toUpperCase();
+    first = name.slice(0, half);
+    second = name.slice(half);
   }
 
-  const longest = Math.max(top.length, bottom.length);
-  // Target ~78% screen width fill
-  const fs = Math.min(Math.floor((W * 0.78) / (longest * 0.46)), 200);
-
   return (
-    <Animated.View style={[hero.wrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      {logo_prefix ? (
-        <Text style={hero.prefix}>{logo_prefix.toUpperCase()}</Text>
-      ) : null}
-      <Text style={[hero.top, { fontSize: fs, lineHeight: fs * 0.9 }]}>{top}</Text>
-      <View style={[hero.accentLine, { backgroundColor: primary_color, width: fs * longest * 0.46 * 0.4 }]} />
-      <Text style={[hero.bottom, { fontSize: fs, lineHeight: fs * 0.9, color: primary_color,
-        textShadowColor: withAlpha(primary_color, 0.55),
-        textShadowRadius: 18, textShadowOffset: { width: 0, height: 0 },
-      }]}>{bottom}</Text>
-      <Text style={hero.tagline}>{tagline ?? 'Train · Compete · Improve'}</Text>
+    <Animated.View style={[heroS.wrap, {
+      opacity: anim,
+      transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+    }]}>
+      {/* Icon badge */}
+      <View style={[heroS.badge, { borderColor: withAlpha(primary_color, 0.35) }]}>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={heroS.badgeImg}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Box name */}
+      {logo_prefix ? <Text style={heroS.prefix}>{logo_prefix.toUpperCase()}</Text> : null}
+      <Text style={heroS.name} adjustsFontSizeToFit numberOfLines={1}>
+        {first}<Text style={{ color: primary_color }}>{second}</Text>
+      </Text>
+
+      {/* Tagline */}
+      <Text style={heroS.tagline}>
+        {tagline ?? 'Entrena · Compite · Mejora'}
+      </Text>
     </Animated.View>
   );
 }
 
-const hero = StyleSheet.create({
-  wrap: { alignItems: 'center' },
+const heroS = StyleSheet.create({
+  wrap: { alignItems: 'center', paddingHorizontal: 28 },
+  badge: {
+    width: 80, height: 80, borderRadius: 20,
+    overflow: 'hidden', borderWidth: 1, marginBottom: 20,
+    backgroundColor: '#080c18',
+  },
+  badgeImg: { width: 80, height: 80 },
   prefix: {
     fontFamily: Fonts.bodySemiBold, fontSize: 10,
-    color: 'rgba(255,255,255,0.3)', letterSpacing: 5, marginBottom: 8,
+    color: 'rgba(255,255,255,0.3)', letterSpacing: 4, marginBottom: 4,
   },
-  top: {
-    fontFamily: Fonts.headingXBold,
-    color: '#EDEDEF',
-    letterSpacing: 5,
-  },
-  accentLine: { height: 2, borderRadius: 1, marginVertical: 4 },
-  bottom: {
-    fontFamily: Fonts.headingXBold,
-    letterSpacing: 5,
+  name: {
+    fontFamily: Fonts.headingXBold, fontSize: 48,
+    color: '#EDEDEF', letterSpacing: 2,
   },
   tagline: {
     fontFamily: Fonts.body, fontSize: 11,
     color: 'rgba(255,255,255,0.28)',
-    letterSpacing: 2.5, textTransform: 'uppercase', marginTop: 14,
+    letterSpacing: 2, textTransform: 'uppercase', marginTop: 8,
   },
 });
 
-// ─── Animated press button ───────────────────────────────────────────────────
-function GlowButton({
-  label, onPress, loading, color,
-}: { label: string; onPress: () => void; loading: boolean; color: string }) {
+// ── Glow button ───────────────────────────────────────────────────────────────
+function GlowButton({ label, onPress, loading, color }: {
+  label: string; onPress: () => void; loading: boolean; color: string;
+}) {
   const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50 }).start();
-  const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30 }).start();
-
   return (
-    <View style={{ marginTop: 28 }}>
-      {/* Glow layer */}
-      <View style={[btnStyles.glow, { backgroundColor: withAlpha(color, 0.3) }]} />
+    <View style={{ marginTop: 24 }}>
+      <View style={[btnS.glow, { backgroundColor: withAlpha(color, 0.28) }]} />
       <Animated.View style={{ transform: [{ scale }] }}>
         <TouchableOpacity
-          style={[btnStyles.btn, { backgroundColor: color }, loading && btnStyles.off]}
+          style={[btnS.btn, { backgroundColor: color }, loading && btnS.off]}
           onPress={onPress}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
+          onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50 }).start()}
+          onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30 }).start()}
           disabled={loading}
           activeOpacity={1}
-          accessibilityLabel={label}
           accessibilityRole="button"
+          accessibilityLabel={label}
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={btnStyles.text}>{label}</Text>}
+            : <Text style={btnS.text}>{label}</Text>}
         </TouchableOpacity>
       </Animated.View>
     </View>
   );
 }
 
-const btnStyles = StyleSheet.create({
-  glow: { position: 'absolute', left: 20, right: 20, top: 16, bottom: -8, borderRadius: 18 },
-  btn: { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
+const btnS = StyleSheet.create({
+  glow: { position: 'absolute', left: 18, right: 18, top: 14, bottom: -6, borderRadius: 16 },
+  btn: { borderRadius: 14, paddingVertical: 17, alignItems: 'center' },
   off: { opacity: 0.55 },
-  text: {
-    fontFamily: Fonts.headingXBold, fontSize: 16,
-    color: '#fff', letterSpacing: 3, textTransform: 'uppercase',
-  },
+  text: { fontFamily: Fonts.headingXBold, fontSize: 16, color: '#fff', letterSpacing: 2.5, textTransform: 'uppercase' },
 });
 
-// ─── Password field with show/hide ───────────────────────────────────────────
-function PasswordInput({ value, onChange }: { value: string; onChange: (t: string) => void }) {
+// ── Password with toggle ──────────────────────────────────────────────────────
+function PassInput({ value, onChange, placeholder = '••••••••', onSubmit, inputRef }: {
+  value: string; onChange: (t: string) => void;
+  placeholder?: string; onSubmit?: () => void;
+  inputRef?: React.RefObject<TextInput | null>;
+}) {
   const [show, setShow] = useState(false);
   return (
     <View>
       <TextInput
-        style={form.input}
-        placeholder="••••••••"
+        ref={inputRef}
+        style={formS.input}
+        placeholder={placeholder}
         placeholderTextColor="rgba(255,255,255,0.2)"
         value={value}
         onChangeText={onChange}
         secureTextEntry={!show}
         autoCorrect={false}
         autoCapitalize="none"
+        returnKeyType="done"
+        onSubmitEditing={onSubmit}
       />
       <TouchableOpacity
-        onPress={() => setShow(s => !s)}
-        style={form.eyeBtn}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        onPress={() => setShow(v => !v)}
+        style={formS.eyeBtn}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         accessibilityLabel={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
       >
-        <Text style={form.eyeText}>{show ? '●' : '○'}</Text>
+        <Text style={formS.eye}>{show ? '●' : '○'}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-// ─── Back button ─────────────────────────────────────────────────────────────
+// ── Back ──────────────────────────────────────────────────────────────────────
 function BackBtn({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={back.btn}
+    <TouchableOpacity onPress={onPress} style={backS.btn}
       hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-      accessibilityLabel="Volver"
-    >
-      <Text style={back.text}>←</Text>
+      accessibilityLabel="Volver">
+      <Text style={backS.arrow}>←</Text>
     </TouchableOpacity>
   );
 }
-const back = StyleSheet.create({
+const backS = StyleSheet.create({
   btn: { position: 'absolute', top: 54, left: 24, zIndex: 10 },
-  text: { color: 'rgba(255,255,255,0.45)', fontSize: 22 },
+  arrow: { color: 'rgba(255,255,255,0.45)', fontSize: 22 },
 });
 
-// ─── Root export ──────────────────────────────────────────────────────────────
+// ── Root ──────────────────────────────────────────────────────────────────────
 export function LoginScreen() {
   const { needsPasswordSetup } = useAuth();
   return needsPasswordSetup ? <SetPasswordScreen /> : <SignInScreen />;
 }
 
-// ─── Sign In ──────────────────────────────────────────────────────────────────
+// ── Sign In ───────────────────────────────────────────────────────────────────
 function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -227,20 +219,20 @@ function SignInScreen() {
   if (showForgot) return <ForgotPasswordScreen onBack={() => setShowForgot(false)} />;
 
   return (
-    <KeyboardAvoidingView style={root.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={rootS.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <AmbientBlob color={primary_color} />
 
-      {/* Hero */}
-      <View style={[root.hero, { height: H * 0.43 }]}>
-        <HeroLogo />
+      {/* Hero: icon + name + tagline */}
+      <View style={rootS.hero}>
+        <Hero />
       </View>
 
-      {/* Form card */}
-      <View style={root.cardWrap}>
-        <View style={root.card}>
-          <Text style={form.label}>Email</Text>
+      {/* Form */}
+      <View style={rootS.formWrap}>
+        <View style={rootS.card}>
+          <Text style={formS.label}>Email</Text>
           <TextInput
-            style={form.input}
+            style={formS.input}
             placeholder="tu@email.com"
             placeholderTextColor="rgba(255,255,255,0.2)"
             value={email}
@@ -253,19 +245,20 @@ function SignInScreen() {
             accessibilityLabel="Email"
           />
 
-          <Text style={[form.label, { marginTop: 20 }]}>Contraseña</Text>
-          <PasswordInput value={password} onChange={t => { setPassword(t); setError(''); }} />
+          <Text style={[formS.label, { marginTop: 20 }]}>Contraseña</Text>
+          <PassInput
+            value={password}
+            onChange={t => { setPassword(t); setError(''); }}
+            inputRef={passRef}
+            onSubmit={handleLogin}
+          />
 
-          {error ? <Text style={form.error} accessibilityRole="alert">{error}</Text> : null}
+          {error ? <Text style={formS.error} accessibilityRole="alert">{error}</Text> : null}
 
           <GlowButton label="Entrar" onPress={handleLogin} loading={loading} color={primary_color} />
 
-          <TouchableOpacity
-            onPress={() => setShowForgot(true)}
-            style={form.forgot}
-            accessibilityLabel="Olvidaste tu contraseña"
-          >
-            <Text style={form.forgotText}>¿Olvidaste tu contraseña?</Text>
+          <TouchableOpacity onPress={() => setShowForgot(true)} style={formS.forgotBtn}>
+            <Text style={formS.forgotText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -273,7 +266,7 @@ function SignInScreen() {
   );
 }
 
-// ─── Forgot Password ──────────────────────────────────────────────────────────
+// ── Forgot Password ───────────────────────────────────────────────────────────
 function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -293,33 +286,31 @@ function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
     else setSent(true);
   };
 
-  if (sent) {
-    return (
-      <View style={[root.bg, sub.center]}>
-        <AmbientBlob color={primary_color} />
-        <Text style={sub.emoji}>📬</Text>
-        <Text style={sub.title}>Email enviado</Text>
-        <Text style={sub.body}>Revisa tu bandeja de entrada y sigue el enlace para restablecer tu contraseña.</Text>
-        <TouchableOpacity onPress={onBack} style={{ marginTop: 36 }}>
-          <Text style={[form.forgotText, { color: primary_color, fontSize: 15 }]}>← Volver al login</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  if (sent) return (
+    <View style={[rootS.bg, centS.wrap]}>
+      <AmbientBlob color={primary_color} />
+      <Text style={centS.emoji}>📬</Text>
+      <Text style={centS.title}>Email enviado</Text>
+      <Text style={centS.body}>Revisa tu bandeja y sigue el enlace para restablecer tu contraseña.</Text>
+      <TouchableOpacity onPress={onBack} style={{ marginTop: 32 }}>
+        <Text style={[formS.forgotText, { color: primary_color }]}>← Volver al login</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
-    <KeyboardAvoidingView style={root.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={rootS.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <AmbientBlob color={primary_color} />
       <BackBtn onPress={onBack} />
-      <View style={[root.hero, { height: H * 0.4 }]}>
-        <Text style={sub.title}>Recuperar{'\n'}contraseña</Text>
-        <Text style={[sub.body, { marginTop: 8 }]}>Te enviaremos un enlace a tu email.</Text>
+      <View style={rootS.hero}>
+        <Text style={centS.title}>Recuperar{'\n'}contraseña</Text>
+        <Text style={[centS.body, { marginTop: 8, paddingHorizontal: 28 }]}>Te enviaremos un enlace a tu email.</Text>
       </View>
-      <View style={root.cardWrap}>
-        <View style={root.card}>
-          <Text style={form.label}>Email</Text>
+      <View style={rootS.formWrap}>
+        <View style={rootS.card}>
+          <Text style={formS.label}>Email</Text>
           <TextInput
-            style={form.input}
+            style={formS.input}
             placeholder="tu@email.com"
             placeholderTextColor="rgba(255,255,255,0.2)"
             value={email}
@@ -328,9 +319,8 @@ function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
             keyboardType="email-address"
             autoCorrect={false}
             autoFocus
-            accessibilityLabel="Email"
           />
-          {error ? <Text style={form.error}>{error}</Text> : null}
+          {error ? <Text style={formS.error}>{error}</Text> : null}
           <GlowButton label="Enviar enlace" onPress={handleReset} loading={loading} color={primary_color} />
         </View>
       </View>
@@ -338,7 +328,7 @@ function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── Set Password ─────────────────────────────────────────────────────────────
+// ── Set Password ──────────────────────────────────────────────────────────────
 function SetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -350,7 +340,7 @@ function SetPasswordScreen() {
   const name = session?.user?.user_metadata?.name ?? 'Atleta';
   const confirmRef = useRef<TextInput>(null);
 
-  const handleSetPassword = async () => {
+  const handle = async () => {
     setError('');
     if (password.length < 6) { setError('Mínimo 6 caracteres'); return; }
     if (password !== confirm) { setError('Las contraseñas no coinciden'); return; }
@@ -361,110 +351,76 @@ function SetPasswordScreen() {
     else setDone(true);
   };
 
-  if (done) {
-    return (
-      <View style={[root.bg, sub.center]}>
-        <AmbientBlob color={primary_color} />
-        <Text style={sub.emoji}>💪</Text>
-        <Text style={sub.title}>¡Bienvenido/a!</Text>
-        <Text style={sub.body}>Tu cuenta está lista. Ya puedes empezar a reservar clases.</Text>
-      </View>
-    );
-  }
+  if (done) return (
+    <View style={[rootS.bg, centS.wrap]}>
+      <AmbientBlob color={primary_color} />
+      <Text style={centS.emoji}>💪</Text>
+      <Text style={centS.title}>¡Bienvenido/a!</Text>
+      <Text style={centS.body}>Tu cuenta está lista. Ya puedes empezar a reservar clases.</Text>
+    </View>
+  );
 
   return (
-    <KeyboardAvoidingView style={root.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={rootS.bg} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <AmbientBlob color={primary_color} />
-      <View style={[root.hero, { height: H * 0.36 }]}>
-        <Text style={sub.title}>
+      <View style={rootS.hero}>
+        <Text style={centS.title}>
           Hola, <Text style={{ color: primary_color }}>{name}</Text> 👋
         </Text>
-        <Text style={[sub.body, { marginTop: 8 }]}>Crea tu contraseña para continuar.</Text>
+        <Text style={[centS.body, { marginTop: 8, paddingHorizontal: 28 }]}>Crea tu contraseña para continuar.</Text>
       </View>
-      <View style={root.cardWrap}>
-        <View style={root.card}>
-          <Text style={form.label}>Nueva contraseña</Text>
-          <TextInput
-            style={form.input}
-            placeholder="Mínimo 6 caracteres"
-            placeholderTextColor="rgba(255,255,255,0.2)"
-            value={password}
-            onChangeText={t => { setPassword(t); setError(''); }}
-            secureTextEntry
-            autoFocus
-            returnKeyType="next"
-            onSubmitEditing={() => confirmRef.current?.focus()}
-            accessibilityLabel="Nueva contraseña"
-          />
-          <Text style={[form.label, { marginTop: 20 }]}>Confirmar contraseña</Text>
-          <TextInput
-            ref={confirmRef}
-            style={form.input}
-            placeholder="Repite la contraseña"
-            placeholderTextColor="rgba(255,255,255,0.2)"
-            value={confirm}
-            onChangeText={t => { setConfirm(t); setError(''); }}
-            secureTextEntry
-            returnKeyType="done"
-            onSubmitEditing={handleSetPassword}
-            accessibilityLabel="Confirmar contraseña"
-          />
-          {error ? <Text style={form.error}>{error}</Text> : null}
-          <GlowButton label="Guardar y entrar" onPress={handleSetPassword} loading={loading} color={primary_color} />
+      <View style={rootS.formWrap}>
+        <View style={rootS.card}>
+          <Text style={formS.label}>Nueva contraseña</Text>
+          <PassInput value={password} onChange={t => { setPassword(t); setError(''); }}
+            placeholder="Mínimo 6 caracteres" onSubmit={() => confirmRef.current?.focus()} />
+
+          <Text style={[formS.label, { marginTop: 20 }]}>Confirmar contraseña</Text>
+          <PassInput value={confirm} onChange={t => { setConfirm(t); setError(''); }}
+            inputRef={confirmRef} onSubmit={handle} />
+
+          {error ? <Text style={formS.error}>{error}</Text> : null}
+          <GlowButton label="Guardar y entrar" onPress={handle} loading={loading} color={primary_color} />
         </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const root = StyleSheet.create({
-  bg: { flex: 1, backgroundColor: '#040608' },
-  hero: { alignItems: 'center', justifyContent: 'center' },
-  cardWrap: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 44 : 32 },
+// ── Styles ────────────────────────────────────────────────────────────────────
+const rootS = StyleSheet.create({
+  bg: { flex: 1, backgroundColor: '#060810' },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: H * 0.3, maxHeight: H * 0.46 },
+  formWrap: { paddingHorizontal: 22, paddingBottom: Platform.OS === 'ios' ? 46 : 32 },
   card: {
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 20,
-    padding: 24,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 20, padding: 22,
   },
 });
 
-const form = StyleSheet.create({
+const formS = StyleSheet.create({
   label: {
     fontFamily: Fonts.bodySemiBold, fontSize: 10,
-    color: 'rgba(255,255,255,0.38)',
-    letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8,
+    color: 'rgba(255,255,255,0.38)', letterSpacing: 1.5,
+    textTransform: 'uppercase', marginBottom: 8,
   },
   input: {
-    fontFamily: Fonts.body, fontSize: 16,
-    color: '#EDEDEF',
+    fontFamily: Fonts.body, fontSize: 16, color: '#EDEDEF',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 12, paddingHorizontal: 0, paddingRight: 36,
+    borderBottomColor: 'rgba(255,255,255,0.14)',
+    paddingVertical: 11, paddingHorizontal: 0, paddingRight: 32,
   },
   eyeBtn: { position: 'absolute', right: 0, bottom: 10 },
-  eyeText: { fontSize: 16, color: 'rgba(255,255,255,0.35)' },
-  error: {
-    fontFamily: Fonts.body, fontSize: 13,
-    color: Colors.red, marginTop: 12, textAlign: 'center',
-  },
-  forgot: { alignItems: 'center', marginTop: 20, paddingBottom: 2 },
+  eye: { fontSize: 16, color: 'rgba(255,255,255,0.3)' },
+  error: { fontFamily: Fonts.body, fontSize: 13, color: Colors.red, marginTop: 12, textAlign: 'center' },
+  forgotBtn: { alignItems: 'center', marginTop: 18, paddingBottom: 2 },
   forgotText: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.28)' },
 });
 
-const sub = StyleSheet.create({
-  center: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+const centS = StyleSheet.create({
+  wrap: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emoji: { fontSize: 52, marginBottom: 20 },
-  title: {
-    fontFamily: Fonts.headingXBold, fontSize: 30,
-    color: '#EDEDEF', letterSpacing: 1,
-    textAlign: 'center', lineHeight: 34,
-  },
-  body: {
-    fontFamily: Fonts.body, fontSize: 14,
-    color: 'rgba(255,255,255,0.32)',
-    textAlign: 'center', lineHeight: 20,
-  },
+  title: { fontFamily: Fonts.headingXBold, fontSize: 30, color: '#EDEDEF', letterSpacing: 1, textAlign: 'center', lineHeight: 36 },
+  body: { fontFamily: Fonts.body, fontSize: 14, color: 'rgba(255,255,255,0.32)', textAlign: 'center', lineHeight: 21 },
 });
