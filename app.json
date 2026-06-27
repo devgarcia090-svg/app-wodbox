@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#111111"
+      "backgroundColor": "#06090f"
     },
     "ios": {
       "supportsTablet": false,
@@ -19,7 +19,7 @@
       "package": "com.wodbox.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#111111"
+        "backgroundColor": "#f95c00"
       },
       "navigationBar": {
         "backgroundColor": "#0A0A0A",
