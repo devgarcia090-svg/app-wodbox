@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WodBox — Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #2563eb;
+      --accent-dim: rgba(37,99,235,.15);
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --muted2: #6e7681;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --sidebar-w: 220px;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: .9375rem;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100vh;
+    }
+
+    .sidebar-brand {
+      padding: 1.25rem 1rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-icon svg { width: 20px; height: 20px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .brand-name { font-weight: 700; font-size: 1rem; letter-spacing: -.02em; }
+    .brand-sub { font-size: .75rem; color: var(--muted); }
+
+    nav { flex: 1; padding: .75rem .5rem; overflow-y: auto; }
+
+    .nav-section-label {
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted2);
+      padding: .5rem .5rem .25rem;
+      margin-top: .25rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      padding: .5rem .625rem;
+      border-radius: 7px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+      user-select: none;
+    }
+
+    .nav-link:hover { background: var(--surface2); color: var(--text); }
+    .nav-link.active { background: var(--accent-dim); color: #93c5fd; }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .8; }
+
+    .sidebar-footer {
+      padding: .75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-chip {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .5rem .625rem;
+      border-radius: 8px;
+      background: var(--surface2);
+    }
+
+    .avatar {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: .8125rem; font-weight: 600; }
+    .user-role { font-size: .6875rem; color: var(--muted); }
+
+    .btn-icon {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      padding: 4px; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .12s, background .12s;
+    }
+    .btn-icon:hover { color: var(--text); background: var(--border); }
+    .btn-icon svg { width: 15px; height: 15px; }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .875rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .topbar-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+    .topbar-actions { display: flex; gap: .5rem; align-items: center; }
+
+    .content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .5rem .875rem;
+      border: none; border-radius: 7px;
+      font-size: .875rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: opacity .12s, background .12s;
+      white-space: nowrap;
+    }
+
+    .btn svg { width: 15px; height: 15px; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+    .btn-danger { background: rgba(248,81,73,.15); color: var(--danger); border: 1px solid rgba(248,81,73,.25); }
+    .btn-danger:hover:not(:disabled) { background: rgba(248,81,73,.25); }
+    .btn-sm { padding: .3rem .6rem; font-size: .8125rem; }
+    .btn-ghost { background: transparent; color: var(--muted); padding: .375rem .5rem; }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+
+    /* ── Cards / Stats ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.125rem 1.25rem;
+    }
+
+    .stat-label {
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+
+    .stat-value {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .stat-sub { font-size: .8rem; color: var(--muted); margin-top: .375rem; }
+
+    /* ── Site Cards ── */
+    .sites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .site-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      transition: border-color .15s;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .site-card:hover { border-color: #444c56; }
+
+    .site-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+    .site-name { font-weight: 700; font-size: 1rem; }
+    .site-desc { font-size: .8125rem; color: var(--muted); margin-top: .2rem; }
+
+    .site-meta {
+      display: flex; gap: 1rem;
+      font-size: .8rem; color: var(--muted2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .site-meta span { display: flex; align-items: center; gap: .3rem; }
+    .site-meta svg { width: 13px; height: 13px; opacity: .7; }
+
+    .site-card-actions { display: flex; gap: .5rem; margin-top: auto; }
+
+    /* ── File Manager ── */
+    .fm-toolbar {
+      display: flex; align-items: center; gap: .5rem;
+      padding-bottom: .875rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: .875rem;
+    }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: .25rem;
+      font-size: .875rem; color: var(--muted);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .breadcrumb span { cursor: pointer; }
+    .breadcrumb span:hover { color: var(--text); }
+    .breadcrumb .sep { color: var(--border); }
+
+    .file-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .file-table th {
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted2);
+      padding: .4rem .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .file-table td {
+      padding: .5rem .75rem;
+      border-bottom: 1px solid rgba(48,54,61,.5);
+      font-size: .875rem;
+    }
+
+    .file-table tr:last-child td { border-bottom: none; }
+
+    .file-table tr:hover td { background: var(--surface2); }
+
+    .file-row { cursor: default; }
+    .file-row.is-dir td:first-child { cursor: pointer; }
+
+    .file-icon { display: inline-flex; align-items: center; gap: .5rem; }
+    .file-icon svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .file-actions { display: flex; gap: .25rem; justify-content: flex-end; opacity: 0; transition: opacity .1s; }
+    .file-row:hover .file-actions { opacity: 1; }
+
+    /* ── Editor ── */
+    .editor-layout {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      height: 100%;
+      gap: 0;
+    }
+
+    .editor-header {
+      display: flex; align-items: center; gap: .75rem;
+      padding-bottom: .875rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: .875rem;
+    }
+
+    .editor-filename {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: .875rem;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .CodeMirror {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: .875rem;
+      height: calc(100vh - 220px);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      z-index: 9999;
+    }
+
+    .toast {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .75rem 1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: .875rem;
+      min-width: 220px;
+      max-width: 380px;
+      animation: toast-in .2s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.info { border-left: 3px solid var(--accent); }
+
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 440px;
+      animation: modal-in .18s ease;
+    }
+
+    @keyframes modal-in { from { opacity: 0; transform: scale(.96); } }
+
+    .modal-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal-actions { display: flex; gap: .625rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+    /* ── Forms ── */
+    .form-field { margin-bottom: 1rem; }
+
+    .form-label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: .4rem;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: .625rem .875rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-size: .9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+
+    /* ── Drag Drop ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 2.5rem;
+      text-align: center;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .drop-zone svg { width: 36px; height: 36px; margin-bottom: .75rem; opacity: .5; }
+    .drop-zone p { font-size: .875rem; }
+    .drop-zone strong { color: var(--accent); }
+
+    /* ── Settings ── */
+    .settings-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .settings-section h3 {
+      font-size: .9rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── Misc ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty-state svg { width: 48px; height: 48px; opacity: .3; margin-bottom: 1rem; }
+    .empty-state h3 { font-size: 1rem; margin-bottom: .5rem; }
+    .empty-state p { font-size: .875rem; color: var(--muted2); }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: .2em .55em;
+      border-radius: 5px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .badge-blue { background: rgba(37,99,235,.15); color: #93c5fd; }
+    .badge-green { background: rgba(63,185,80,.15); color: #3fb950; }
+
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    .hidden { display: none !important; }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">WodBox</div>
+      <div class="brand-sub">Panel de control</div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-link active" data-view="dashboard" onclick="navigate('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Inicio
+    </div>
+    <div class="nav-link" data-view="sites" onclick="navigate('sites')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      Sitios
+    </div>
+
+    <div class="nav-section-label" id="siteNavSection" style="display:none">Sitio activo</div>
+    <div class="nav-link hidden" id="navFiles" data-view="files" onclick="navigate('files')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Archivos
+    </div>
+    <div class="nav-link hidden" id="navUpload" data-view="upload" onclick="navigate('upload')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      Subir archivos
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="nav-link" data-view="settings" onclick="navigate('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuración
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="userAvatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">admin</div>
+        <div class="user-role">Administrador</div>
+      </div>
+      <button class="btn-icon" onclick="logout()" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbarTitle">Inicio</span>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
+
+  <div class="content" id="mainContent"></div>
+</main>
+
+<!-- Modal nueva/editar sitio -->
+<div class="modal-overlay" id="modalSite">
+  <div class="modal">
+    <div class="modal-title">Nuevo sitio</div>
+    <div class="form-field">
+      <label class="form-label">Nombre (identificador único)</label>
+      <input class="form-input" id="newSiteName" placeholder="mi-sitio" pattern="[a-zA-Z0-9_-]+" required>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Descripción (opcional)</label>
+      <input class="form-input" id="newSiteDesc" placeholder="Descripción breve">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalSite')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createSite()">Crear sitio</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nueva carpeta -->
+<div class="modal-overlay" id="modalMkdir">
+  <div class="modal">
+    <div class="modal-title">Nueva carpeta</div>
+    <div class="form-field">
+      <label class="form-label">Nombre de la carpeta</label>
+      <input class="form-input" id="newDirName" placeholder="carpeta">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalMkdir')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createDir()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nuevo archivo -->
+<div class="modal-overlay" id="modalNewFile">
+  <div class="modal">
+    <div class="modal-title">Nuevo archivo</div>
+    <div class="form-field">
+      <label class="form-label">Nombre del archivo</label>
+      <input class="form-input" id="newFileName" placeholder="index.html">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalNewFile')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createNewFile()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal renombrar -->
+<div class="modal-overlay" id="modalRename">
+  <div class="modal">
+    <div class="modal-title">Renombrar</div>
+    <div class="form-field">
+      <label class="form-label">Nuevo nombre</label>
+      <input class="form-input" id="renameNewName" placeholder="">
+      <input type="hidden" id="renameOldPath">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalRename')">Cancelar</button>
+      <button class="btn btn-primary" onclick="doRename()">Renombrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmar eliminar -->
+<div class="modal-overlay" id="modalConfirmDelete">
+  <div class="modal">
+    <div class="modal-title">Confirmar eliminación</div>
+    <p style="color:var(--muted);font-size:.9rem" id="deleteMsg">¿Seguro que quieres eliminar esto?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalConfirmDelete')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- CodeMirror -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+
+<script>
+// ── State ──
+let currentView = 'dashboard';
+let currentSite = null;
+let currentPath = '';
+let editorInstance = null;
+let editorFile = null;
+let stats = {};
+
+// ── Init ──
+async function init() {
+  try {
+    const r = await fetch('/auth/me');
+    if (!r.ok) { window.location.href = '/'; return; }
+    const { user } = await r.json();
+    document.getElementById('userName').textContent = user.username;
+    document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
+  } catch { window.location.href = '/'; return; }
+
+  navigate('dashboard');
+}
+
+// ── Navigation ──
+function navigate(view, site, path) {
+  currentView = view;
+  if (site !== undefined) currentSite = site;
+  if (path !== undefined) currentPath = path;
+
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const link = document.querySelector(`[data-view="${view}"]`);
+  if (link) link.classList.add('active');
+
+  const titles = {
+    dashboard: 'Inicio',
+    sites: 'Sitios web',
+    files: `Archivos — ${currentSite}`,
+    upload: `Subir archivos — ${currentSite}`,
+    editor: `Editor — ${editorFile}`,
+    settings: 'Configuración'
+  };
+  document.getElementById('topbarTitle').textContent = titles[view] || view;
+  document.getElementById('topbarActions').innerHTML = '';
+
+  // Show/hide site sub-nav
+  const showSiteNav = currentSite && ['files','upload','editor'].includes(view);
+  document.getElementById('siteNavSection').style.display = showSiteNav ? 'block' : 'none';
+  document.getElementById('navFiles').classList.toggle('hidden', !currentSite);
+  document.getElementById('navUpload').classList.toggle('hidden', !currentSite);
+  if (currentSite) {
+    document.getElementById('navFiles').querySelector('span') || null;
+    document.getElementById('navFiles').title = currentSite;
+  }
+
+  const renders = {
+    dashboard: renderDashboard,
+    sites: renderSites,
+    files: renderFiles,
+    upload: renderUpload,
+    editor: renderEditor,
+    settings: renderSettings
+  };
+  (renders[view] || (() => {}))();
+}
+
+// ── Dashboard ──
+async function renderDashboard() {
+  document.getElementById('mainContent').innerHTML = '<div style="color:var(--muted);padding:2rem">Cargando…</div>';
+  stats = await api('/api/stats');
+  const sites = await api('/api/sites');
+  const uptimeStr = formatUptime(stats.uptime);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Sitios</div>
+        <div class="stat-value" style="color:#93c5fd">${stats.siteCount}</div>
+        <div class="stat-sub">publicados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Archivos</div>
+        <div class="stat-value" style="color:#86efac">${stats.totalFiles}</div>
+        <div class="stat-sub">en total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Espacio</div>
+        <div class="stat-value" style="color:#fbbf24;font-size:1.5rem">${formatSize(stats.totalSize)}</div>
+        <div class="stat-sub">usado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Servidor activo</div>
+        <div class="stat-value" style="color:#34d399;font-size:1.125rem">${uptimeStr}</div>
+        <div class="stat-sub">sin parar</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+      <h2 style="font-size:.9375rem;font-weight:700">Sitios recientes</h2>
+      <button class="btn btn-sm btn-secondary" onclick="navigate('sites')">Ver todos →</button>
+    </div>
+
+    ${sites.length === 0 ? `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <h3>No hay sitios todavía</h3>
+        <p>Crea tu primer sitio para empezar</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="navigate('sites')">Crear sitio</button>
+      </div>
+    ` : `
+      <div class="sites-grid">
+        ${sites.slice(0,6).map(s => siteCardHtml(s)).join('')}
+      </div>
+    `}
+
+    <div style="margin-top:1.75rem;padding:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+      <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.75rem">Acceso a sitios</div>
+      <div style="font-family:monospace;font-size:.875rem;color:var(--muted)">
+        <div>Puerto admin: <strong style="color:var(--text)">:${location.port || 3000}</strong></div>
+        <div style="margin-top:.25rem">Puerto sitios: <strong style="color:var(--text)">:${stats.sitesPort}</strong></div>
+        <div style="margin-top:.5rem;color:var(--muted2)">http://localhost:${stats.sitesPort}/<em>nombre-sitio</em>/</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Sites ──
+async function renderSites() {
+  setTopbarActions(`<button class="btn btn-primary" onclick="openModal('modalSite')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo sitio</button>`);
+
+  document.getElementById('mainContent').innerHTML = '<div style="color:var(--muted);padding:2rem">Cargando…</div>';
+  const sites = await api('/api/sites');
+
+  if (sites.length === 0) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <h3>Sin sitios</h3>
+        <p>Crea tu primer sitio web</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="openModal('modalSite')">Crear sitio</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('mainContent').innerHTML = `<div class="sites-grid">${sites.map(s => siteCardHtml(s)).join('')}</div>`;
+}
+
+function siteCardHtml(s) {
+  return `<div class="site-card">
+    <div class="site-card-header">
+      <div>
+        <div class="site-name">${s.name}</div>
+        ${s.description ? `<div class="site-desc">${esc(s.description)}</div>` : ''}
+      </div>
+      <span class="badge badge-green">activo</span>
+    </div>
+    <div class="site-meta">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${s.fileCount} archivos</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>${formatSize(s.size)}</span>
+    </div>
+    <div class="site-card-actions">
+      <button class="btn btn-secondary btn-sm" onclick="navigate('files','${s.name}','')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Archivos</button>
+      <a class="btn btn-secondary btn-sm" href="http://${location.hostname}:${stats.sitesPort || 8080}/${s.name}/" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></a>
+      <button class="btn btn-secondary btn-sm" onclick="downloadSite('${s.name}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteSite('${s.name}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+    </div>
+  </div>`;
+}
+
+// ── File Manager ──
+async function renderFiles() {
+  if (!currentSite) return;
+  setTopbarActions(`
+    <button class="btn btn-secondary btn-sm" onclick="openModal('modalNewFile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Nuevo archivo</button>
+    <button class="btn btn-secondary btn-sm" onclick="openModal('modalMkdir')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Carpeta</button>
+    <button class="btn btn-primary btn-sm" onclick="navigate('upload')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Subir</button>`);
+
+  document.getElementById('mainContent').innerHTML = '<div style="color:var(--muted);padding:2rem">Cargando…</div>';
+  const files = await api(`/api/sites/${currentSite}/files?path=${encodeURIComponent(currentPath)}`);
+
+  const parts = currentPath ? currentPath.split('/') : [];
+  const breadcrumbs = [
+    `<span onclick="navigate('files','${currentSite}','')">🏠 ${currentSite}</span>`
+  ];
+  parts.forEach((p, i) => {
+    const subPath = parts.slice(0, i+1).join('/');
+    breadcrumbs.push(`<span class="sep">/</span><span onclick="navigate('files','${currentSite}','${subPath}')">${p}</span>`);
+  });
+
+  let rows = '';
+  if (currentPath) {
+    const parentPath = parts.slice(0, -1).join('/');
+    rows += `<tr class="file-row is-dir" onclick="navigate('files','${currentSite}','${parentPath}')">
+      <td><span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#fbbf24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>..</span></td>
+      <td></td><td></td><td></td></tr>`;
+  }
+
+  files.forEach(f => {
+    const filePath = f.path;
+    const icon = f.isDir
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#fbbf24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : fileIcon(f.name);
+
+    const openAction = f.isDir
+      ? `navigate('files','${currentSite}','${filePath}')`
+      : isEditable(f.name) ? `openEditor('${filePath}')` : '';
+
+    rows += `<tr class="file-row ${f.isDir ? 'is-dir' : ''}" ${f.isDir ? `onclick="${openAction}"` : ''}>
+      <td><span class="file-icon">${icon}${!f.isDir && isEditable(f.name)
+        ? `<a href="#" onclick="event.preventDefault();${openAction}" style="color:var(--text);text-decoration:none">${esc(f.name)}</a>`
+        : esc(f.name)}</span></td>
+      <td style="color:var(--muted2);font-size:.8rem">${f.isDir ? '—' : formatSize(f.size)}</td>
+      <td style="color:var(--muted2);font-size:.8rem">${f.isDir ? '' : (f.mimeType || '')}</td>
+      <td>
+        <div class="file-actions">
+          ${!f.isDir && isEditable(f.name) ? `<button class="btn-icon" title="Editar" onclick="${openAction}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+          <button class="btn-icon" title="Renombrar" onclick="openRenameModal('${filePath}','${esc(f.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+          <button class="btn-icon" title="Eliminar" onclick="confirmDeleteFile('${filePath}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="fm-toolbar">
+      <div class="breadcrumb">${breadcrumbs.join('')}</div>
+    </div>
+    ${files.length === 0 && !currentPath ? `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <h3>Carpeta vacía</h3>
+        <p>Sube archivos o crea uno nuevo</p>
+      </div>` : `
+    <table class="file-table">
+      <thead><tr>
+        <th>Nombre</th><th>Tamaño</th><th>Tipo</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`}`;
+}
+
+// ── Upload ──
+function renderUpload() {
+  if (!currentSite) return;
+  document.getElementById('mainContent').innerHTML = `
+    <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      <p><strong>Haz clic</strong> o arrastra archivos aquí</p>
+      <p style="margin-top:.4rem;font-size:.8rem;color:var(--muted2)">HTML, CSS, JS, imágenes, etc. — máx. 50 MB por archivo</p>
+    </div>
+    <input type="file" id="fileInput" multiple style="display:none">
+    <div id="uploadProgress" style="margin-top:1.25rem"></div>`;
+
+  const dz = document.getElementById('dropZone');
+  const fi = document.getElementById('fileInput');
+
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); uploadFiles(e.dataTransfer.files); });
+  fi.addEventListener('change', () => uploadFiles(fi.files));
+}
+
+async function uploadFiles(fileList) {
+  const progress = document.getElementById('uploadProgress');
+  const files = Array.from(fileList);
+  if (!files.length) return;
+
+  progress.innerHTML = `<div style="color:var(--muted);font-size:.875rem">Subiendo ${files.length} archivo(s)…</div>`;
+
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+  formData.append('path', currentPath);
+
+  try {
+    const res = await fetch(`/api/sites/${currentSite}/upload`, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (res.ok) {
+      toast(`${data.uploaded.length} archivo(s) subidos`, 'success');
+      progress.innerHTML = `<div style="color:var(--success)">✓ Subidos: ${data.uploaded.join(', ')}</div>`;
+    } else {
+      toast(data.error, 'error');
+    }
+  } catch (e) {
+    toast('Error al subir: ' + e.message, 'error');
+  }
+}
+
+// ── Editor ──
+async function openEditor(filePath) {
+  editorFile = filePath;
+  navigate('editor');
+}
+
+async function renderEditor() {
+  if (!editorFile) return;
+  document.getElementById('topbarTitle').textContent = `Editor — ${editorFile.split('/').pop()}`;
+
+  setTopbarActions(`
+    <button class="btn btn-secondary btn-sm" onclick="navigate('files')">← Archivos</button>
+    <button class="btn btn-primary btn-sm" id="saveBtn" onclick="saveFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar</button>`);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div style="padding:.25rem 0 .75rem;color:var(--muted);font-family:monospace;font-size:.875rem">
+      ${currentSite} / ${editorFile}
+    </div>
+    <textarea id="editorArea"></textarea>`;
+
+  const data = await api(`/api/sites/${currentSite}/file?path=${encodeURIComponent(editorFile)}`);
+
+  const ext = editorFile.split('.').pop().toLowerCase();
+  const modeMap = { html: 'htmlmixed', htm: 'htmlmixed', css: 'css', js: 'javascript', json: 'javascript', xml: 'xml' };
+
+  if (editorInstance) { editorInstance.toTextArea(); editorInstance = null; }
+
+  editorInstance = CodeMirror.fromTextArea(document.getElementById('editorArea'), {
+    value: data.content,
+    mode: modeMap[ext] || 'htmlmixed',
+    theme: 'dracula',
+    lineNumbers: true,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    indentUnit: 2,
+    tabSize: 2,
+    lineWrapping: false,
+    extraKeys: { 'Ctrl-S': saveFile, 'Cmd-S': saveFile }
+  });
+  editorInstance.setValue(data.content);
+}
+
+async function saveFile() {
+  if (!editorInstance) return;
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  const res = await fetch(`/api/sites/${currentSite}/file`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: editorFile, content: editorInstance.getValue() })
+  });
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar`;
+  if (res.ok) toast('Archivo guardado', 'success');
+  else toast('Error al guardar', 'error');
+}
+
+// ── Settings ──
+async function renderSettings() {
+  const config = await api('/api/config');
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="settings-section">
+      <h3>Servidor</h3>
+      <div class="form-field">
+        <label class="form-label">Nombre del servidor</label>
+        <input class="form-input" id="cfgServerName" value="${esc(config.serverName || 'WodBox')}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-field">
+          <label class="form-label">Puerto panel admin</label>
+          <input class="form-input" id="cfgPort" type="number" value="${config.port || 3000}">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Puerto sitios web</label>
+          <input class="form-input" id="cfgSitesPort" type="number" value="${config.sitesPort || 8080}">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveConfig()">Guardar configuración</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Seguridad</h3>
+      <div class="form-field">
+        <label class="form-label">Contraseña actual</label>
+        <input class="form-input" type="password" id="curPwd" placeholder="••••••••">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Nueva contraseña</label>
+        <input class="form-input" type="password" id="newPwd" placeholder="Mín. 6 caracteres">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Confirmar contraseña</label>
+        <input class="form-input" type="password" id="newPwd2" placeholder="Repetir contraseña">
+      </div>
+      <button class="btn btn-primary" onclick="changePassword()">Cambiar contraseña</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Información</h3>
+      <div style="display:grid;gap:.4rem;font-size:.875rem;color:var(--muted)">
+        <div>Versión: <strong style="color:var(--text)">WodBox 1.0</strong></div>
+        <div>Node.js: <strong style="color:var(--text)">${navigator.userAgent.includes('Node') ? 'N/A' : 'Running'}</strong></div>
+        <div>Tiempo activo: <strong style="color:var(--text)" id="uptimeSetting">—</strong></div>
+      </div>
+    </div>`;
+
+  api('/api/stats').then(s => {
+    const el = document.getElementById('uptimeSetting');
+    if (el) el.textContent = formatUptime(s.uptime);
+  });
+}
+
+async function saveConfig() {
+  const res = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      serverName: document.getElementById('cfgServerName').value,
+      port: document.getElementById('cfgPort').value,
+      sitesPort: document.getElementById('cfgSitesPort').value
+    })
+  });
+  const data = await res.json();
+  if (res.ok) toast(data.message || 'Guardado', 'success');
+  else toast(data.error, 'error');
+}
+
+async function changePassword() {
+  const cur = document.getElementById('curPwd').value;
+  const nw = document.getElementById('newPwd').value;
+  const nw2 = document.getElementById('newPwd2').value;
+  if (nw !== nw2) { toast('Las contraseñas no coinciden', 'error'); return; }
+
+  const res = await fetch('/auth/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword: cur, newPassword: nw })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    toast('Contraseña cambiada', 'success');
+    document.getElementById('curPwd').value = '';
+    document.getElementById('newPwd').value = '';
+    document.getElementById('newPwd2').value = '';
+  } else {
+    toast(data.error, 'error');
+  }
+}
+
+// ── Site actions ──
+async function createSite() {
+  const name = document.getElementById('newSiteName').value.trim();
+  const desc = document.getElementById('newSiteDesc').value.trim();
+  if (!name) { toast('Nombre obligatorio', 'error'); return; }
+
+  const res = await fetch('/api/sites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description: desc })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    closeModal('modalSite');
+    document.getElementById('newSiteName').value = '';
+    document.getElementById('newSiteDesc').value = '';
+    toast(`Sitio "${name}" creado`, 'success');
+    navigate('files', name, '');
+  } else {
+    toast(data.error, 'error');
+  }
+}
+
+function confirmDeleteSite(name) {
+  document.getElementById('deleteMsg').textContent = `¿Eliminar el sitio "${name}" y todos sus archivos?`;
+  document.getElementById('confirmDeleteBtn').onclick = async () => {
+    const res = await fetch(`/api/sites/${name}`, { method: 'DELETE' });
+    closeModal('modalConfirmDelete');
+    if (res.ok) {
+      toast(`Sitio "${name}" eliminado`, 'success');
+      if (currentSite === name) { currentSite = null; navigate('sites'); }
+      else renderSites();
+    } else toast('Error al eliminar', 'error');
+  };
+  openModal('modalConfirmDelete');
+}
+
+function downloadSite(name) {
+  window.open(`/api/sites/${name}/download`, '_blank');
+}
+
+// ── File actions ──
+async function createDir() {
+  const name = document.getElementById('newDirName').value.trim();
+  if (!name) { toast('Nombre obligatorio', 'error'); return; }
+  const dirPath = currentPath ? `${currentPath}/${name}` : name;
+
+  const res = await fetch(`/api/sites/${currentSite}/mkdir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: dirPath })
+  });
+  closeModal('modalMkdir');
+  document.getElementById('newDirName').value = '';
+  if (res.ok) { toast('Carpeta creada', 'success'); renderFiles(); }
+  else toast('Error', 'error');
+}
+
+async function createNewFile() {
+  const name = document.getElementById('newFileName').value.trim();
+  if (!name) { toast('Nombre obligatorio', 'error'); return; }
+  const filePath = currentPath ? `${currentPath}/${name}` : name;
+
+  const defaultContent = name.endsWith('.html')
+    ? `<!DOCTYPE html>\n<html lang="es">\n<head>\n  <meta charset="UTF-8">\n  <title>${name}</title>\n</head>\n<body>\n  \n</body>\n</html>`
+    : name.endsWith('.css') ? `/* ${name} */\n`
+    : name.endsWith('.js') ? `// ${name}\n`
+    : '';
+
+  const res = await fetch(`/api/sites/${currentSite}/file`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: filePath, content: defaultContent })
+  });
+  closeModal('modalNewFile');
+  document.getElementById('newFileName').value = '';
+  if (res.ok) {
+    toast('Archivo creado', 'success');
+    editorFile = filePath;
+    navigate('editor');
+  } else toast('Error', 'error');
+}
+
+function openRenameModal(filePath, currentName) {
+  document.getElementById('renameOldPath').value = filePath;
+  document.getElementById('renameNewName').value = currentName;
+  openModal('modalRename');
+}
+
+async function doRename() {
+  const oldPath = document.getElementById('renameOldPath').value;
+  const newName = document.getElementById('renameNewName').value.trim();
+  if (!newName) { toast('Nombre obligatorio', 'error'); return; }
+
+  const parts = oldPath.split('/');
+  parts[parts.length - 1] = newName;
+  const newPath = parts.join('/');
+
+  const res = await fetch(`/api/sites/${currentSite}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: oldPath, to: newPath })
+  });
+  closeModal('modalRename');
+  if (res.ok) { toast('Renombrado', 'success'); renderFiles(); }
+  else toast('Error al renombrar', 'error');
+}
+
+function confirmDeleteFile(filePath) {
+  const name = filePath.split('/').pop();
+  document.getElementById('deleteMsg').textContent = `¿Eliminar "${name}"?`;
+  document.getElementById('confirmDeleteBtn').onclick = async () => {
+    const res = await fetch(`/api/sites/${currentSite}/file?path=${encodeURIComponent(filePath)}`, { method: 'DELETE' });
+    closeModal('modalConfirmDelete');
+    if (res.ok) { toast('Eliminado', 'success'); renderFiles(); }
+    else toast('Error al eliminar', 'error');
+  };
+  openModal('modalConfirmDelete');
+}
+
+// ── Helpers ──
+async function api(url) {
+  try {
+    const r = await fetch(url);
+    if (r.status === 401) { window.location.href = '/'; return {}; }
+    return await r.json();
+  } catch { return {}; }
+}
+
+async function logout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location.href = '/';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function setTopbarActions(html) {
+  document.getElementById('topbarActions').innerHTML = html;
+}
+
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = {
+    success: '✓',
+    error: '✕',
+    info: 'ℹ'
+  };
+  t.innerHTML = `<span style="font-weight:700">${icons[type]}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
+  return `${bytes.toFixed(i ? 1 : 0)} ${units[i]}`;
+}
+
+function formatUptime(s) {
+  if (!s) return '—';
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function isEditable(name) {
+  return /\.(html?|css|js|json|txt|md|xml|svg|php)$/i.test(name);
+}
+
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const colors = { html: '#e34c26', htm: '#e34c26', css: '#264de4', js: '#f7df1e', json: '#cbcb41',
+    svg: '#ffb13b', png: '#9b59b6', jpg: '#9b59b6', jpeg: '#9b59b6', gif: '#9b59b6',
+    pdf: '#e74c3c', txt: '#8b949e', md: '#8b949e' };
+  const color = colors[ext] || 'var(--muted)';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+init();
+</script>
+</body>
+</html>

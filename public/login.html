@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WodBox — Acceso</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --error: #f85149;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .login-wrap {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: var(--accent);
+      border-radius: 14px;
+      margin-bottom: 1rem;
+    }
+
+    .logo-mark svg { width: 30px; height: 30px; fill: white; }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -.025em;
+      color: var(--text);
+    }
+
+    .logo p {
+      font-size: .875rem;
+      color: var(--muted);
+      margin-top: .25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    label {
+      display: block;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: .625rem .875rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9375rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    input:focus { border-color: var(--accent); }
+
+    .field { margin-bottom: 1.25rem; }
+
+    .btn {
+      width: 100%;
+      padding: .75rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: .9375rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      margin-top: .5rem;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:active { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .error-msg {
+      display: none;
+      background: rgba(248, 81, 73, .12);
+      border: 1px solid rgba(248, 81, 73, .3);
+      color: var(--error);
+      padding: .625rem .875rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <h1>WodBox</h1>
+      <p>Servidor web personal</p>
+    </div>
+
+    <div class="card">
+      <div class="error-msg" id="errorMsg"></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" name="username" autocomplete="username" autofocus required>
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn" id="submitBtn">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.classList.remove('visible');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Accediendo…';
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.location.href = '/admin';
+        } else {
+          errorMsg.textContent = data.error || 'Error de acceso';
+          errorMsg.classList.add('visible');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Entrar';
+        }
+      } catch {
+        errorMsg.textContent = 'Error de conexión';
+        errorMsg.classList.add('visible');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Entrar';
+      }
+    });
+  </script>
+</body>
+</html>
