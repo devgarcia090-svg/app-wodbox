@@ -1,0 +1,648 @@
+<title>WodBox — Gestión profesional para tu box de CrossFit</title>
+<meta name="description" content="Software all-in-one para boxes de CrossFit. Miembros, reservas, pagos y comunicación en una sola app. Sin comisiones.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #06090f;
+  --s1:     #0d1420;
+  --s2:     #131d2e;
+  --s3:     #1a2740;
+  --border: #1e2d45;
+  --border2:#2a3d58;
+  --accent: #f95c00;
+  --a12:    rgba(249,92,0,0.12);
+  --a25:    rgba(249,92,0,0.25);
+  --text:   #F0F4FA;
+  --muted:  #7a94b0;
+  --green:  #22c55e;
+  --yellow: #f59e0b;
+  --blue:   #3b82f6;
+  --red:    #ef4444;
+  --ease:   cubic-bezier(0.16,1,0.3,1);
+  --spring: cubic-bezier(0.34,1.56,0.64,1);
+}
+
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body { font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+/* ── SCROLL REVEAL ── */
+.r  { opacity: 0; transform: translateY(36px); transition: opacity .65s var(--ease), transform .65s var(--ease); }
+.rl { opacity: 0; transform: translateX(-44px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.rr { opacity: 0; transform: translateX(44px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.rs { opacity: 0; transform: scale(.93); transition: opacity .6s var(--ease), transform .6s var(--spring); }
+.r.on,.rl.on,.rr.on,.rs.on { opacity: 1; transform: none; }
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}.d5{transition-delay:.40s}.d6{transition-delay:.48s}
+
+/* ── LAYOUT ── */
+.w { max-width: 1160px; margin: 0 auto; padding: 0 32px; }
+
+/* ── NAV ── */
+nav { position: fixed; inset: 0 0 auto; z-index: 200; background: rgba(6,9,15,.0); transition: background .4s, box-shadow .4s; }
+nav.s { background: rgba(6,9,15,.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 1px 0 rgba(255,255,255,.05); }
+.nav-r { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 68px; gap: 24px; }
+.logo-t { font-size: 19px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 9px; }
+.logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-t b { color: var(--accent); font-weight: 900; }
+/* center pill group */
+.nav-pill-group { display: flex; align-items: center; gap: 2px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 4px; }
+.nav-pill-group a { font-size: 13.5px; font-weight: 500; color: rgba(240,244,250,.7); text-decoration: none; padding: 6px 14px; border-radius: 8px; letter-spacing: .01em; transition: color .2s, background .2s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.nav-pill-group a:hover { color: var(--text); background: rgba(255,255,255,.07); }
+.nav-pill-group a.active { background: var(--text); color: #0d1420; font-weight: 700; }
+.nav-pill-group a.active:hover { background: var(--text); }
+.nav-chevron { width: 10px; height: 10px; opacity: .5; }
+/* right side */
+.nav-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.btn-login { background: transparent; color: var(--muted); border: 1px solid var(--border2); padding: 8px 18px; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none; transition: border-color .2s, color .2s; }
+.btn-login:hover { color: var(--text); border-color: rgba(255,255,255,.3); }
+.btn-n { background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; letter-spacing: .02em; text-decoration: none; transition: background .2s, transform .15s, box-shadow .2s; }
+.btn-n:hover { background: #ff6820; transform: translateY(-1px); box-shadow: 0 4px 22px rgba(249,92,0,.45); }
+
+/* ── PRICING ── */
+.pricing-s { padding: 96px 0; }
+.price-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-top: 52px; }
+.price-card { background: var(--s2); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px; position: relative; transition: border-color .3s, transform .3s, box-shadow .3s; }
+.price-card:hover { border-color: rgba(249,92,0,.35); transform: translateY(-5px); box-shadow: 0 24px 56px rgba(0,0,0,.4); }
+.price-card.featured { border-color: var(--accent); background: linear-gradient(160deg, rgba(249,92,0,.1) 0%, var(--s2) 60%); }
+.price-card.featured::before { content:'POPULAR'; position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:var(--accent); color:#fff; font-size:9px; font-weight:800; letter-spacing:.12em; padding:3px 10px; border-radius:20px; }
+.price-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 18px; min-height: 52px; }
+.price-amount { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+.price-big { font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -.04em; }
+.price-mo { font-size: 14px; color: var(--muted); }
+.price-old { font-size: 14px; color: var(--muted); text-decoration: line-through; margin-right: 4px; }
+.price-limit { font-size: 13.5px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+.price-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.price-feat { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; }
+.pf { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.pf svg { flex-shrink: 0; }
+.btn-price { display: block; width: 100%; text-align: center; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; transition: background .2s, transform .15s; border: none; }
+.btn-price-out { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.btn-price-out:hover { border-color: var(--accent); color: var(--accent); }
+.btn-price-fill { background: var(--accent); color: #fff; }
+.btn-price-fill:hover { background: #ff6820; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(249,92,0,.4); }
+
+/* ── AMBIENT BG ── */
+.ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.orb { position: absolute; border-radius: 50%; filter: blur(90px); }
+.o1 { width: 800px; height: 800px; top: -260px; right: -240px; background: radial-gradient(circle, rgba(249,92,0,.13) 0%, transparent 70%); animation: oa 14s ease-in-out infinite alternate; }
+.o2 { width: 600px; height: 600px; bottom: 0; left: -160px; background: radial-gradient(circle, rgba(59,130,246,.09) 0%, transparent 70%); animation: oa 19s ease-in-out infinite alternate-reverse; }
+.o3 { width: 400px; height: 400px; top: 35%; left: 38%; background: radial-gradient(circle, rgba(249,92,0,.06) 0%, transparent 70%); animation: ob 22s ease-in-out infinite alternate; }
+@keyframes oa { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(24px,-18px) scale(1.04)} 100%{transform:translate(-18px,32px) scale(.97)} }
+@keyframes ob { 0%{transform:translate(0,0)} 100%{transform:translate(-36px,28px)} }
+
+/* grid overlay */
+.grid-ov { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 100%); }
+
+/* ── HERO ── */
+.hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; padding: 120px 32px 80px; max-width: 1160px; margin: 0 auto; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--a12); border: 1px solid var(--a25); color: var(--accent); border-radius: 100px; padding: 5px 14px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 22px; opacity: 0; animation: fi .6s .2s var(--ease) forwards; }
+.bdot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pd 2s ease-in-out infinite; }
+@keyframes pd { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
+@keyframes fi { to{opacity:1} }
+
+.hero-title { font-size: clamp(52px,7vw,92px); font-weight: 900; line-height: .9; letter-spacing: -.025em; text-transform: uppercase; color: var(--text); margin-bottom: 22px; }
+.ht-line { display: block; overflow: hidden; }
+.ht-inner { display: block; opacity: 0; transform: translateY(100%); animation: li .65s var(--ease) forwards; }
+.l1 .ht-inner { animation-delay: .25s; }
+.l2 .ht-inner { animation-delay: .45s; }
+.l2 .ht-inner { color: var(--accent); }
+@keyframes li { to{opacity:1;transform:none} }
+
+.hero-sub { font-size: 16px; color: var(--muted); line-height: 1.7; max-width: 450px; margin-bottom: 34px; opacity: 0; animation: fi .7s .75s var(--ease) forwards; }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; opacity: 0; animation: fi .6s .95s var(--ease) forwards; }
+.btn-p { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; text-decoration: none; padding: 13px 26px; border-radius: 10px; font-size: 15px; font-weight: 700; letter-spacing: .02em; position: relative; overflow: hidden; transition: background .2s, transform .15s; }
+.btn-p::before { content:''; position:absolute; inset:0; background: linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
+.btn-p:hover { background: #ff6820; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(249,92,0,.5); }
+.btn-s { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--muted); text-decoration: none; padding: 13px 26px; border-radius: 10px; font-size: 15px; font-weight: 500; border: 1px solid var(--border2); transition: border-color .2s, color .2s; }
+.btn-s:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── PHONE ── */
+.phone-wrap { display: flex; justify-content: center; align-items: center; opacity: 0; animation: pin .9s .35s var(--spring) forwards; position: relative; }
+@keyframes pin { from{opacity:0;transform:translateY(44px) scale(.93)} to{opacity:1;transform:none} }
+.phone-float { animation: pf 4.5s ease-in-out infinite; }
+@keyframes pf { 0%,100%{transform:translateY(0) rotate(-1.5deg)} 50%{transform:translateY(-16px) rotate(1.5deg)} }
+
+/* shadow behind phone */
+.phone-shadow { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); width: 200px; height: 40px; background: rgba(249,92,0,.18); filter: blur(30px); border-radius: 50%; animation: pfs 4.5s ease-in-out infinite; }
+@keyframes pfs { 0%,100%{opacity:.8;transform:translateX(-50%) scaleX(1)} 50%{opacity:.4;transform:translateX(-50%) scaleX(.75)} }
+
+.phone { width: 254px; background: #060a12; border-radius: 44px; border: 2px solid #243040; box-shadow: 0 50px 100px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.06); overflow: hidden; position: relative; }
+.p-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 108px; height: 30px; background: #060a12; border-radius: 0 0 16px 16px; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.p-spk { width: 46px; height: 4px; border-radius: 2px; background: #1a2235; }
+.p-cam { width: 9px; height: 9px; border-radius: 50%; background: #1a2235; border: 1.5px solid #2d3f5c; }
+.p-screen { padding: 36px 0 0; background: #0d1420; }
+.p-hdr { padding: 0 14px 10px; display: flex; justify-content: space-between; align-items: center; }
+.p-hdr-t { font-weight: 800; font-size: 17px; }
+.p-av { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; }
+.p-dates { display: flex; gap: 7px; padding: 0 14px 12px; overflow: hidden; }
+.p-dc { flex-shrink: 0; text-align: center; padding: 7px 9px; border-radius: 9px; font-size: 9.5px; }
+.p-dc.a { background: var(--accent); color: #fff; }
+.p-dc:not(.a) { background: #131d2e; color: var(--muted); }
+.p-dc b { display: block; font-size: 13px; font-weight: 800; }
+.cc { margin: 0 12px 7px; background: #131d2e; border-radius: 9px; border: 1px solid #1e2d45; padding: 9px 11px; position: relative; overflow: hidden; }
+.cc-a { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 0; }
+.cc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.cc-time { font-weight: 900; font-size: 14px; }
+.cc-b { font-size: 7.5px; padding: 2px 5px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.bg-o { background: rgba(249,92,0,.15); color: var(--accent); }
+.bg-g { background: rgba(34,197,94,.15); color: var(--green); }
+.bg-r { background: rgba(239,68,68,.15); color: var(--red); }
+.cc-name { font-size: 10.5px; font-weight: 600; margin-bottom: 2px; }
+.cc-meta { font-size: 9px; color: var(--muted); margin-bottom: 6px; }
+.spots { display: flex; gap: 3px; }
+.sp { width: 13px; height: 13px; border-radius: 3px; }
+.sp.f { background: var(--accent); opacity: .8; }
+.sp.m { background: var(--green); }
+.sp.e { background: #1a2740; border: 1px solid #1e2d45; }
+.p-tab { display: flex; padding: 10px 0 18px; border-top: 1px solid #131d2e; background: rgba(6,9,15,.97); }
+.ti { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ti-l { font-size: 8.5px; color: var(--muted); }
+.ti.a .ti-l { color: var(--accent); }
+
+/* ── STATS ── */
+.stats-s { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--s1); }
+.stats-g { display: grid; grid-template-columns: repeat(4,1fr); max-width: 1160px; margin: 0 auto; }
+.stat-i { padding: 30px 36px; border-right: 1px solid var(--border); text-align: center; }
+.stat-i:last-child { border-right: none; }
+.stat-n { font-size: 46px; font-weight: 900; color: var(--accent); line-height: 1; letter-spacing: -.03em; }
+.stat-l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* ── SECTIONS ── */
+.sec { padding: 96px 0; }
+.eyebrow { display: flex; align-items: center; gap: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+.ebl { height: 1px; background: var(--border2); width: 32px; }
+.sec-title { font-size: clamp(34px,5vw,60px); font-weight: 900; line-height: .92; text-transform: uppercase; letter-spacing: -.025em; color: var(--text); margin-bottom: 14px; }
+.sec-sub { font-size: 15.5px; color: var(--muted); max-width: 520px; line-height: 1.7; }
+
+/* ── BENTO ── */
+.bento { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 52px; }
+.bc { background: var(--s2); border: 1px solid var(--border); border-radius: 20px; padding: 26px; position: relative; overflow: hidden; transition: border-color .3s, transform .3s, box-shadow .3s; }
+.bc:hover { border-color: rgba(249,92,0,.38); transform: translateY(-5px); box-shadow: 0 24px 56px rgba(0,0,0,.4), 0 0 0 1px rgba(249,92,0,.1); }
+.bc.span2 { grid-column: span 2; }
+.bc-glow { position: absolute; bottom: -60px; right: -60px; width: 180px; height: 180px; background: radial-gradient(circle,rgba(249,92,0,.08),transparent 70%); border-radius: 50%; pointer-events: none; }
+.bc-icon { width: 46px; height: 46px; border-radius: 13px; background: var(--a12); border: 1px solid rgba(249,92,0,.18); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.bc-t { font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+.bc-d { font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+
+.memb-list { margin-top: 18px; display: flex; flex-direction: column; gap: 7px; }
+.mb-row { display: flex; align-items: center; gap: 10px; background: var(--s3); border-radius: 10px; padding: 8px 11px; border: 1px solid var(--border); }
+.mb-av { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.mb-info { flex: 1; min-width: 0; }
+.mb-n { font-size: 11.5px; font-weight: 600; }
+.mb-p { font-size: 9.5px; color: var(--muted); }
+.mb-st { font-size: 8.5px; padding: 3px 7px; border-radius: 20px; font-weight: 700; flex-shrink: 0; }
+.st-a { background: rgba(34,197,94,.15); color: var(--green); }
+.st-d { background: rgba(245,158,11,.15); color: var(--yellow); }
+.st-n { background: rgba(59,130,246,.15); color: var(--blue); }
+
+.chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 58px; margin-top: 18px; }
+.cb { flex: 1; border-radius: 4px 4px 0 0; background: rgba(249,92,0,.22); transition: background .2s; }
+.cb:hover { background: rgba(249,92,0,.55); }
+.cb.hi { background: var(--accent); }
+.big-n { font-size: 42px; font-weight: 900; color: var(--accent); line-height: 1; letter-spacing: -.03em; margin-top: 18px; }
+.big-l { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ── STEPS ── */
+.steps-g { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; margin-top: 52px; position: relative; }
+.steps-g::before { content:''; position: absolute; top: 34px; left: 17%; right: 17%; height: 2px; background: linear-gradient(90deg,var(--border),var(--accent),var(--border)); z-index: 0; }
+.step { padding: 0 28px; text-align: center; position: relative; z-index: 1; }
+.step-n { width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px; font-weight: 900; color: var(--accent); background: var(--bg); position: relative; }
+.step-n::after { content:''; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle,rgba(249,92,0,.14),transparent 70%); }
+.step-t { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.step-d { font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+
+/* ── TESTI ── */
+.testi-g { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 48px; }
+.tc { background: var(--s2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: border-color .3s; }
+.tc:hover { border-color: rgba(249,92,0,.28); }
+.stars { color: var(--yellow); font-size: 13px; margin-bottom: 13px; letter-spacing: 2px; }
+.tq { font-size: 13.5px; color: var(--muted); line-height: 1.75; margin-bottom: 14px; font-style: italic; }
+.ta { display: flex; align-items: center; gap: 9px; }
+.tav { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+.tn { font-size: 12.5px; font-weight: 600; }
+.tb { font-size: 10.5px; color: var(--muted); }
+
+/* ── CTA ── */
+.cta-s { padding: 120px 0; text-align: center; position: relative; overflow: hidden; }
+.cta-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 700px; height: 500px; background: radial-gradient(ellipse,rgba(249,92,0,.13) 0%,transparent 70%); pointer-events: none; animation: cglow 4s ease-in-out infinite alternate; }
+@keyframes cglow { 0%{opacity:.6;transform:translate(-50%,-50%) scale(1)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1.08)} }
+.cta-t { font-size: clamp(42px,6vw,84px); font-weight: 900; text-transform: uppercase; line-height: .92; letter-spacing: -.025em; margin-bottom: 18px; position: relative; }
+.cta-sub { font-size: 15px; color: var(--muted); margin-bottom: 34px; position: relative; }
+
+/* pulse ring on main CTA button */
+.btn-cta { display: inline-flex; align-items: center; gap: 9px; background: var(--accent); color: #fff; text-decoration: none; padding: 16px 36px; border-radius: 12px; font-size: 16px; font-weight: 800; letter-spacing: .02em; position: relative; transition: background .2s, transform .15s; }
+.btn-cta::before { content:''; position:absolute; inset:-3px; border-radius:15px; border: 2px solid rgba(249,92,0,.5); animation: ring 2.5s ease-out infinite; }
+@keyframes ring { 0%{opacity:.9;transform:scale(1)} 100%{opacity:0;transform:scale(1.18)} }
+.btn-cta:hover { background: #ff6820; transform: translateY(-3px); box-shadow: 0 12px 40px rgba(249,92,0,.55); }
+.btn-cta:hover::before { animation: none; }
+
+/* ── FOOTER ── */
+footer { border-top: 1px solid var(--border); padding: 36px 0; }
+.ft-r { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.ft-logo { font-size: 17px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.ft-logo b { color: var(--accent); }
+.ft-l { display: flex; gap: 22px; }
+.ft-l a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s; }
+.ft-l a:hover { color: var(--text); }
+.ft-c { font-size: 12.5px; color: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .hero{grid-template-columns:1fr;text-align:center;gap:36px;padding:96px 20px 60px;}
+  .hero-sub{margin-left:auto;margin-right:auto;}
+  .hero-ctas{justify-content:center;}
+  .phone-wrap{order:-1;}
+  .stats-g{grid-template-columns:repeat(2,1fr);}
+  .stat-i{border-right:none;border-bottom:1px solid var(--border);}
+  .stat-i:nth-child(even){border-right:none;}
+  .bento{grid-template-columns:1fr;}
+  .bc.span2{grid-column:span 1;}
+  .steps-g{grid-template-columns:1fr;}
+  .steps-g::before{display:none;}
+  .testi-g{grid-template-columns:1fr;}
+  .nav-pill-group{display:none;}
+  .nav-right .btn-login{display:none;}
+  .nav-r{grid-template-columns:1fr auto;}
+  .w{padding:0 20px;}
+  .price-grid{grid-template-columns:1fr 1fr;}
+  .price-card.featured::before{display:none;}
+  .eyebrow{justify-content:center;}
+  .sec-title{text-align:center;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;}
+  .r,.rl,.rr,.rs{opacity:1;transform:none;}
+  .hero-badge,.hero-sub,.hero-ctas,.phone-wrap,.ht-inner{opacity:1;transform:none;}
+}
+</style>
+
+<!-- ambient -->
+<div class="ambient" aria-hidden="true">
+  <div class="grid-ov"></div>
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="w nav-r">
+    <a href="#" class="logo-t">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 4v16M18 4v16M3 12h18M9 8l-3 4 3 4M15 8l3 4-3 4" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      WOD<b>BOX</b>
+    </a>
+    <div class="nav-pill-group">
+      <a href="#feat">
+        Funciones
+        <svg class="nav-chevron" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#pricing" class="active">Precio</a>
+      <a href="#how">Cómo funciona</a>
+      <a href="#reviews">Opiniones</a>
+    </div>
+    <div class="nav-right">
+      <a href="#" class="btn-login">Iniciar sesión</a>
+      <a href="mailto:hola@wodbox.xyz" class="btn-n">Empieza ahora →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section>
+  <div class="hero">
+    <div>
+      <div class="hero-badge"><span class="bdot"></span> iOS · Android · Sin comisiones</div>
+      <h1 class="hero-title">
+        <span class="ht-line l1"><span class="ht-inner">TU BOX,</span></span>
+        <span class="ht-line l2"><span class="ht-inner">SIN CAOS</span></span>
+      </h1>
+      <p class="hero-sub">Gestiona miembros, reservas, cobros y comunicación desde una sola app. Diseñada para boxes de CrossFit que quieren crecer.</p>
+      <div class="hero-ctas">
+        <a href="mailto:hola@wodbox.xyz" class="btn-p">
+          Solicitar demo gratis
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m-4-4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#feat" class="btn-s">Ver funciones ↓</a>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-shadow"></div>
+      <div class="phone-float">
+        <div class="phone">
+          <div class="p-notch"><div class="p-spk"></div><div class="p-cam"></div></div>
+          <div class="p-screen">
+            <div class="p-hdr">
+              <span class="p-hdr-t">Clases</span>
+              <div class="p-av">M</div>
+            </div>
+            <div class="p-dates">
+              <div class="p-dc"><b>L</b>23</div>
+              <div class="p-dc"><b>M</b>24</div>
+              <div class="p-dc a"><b>X</b>25</div>
+              <div class="p-dc"><b>J</b>26</div>
+              <div class="p-dc"><b>V</b>27</div>
+            </div>
+            <div class="cc">
+              <div class="cc-a" style="background:var(--accent)"></div>
+              <div class="cc-top"><span class="cc-time">07:00</span><span class="cc-b bg-o">Reservada ✓</span></div>
+              <div class="cc-name">WOD · CrossFit</div>
+              <div class="cc-meta">👤 Carlos M. · ⏱ 60 min</div>
+              <div class="spots"><div class="sp m"></div><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div><div class="sp e"></div><div class="sp e"></div></div>
+            </div>
+            <div class="cc">
+              <div class="cc-a" style="background:var(--green)"></div>
+              <div class="cc-top"><span class="cc-time">10:00</span><span class="cc-b bg-g">Plazas libres</span></div>
+              <div class="cc-name">Open Box</div>
+              <div class="cc-meta">👤 Ana R. · ⏱ 90 min</div>
+              <div class="spots"><div class="sp f"></div><div class="sp f"></div><div class="sp e"></div><div class="sp e"></div><div class="sp e"></div><div class="sp e"></div></div>
+            </div>
+            <div class="cc">
+              <div class="cc-a" style="background:var(--red)"></div>
+              <div class="cc-top"><span class="cc-time">19:30</span><span class="cc-b bg-r">Llena</span></div>
+              <div class="cc-name">Halterofilia</div>
+              <div class="cc-meta">👤 Carlos M. · ⏱ 60 min</div>
+              <div class="spots"><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div><div class="sp f"></div></div>
+            </div>
+          </div>
+          <div class="p-tab">
+            <div class="ti a">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v9a1 1 0 01-1 1H4a1 1 0 01-1-1z" stroke="#f95c00" stroke-width="1.5"/></svg>
+              <span class="ti-l" style="color:var(--accent)">Inicio</span>
+            </div>
+            <div class="ti">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="14" rx="2" stroke="#7a94b0" stroke-width="1.5"/><path d="M7 2v4M13 2v4M3 9h14" stroke="#7a94b0" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span class="ti-l">Clases</span>
+            </div>
+            <div class="ti">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v6l3 3" stroke="#7a94b0" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="7" stroke="#7a94b0" stroke-width="1.5"/></svg>
+              <span class="ti-l">PRs</span>
+            </div>
+            <div class="ti">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#7a94b0" stroke-width="1.5"/><path d="M3 17c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="#7a94b0" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span class="ti-l">Perfil</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-s">
+  <div class="stats-g">
+    <div class="stat-i r"><div class="stat-n"><span class="cnt" data-t="0">0</span>€</div><div class="stat-l">comisión por reserva</div></div>
+    <div class="stat-i r d1"><div class="stat-n"><span class="cnt" data-t="5">0</span> min</div><div class="stat-l">para empezar</div></div>
+    <div class="stat-i r d2"><div class="stat-n"><span class="cnt" data-t="2">0</span> apps</div><div class="stat-l">iOS y Android</div></div>
+    <div class="stat-i r d3"><div class="stat-n"><span class="cnt" data-t="100">0</span>%</div><div class="stat-l">tu marca, tus colores</div></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="sec" id="feat">
+  <div class="w">
+    <div class="eyebrow r"><div class="ebl"></div>Funcionalidades<div class="ebl"></div></div>
+    <h2 class="sec-title r d1">TODO LO QUE<br>NECESITAS</h2>
+    <p class="sec-sub r d2">Cada función diseñada para reducir el trabajo administrativo y mejorar la experiencia de tus atletas.</p>
+
+    <div class="bento">
+      <div class="bc span2 r d1">
+        <div class="bc-glow"></div>
+        <div class="bc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#f95c00" stroke-width="2"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bc-t">Gestión de Miembros</div>
+        <div class="bc-d">Fichas completas, historial de asistencia, estado de cuotas y comunicación directa con cada atleta desde una sola pantalla.</div>
+        <div class="memb-list">
+          <div class="mb-row"><div class="mb-av" style="background:#f95c00">MG</div><div class="mb-info"><div class="mb-n">María González</div><div class="mb-p">Ilimitado · desde ene 2024</div></div><div class="mb-st st-a">ACTIVO</div></div>
+          <div class="mb-row"><div class="mb-av" style="background:#3b82f6">JR</div><div class="mb-info"><div class="mb-n">Javier Ruiz</div><div class="mb-p">3 días/sem · desde mar 2024</div></div><div class="mb-st st-d">PENDIENTE</div></div>
+          <div class="mb-row"><div class="mb-av" style="background:#22c55e">LP</div><div class="mb-info"><div class="mb-n">Laura Pérez</div><div class="mb-p">Ilimitado · desde jun 2024</div></div><div class="mb-st st-n">NUEVO</div></div>
+        </div>
+      </div>
+
+      <div class="bc r d2">
+        <div class="bc-glow"></div>
+        <div class="bc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#f95c00" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bc-t">Reservas en tiempo real</div>
+        <div class="bc-d">Los atletas reservan y cancelan desde la app. Control de aforo automático y lista de espera.</div>
+        <div class="chart-bars">
+          <div class="cb" style="height:32%"></div><div class="cb" style="height:54%"></div><div class="cb" style="height:43%"></div><div class="cb" style="height:74%"></div><div class="cb hi" style="height:91%"></div><div class="cb" style="height:62%"></div><div class="cb" style="height:79%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Reservas esta semana ↑ 23%</div>
+      </div>
+
+      <div class="bc r d3">
+        <div class="bc-glow"></div>
+        <div class="bc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#f95c00" stroke-width="2"/><path d="M2 10h20" stroke="#f95c00" stroke-width="2"/><path d="M6 15h4" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bc-t">Cobros automáticos</div>
+        <div class="bc-d">Domiciliación de cuotas sin comisiones. Alertas de impago y seguimiento en un clic.</div>
+        <div class="big-n">€0</div>
+        <div class="big-l">comisiones por transacción</div>
+      </div>
+
+      <div class="bc r d4">
+        <div class="bc-glow"></div>
+        <div class="bc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M9 8l-3 4 3 4M15 8l3 4-3 4" stroke="#f95c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="bc-t">WODs y PRs</div>
+        <div class="bc-d">Publica los entrenamientos del día y registra los récords personales de tus atletas automáticamente.</div>
+      </div>
+
+      <div class="bc r d5">
+        <div class="bc-glow"></div>
+        <div class="bc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#f95c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="bc-t">Comunicación directa</div>
+        <div class="bc-d">Notificaciones push y mensajes a todos tus miembros o grupos específicos, sin apps externas.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="sec" id="how" style="padding-top:0">
+  <div class="w">
+    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Cómo funciona<div class="ebl"></div></div>
+    <h2 class="sec-title r d1" style="text-align:center">LISTO EN<br><span style="color:var(--accent)">5 MINUTOS</span></h2>
+    <div class="steps-g">
+      <div class="step r d1">
+        <div class="step-n">1</div>
+        <div class="step-t">Crea tu box</div>
+        <div class="step-d">Añade tu logo, nombre y colores de marca. Tu app, tu identidad.</div>
+      </div>
+      <div class="step r d2">
+        <div class="step-n">2</div>
+        <div class="step-t">Invita a tus atletas</div>
+        <div class="step-d">Envía invitaciones por email. Tus miembros se unen en segundos.</div>
+      </div>
+      <div class="step r d3">
+        <div class="step-n">3</div>
+        <div class="step-t">Empieza a operar</div>
+        <div class="step-d">Crea clases, gestiona reservas y cobra cuotas desde el primer día.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="sec" id="reviews" style="padding-top:48px">
+  <div class="w">
+    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Testimonios<div class="ebl"></div></div>
+    <h2 class="sec-title r d1" style="text-align:center">LO QUE DICEN<br>LOS COACHES</h2>
+    <div class="testi-g">
+      <div class="tc r d1">
+        <div class="stars">★★★★★</div>
+        <div class="tq">"Antes perdía horas con hojas de cálculo. Ahora en 5 minutos tengo toda la semana organizada. Mis atletas están encantados."</div>
+        <div class="ta"><div class="tav" style="background:#f95c00">CM</div><div><div class="tn">Carlos Martínez</div><div class="tb">CrossFit Murcia Norte</div></div></div>
+      </div>
+      <div class="tc r d2">
+        <div class="stars">★★★★★</div>
+        <div class="tq">"El control de pagos automático me ha ahorrado conversaciones incómodas. Todo transparente desde la app."</div>
+        <div class="ta"><div class="tav" style="background:#3b82f6">AR</div><div><div class="tn">Ana Rodríguez</div><div class="tb">Box Valencia CrossFit</div></div></div>
+      </div>
+      <div class="tc r d3">
+        <div class="stars">★★★★★</div>
+        <div class="tq">"La personalización con mi logo y colores le da una imagen profesional que antes no me podía permitir."</div>
+        <div class="ta"><div class="tav" style="background:#22c55e">PL</div><div><div class="tn">Pablo López</div><div class="tb">Barbell Club Bilbao</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-s" id="pricing">
+  <div class="w">
+    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Precios<div class="ebl"></div></div>
+    <h2 class="sec-title r d1" style="text-align:center">SIMPLE Y<br><span style="color:var(--accent)">SIN SORPRESAS</span></h2>
+    <p class="sec-sub r d2" style="margin:0 auto;text-align:center">Sin comisiones por reserva. Sin letra pequeña. Cancela cuando quieras.</p>
+
+    <div class="price-grid">
+      <!-- FREE -->
+      <div class="price-card r d1">
+        <div class="price-desc">Empieza y comprueba si WodBox se ajusta a tu box.</div>
+        <div class="price-amount"><span class="price-big">GRATIS</span></div>
+        <div class="price-limit">Hasta 10 atletas</div>
+        <div class="price-divider"></div>
+        <div class="price-feat">
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Reservas básicas</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>App iOS y Android</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Gestión de miembros</div>
+        </div>
+        <a href="mailto:hola@wodbox.xyz" class="btn-price btn-price-out">Empezar gratis</a>
+      </div>
+
+      <!-- STARTER -->
+      <div class="price-card r d2">
+        <div class="price-desc">Si tu box es pequeño o estás en una fase inicial.</div>
+        <div class="price-amount"><span class="price-old">29€</span><span class="price-big">9€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-limit">Hasta 35 atletas</div>
+        <div class="price-divider"></div>
+        <div class="price-feat">
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todo lo del plan Gratis</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Cobros automáticos</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>WODs y PRs</div>
+        </div>
+        <a href="mailto:hola@wodbox.xyz" class="btn-price btn-price-out">Solicitar demo</a>
+      </div>
+
+      <!-- PRO (featured) -->
+      <div class="price-card featured r d3">
+        <div class="price-desc">Estás en crecimiento o ya tienes un buen número de atletas.</div>
+        <div class="price-amount"><span class="price-big">44€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-limit">Hasta 70 atletas</div>
+        <div class="price-divider"></div>
+        <div class="price-feat">
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todo lo del plan Starter</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Comunicación push</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Marca personalizada</div>
+        </div>
+        <a href="mailto:hola@wodbox.xyz" class="btn-price btn-price-fill">Solicitar demo</a>
+      </div>
+
+      <!-- UNLIMITED -->
+      <div class="price-card r d4">
+        <div class="price-desc">Para boxes con mucha actividad y alto volumen de atletas.</div>
+        <div class="price-amount"><span class="price-big">54€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-limit">Atletas ilimitados</div>
+        <div class="price-divider"></div>
+        <div class="price-feat">
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todo lo del plan Pro</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Soporte prioritario</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Onboarding guiado</div>
+        </div>
+        <a href="mailto:hola@wodbox.xyz" class="btn-price btn-price-out">Solicitar demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-s">
+  <div class="cta-bg" aria-hidden="true"></div>
+  <div class="w">
+    <h2 class="cta-t r">TU BOX MERECE<br><span style="color:var(--accent)">LA MEJOR APP</span></h2>
+    <p class="cta-sub r d1">Demo gratuita · Sin permanencia · Sin comisiones</p>
+    <div class="r d2">
+      <a href="mailto:hola@wodbox.xyz" class="btn-cta">
+        Solicitar demo gratis
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m-4-4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <p class="r d3" style="margin-top:18px;font-size:13px;color:var(--muted);position:relative">hola@wodbox.xyz · Respuesta en menos de 24h</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="w ft-r">
+    <div class="ft-logo">WOD<b>BOX</b></div>
+    <div class="ft-l">
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="mailto:hola@wodbox.xyz">Contacto</a>
+    </div>
+    <div class="ft-c">© 2025 WodBox. Todos los derechos reservados.</div>
+  </div>
+</footer>
+
+<script>
+// Nav scroll glass effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => nav.classList.toggle('s', scrollY > 50), {passive:true});
+
+// Scroll reveal via IntersectionObserver
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('on'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+document.querySelectorAll('.r,.rl,.rr,.rs').forEach(el => io.observe(el));
+
+// Animated counters
+function animateCount(el) {
+  const target = +el.dataset.t;
+  if(target === 0) { el.textContent = '0'; return; }
+  const dur = 1400, start = performance.now();
+  const tick = now => {
+    const p = Math.min((now-start)/dur, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(ease * target);
+    if(p < 1) requestAnimationFrame(tick);
+    else el.textContent = target;
+  };
+  requestAnimationFrame(tick);
+}
+const cio = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ animateCount(e.target); cio.unobserve(e.target); } });
+}, {threshold: 0.5});
+document.querySelectorAll('.cnt').forEach(el => cio.observe(el));
+</script>
