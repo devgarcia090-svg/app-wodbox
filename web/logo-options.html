@@ -1,0 +1,206 @@
+<title>WodBox — Opciones de Logo</title>
+<meta name="description" content="4 propuestas de logo para WodBox CrossFit Management App">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #06090f; --s1: #0d1420; --s2: #131d2e; --border: #1e2d45;
+  --accent: #f95c00; --text: #F0F4FA; --muted: #7a94b0;
+  --ease: cubic-bezier(0.16,1,0.3,1);
+}
+body { font-family: system-ui,-apple-system,sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px; }
+h1 { text-align:center; font-size: 13px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom: 48px; }
+.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; max-width:960px; margin:0 auto; }
+.card { background: var(--s1); border:1px solid var(--border); border-radius:20px; padding:40px 32px; display:flex; flex-direction:column; align-items:center; gap:20px; transition: border-color .3s, transform .3s, box-shadow .3s; cursor:pointer; }
+.card:hover { border-color:rgba(249,92,0,.5); transform:translateY(-4px); box-shadow:0 20px 50px rgba(0,0,0,.5); }
+.card.selected { border-color:var(--accent); box-shadow:0 0 0 2px rgba(249,92,0,.3); }
+.logo-area { width:100%; background: var(--s2); border-radius:14px; padding:36px; display:flex; align-items:center; justify-content:center; min-height:160px; }
+/* dark bg version */
+.logo-area.light { background:#fff; }
+.card-label { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.card-name { font-size:18px; font-weight:700; color:var(--text); }
+.card-desc { font-size:13px; color:var(--muted); text-align:center; line-height:1.6; }
+.variants { display:flex; gap:10px; }
+.v { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); }
+.v.dark { background:var(--s2); }
+.v.light { background:#fff; }
+.v.orange { background:var(--accent); }
+
+/* ── LOGO 1: Icono + Wordmark ── */
+.logo1 { display:flex; align-items:center; gap:14px; }
+.logo1-icon { width:52px; height:52px; }
+.logo1-text { display:flex; flex-direction:column; line-height:1; }
+.logo1-wod { font-size:32px; font-weight:900; color:#f95c00; letter-spacing:-.02em; text-transform:uppercase; }
+.logo1-box { font-size:32px; font-weight:900; color:#F0F4FA; letter-spacing:-.02em; text-transform:uppercase; margin-top:-4px; }
+
+/* ── LOGO 2: Wordmark split ── */
+.logo2 { display:flex; align-items:baseline; gap:0; }
+.logo2-wod { font-size:52px; font-weight:900; color:#f95c00; letter-spacing:-.04em; text-transform:uppercase; line-height:1; }
+.logo2-box { font-size:52px; font-weight:200; color:#F0F4FA; letter-spacing:.05em; text-transform:uppercase; line-height:1; }
+.logo2-dot { width:8px; height:8px; border-radius:50%; background:#f95c00; margin:0 3px 10px; }
+
+/* ── LOGO 3: Emblem / Badge ── */
+.logo3 { display:flex; flex-direction:column; align-items:center; gap:0; }
+
+/* ── LOGO 4: Monogram ── */
+.logo4 { display:flex; align-items:center; gap:18px; }
+.logo4-mark { width:64px; height:64px; }
+.logo4-text { display:flex; flex-direction:column; }
+.logo4-name { font-size:26px; font-weight:900; color:#F0F4FA; letter-spacing:.06em; text-transform:uppercase; line-height:1; }
+.logo4-tag { font-size:9px; font-weight:600; letter-spacing:.2em; color:#f95c00; text-transform:uppercase; margin-top:4px; }
+
+@media(max-width:640px){ .grid{grid-template-columns:1fr;} }
+</style>
+
+<h1>WodBox · Propuestas de Logo</h1>
+
+<div class="grid">
+
+  <!-- OPCIÓN 1: Icono dumbbell + wordmark vertical -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="logo-area">
+      <div class="logo1">
+        <svg class="logo1-icon" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Barbell icon -->
+          <rect x="6" y="22" width="6" height="8" rx="2" fill="#f95c00"/>
+          <rect x="40" y="22" width="6" height="8" rx="2" fill="#f95c00"/>
+          <rect x="3" y="20" width="5" height="12" rx="1.5" fill="#f95c00" opacity=".7"/>
+          <rect x="44" y="20" width="5" height="12" rx="1.5" fill="#f95c00" opacity=".7"/>
+          <rect x="12" y="24" width="28" height="4" rx="2" fill="#F0F4FA"/>
+          <!-- Box outline top -->
+          <path d="M16 8 L26 4 L36 8 L36 18 L26 22 L16 18 Z" stroke="#f95c00" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+          <path d="M16 8 L26 12 L36 8" stroke="#f95c00" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+          <line x1="26" y1="12" x2="26" y2="22" stroke="#f95c00" stroke-width="1.5"/>
+        </svg>
+        <div class="logo1-text">
+          <span class="logo1-wod">WOD</span>
+          <span class="logo1-box">BOX</span>
+        </div>
+      </div>
+    </div>
+    <div class="logo-area light" style="min-height:100px">
+      <div class="logo1">
+        <svg width="42" height="42" viewBox="0 0 52 52" fill="none">
+          <rect x="6" y="22" width="6" height="8" rx="2" fill="#f95c00"/>
+          <rect x="40" y="22" width="6" height="8" rx="2" fill="#f95c00"/>
+          <rect x="3" y="20" width="5" height="12" rx="1.5" fill="#f95c00" opacity=".7"/>
+          <rect x="44" y="20" width="5" height="12" rx="1.5" fill="#f95c00" opacity=".7"/>
+          <rect x="12" y="24" width="28" height="4" rx="2" fill="#0d1420"/>
+          <path d="M16 8 L26 4 L36 8 L36 18 L26 22 L16 18 Z" stroke="#f95c00" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+          <path d="M16 8 L26 12 L36 8" stroke="#f95c00" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+          <line x1="26" y1="12" x2="26" y2="22" stroke="#f95c00" stroke-width="1.5"/>
+        </svg>
+        <div class="logo1-text">
+          <span class="logo1-wod" style="font-size:26px">WOD</span>
+          <span class="logo1-box" style="font-size:26px;color:#0d1420">BOX</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">Opción 1</div>
+    <div class="card-name">Icono + Wordmark</div>
+    <div class="card-desc">Barra de pesas + caja 3D isométrica. Doble símbolo que representa literalmente el producto. Muy versátil.</div>
+  </div>
+
+  <!-- OPCIÓN 2: Wordmark tipográfico WOD·BOX -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="logo-area">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div class="logo2">
+          <span class="logo2-wod">WOD</span>
+          <span class="logo2-dot" style="align-self:center;margin:0 6px"></span>
+          <span class="logo2-box">BOX</span>
+        </div>
+        <div style="width:100%;height:2px;background:linear-gradient(90deg,transparent,#f95c00,transparent);margin-top:2px"></div>
+        <div style="font-size:9px;letter-spacing:.22em;color:#7a94b0;text-transform:uppercase;margin-top:4px">Gestión para tu box</div>
+      </div>
+    </div>
+    <div class="logo-area light" style="min-height:100px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="display:flex;align-items:baseline">
+          <span style="font-size:38px;font-weight:900;color:#f95c00;letter-spacing:-.04em;text-transform:uppercase">WOD</span>
+          <span style="width:7px;height:7px;border-radius:50%;background:#f95c00;margin:0 5px 8px;align-self:center"></span>
+          <span style="font-size:38px;font-weight:200;color:#0d1420;letter-spacing:.05em;text-transform:uppercase">BOX</span>
+        </div>
+        <div style="width:100%;height:2px;background:linear-gradient(90deg,transparent,#f95c00,transparent)"></div>
+        <div style="font-size:8px;letter-spacing:.2em;color:#666;text-transform:uppercase;margin-top:2px">Gestión para tu box</div>
+      </div>
+    </div>
+    <div class="card-label">Opción 2</div>
+    <div class="card-name">Wordmark tipográfico</div>
+    <div class="card-desc">WOD en naranja bold + BOX en blanco light. El contraste de pesos crea tensión visual potente. Estilo editorial.</div>
+  </div>
+
+  <!-- OPCIÓN 3: Emblem / Badge -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="logo-area">
+      <svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Hexagon badge -->
+        <path d="M80 8 L142 44 L142 116 L80 152 L18 116 L18 44 Z" stroke="#f95c00" stroke-width="2" fill="rgba(249,92,0,0.06)"/>
+        <path d="M80 18 L132 50 L132 110 L80 142 L28 110 L28 50 Z" stroke="rgba(249,92,0,0.25)" stroke-width="1" fill="none"/>
+        <!-- WB monogram inside -->
+        <text x="80" y="72" text-anchor="middle" font-family="system-ui" font-weight="900" font-size="38" fill="#f95c00" letter-spacing="-2">WOD</text>
+        <line x1="40" y1="82" x2="120" y2="82" stroke="#f95c00" stroke-width="1.5" opacity=".5"/>
+        <text x="80" y="108" text-anchor="middle" font-family="system-ui" font-weight="200" font-size="28" fill="#F0F4FA" letter-spacing="8">BOX</text>
+        <!-- corner marks -->
+        <circle cx="80" cy="20" r="3" fill="#f95c00"/>
+        <circle cx="80" cy="140" r="3" fill="#f95c00"/>
+      </svg>
+    </div>
+    <div class="logo-area light" style="min-height:100px">
+      <svg width="100" height="100" viewBox="0 0 160 160" fill="none">
+        <path d="M80 8 L142 44 L142 116 L80 152 L18 116 L18 44 Z" stroke="#f95c00" stroke-width="2" fill="rgba(249,92,0,0.06)"/>
+        <path d="M80 18 L132 50 L132 110 L80 142 L28 110 L28 50 Z" stroke="rgba(249,92,0,0.3)" stroke-width="1" fill="none"/>
+        <text x="80" y="72" text-anchor="middle" font-family="system-ui" font-weight="900" font-size="38" fill="#f95c00" letter-spacing="-2">WOD</text>
+        <line x1="40" y1="82" x2="120" y2="82" stroke="#f95c00" stroke-width="1.5" opacity=".5"/>
+        <text x="80" y="108" text-anchor="middle" font-family="system-ui" font-weight="200" font-size="28" fill="#0d1420" letter-spacing="8">BOX</text>
+        <circle cx="80" cy="20" r="3" fill="#f95c00"/>
+        <circle cx="80" cy="140" r="3" fill="#f95c00"/>
+      </svg>
+    </div>
+    <div class="card-label">Opción 3</div>
+    <div class="card-name">Emblema hexagonal</div>
+    <div class="card-desc">Badge geométrico estilo CrossFit Games. Perfecto para ropa, stickers y merchandising del box.</div>
+  </div>
+
+  <!-- OPCIÓN 4: Monograma WB + wordmark horizontal -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="logo-area">
+      <div class="logo4">
+        <svg class="logo4-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Square with cut corner (box shape) -->
+          <rect x="4" y="4" width="56" height="56" rx="12" fill="rgba(249,92,0,0.12)" stroke="#f95c00" stroke-width="1.5"/>
+          <!-- W shape -->
+          <path d="M12 20 L18 44 L24 30 L30 44 L36 20" stroke="#f95c00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- B shape -->
+          <path d="M40 20 L40 44" stroke="#F0F4FA" stroke-width="3" stroke-linecap="round"/>
+          <path d="M40 20 L48 20 Q54 20 54 26 Q54 32 40 32 Q54 32 54 38 Q54 44 48 44 L40 44" stroke="#F0F4FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <div class="logo4-text">
+          <span class="logo4-name">WODBOX</span>
+          <span class="logo4-tag">CrossFit Management</span>
+        </div>
+      </div>
+    </div>
+    <div class="logo-area light" style="min-height:100px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none">
+          <rect x="4" y="4" width="56" height="56" rx="12" fill="rgba(249,92,0,0.1)" stroke="#f95c00" stroke-width="1.5"/>
+          <path d="M12 20 L18 44 L24 30 L30 44 L36 20" stroke="#f95c00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M40 20 L40 44" stroke="#0d1420" stroke-width="3" stroke-linecap="round"/>
+          <path d="M40 20 L48 20 Q54 20 54 26 Q54 32 40 32 Q54 32 54 38 Q54 44 48 44 L40 44" stroke="#0d1420" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#0d1420;letter-spacing:.06em;text-transform:uppercase;line-height:1">WODBOX</div>
+          <div style="font-size:8px;font-weight:600;letter-spacing:.2em;color:#f95c00;text-transform:uppercase;margin-top:3px">CrossFit Management</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-label">Opción 4</div>
+    <div class="card-name">Monograma WB</div>
+    <div class="card-desc">Las letras W y B integradas en un cuadrado (box). Icono de app perfecto — reconocible a cualquier tamaño.</div>
+  </div>
+
+</div>
+
+<div style="text-align:center;margin-top:36px;font-size:13px;color:var(--muted)">
+  Haz clic en una opción para seleccionarla · La fila superior muestra versión oscura + clara
+</div>
