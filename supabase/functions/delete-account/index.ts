@@ -21,8 +21,8 @@ serve(async (req) => {
     await adminClient.from('bookings').delete().eq('athlete_id', userId);
     await adminClient.from('messages').delete().eq('sender_id', userId);
     await adminClient.from('conversations').delete().eq('athlete_id', userId);
-    await adminClient.from('push_tokens').delete().eq('user_id', userId);
     await adminClient.from('profiles').delete().eq('id', userId);
+    await adminClient.storage.from('avatars').remove([`${userId}/avatar.jpg`]);
 
     // Delete the auth user (permanent)
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);

@@ -176,7 +176,11 @@ create policy "Admins see all messages"
 
 create policy "Authenticated insert messages"
   on public.messages for insert
-  with check (auth.uid() = sender_id);
+  with check (
+    auth.uid() = sender_id
+    and length(text) <= 5000
+    and (is_broadcast = false or public.is_admin())
+  );
 
 
 -- ============================================================

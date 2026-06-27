@@ -143,6 +143,7 @@ export function ChatScreen() {
   const sendDM = async () => {
     if (!dmInput.trim() || !session?.user.id || !convId) return;
     const text = dmInput.trim();
+    if (text.length > 5000) return;
     setDmInput('');
     const { error } = await supabase.from('messages').insert({
       sender_id: session.user.id,

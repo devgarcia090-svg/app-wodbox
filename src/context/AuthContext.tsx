@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Handle deep link tokens (invite / password reset links)
   const handleAuthUrl = async (url: string) => {
+    if (!url.startsWith('wodbox://')) return;
     const hash = url.split('#')[1];
     if (!hash) return;
     const params = new URLSearchParams(hash);

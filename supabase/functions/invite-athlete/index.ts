@@ -22,6 +22,10 @@ serve(async (req) => {
     const { email, name, plan } = await req.json();
     if (!email || !name || !plan) return new Response('Missing fields', { status: 400 });
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return new Response('Invalid email', { status: 400 });
+    if (name.trim().length < 2 || name.length > 100) return new Response('Invalid name', { status: 400 });
+
     const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       redirectTo: 'wodbox://auth/callback',
       data: { name, plan, role: 'athlete', invited: true },
