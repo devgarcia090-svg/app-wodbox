@@ -1,0 +1,38 @@
+# WodBox
+
+> Software all-in-one para gestionar boxes de CrossFit.
+
+WodBox es una aplicación móvil nativa (iOS y Android) diseñada para simplificar la gestión de boxes de CrossFit. Permite a los coaches y propietarios gestionar miembros, reservas de clases, cobros y comunicación desde una sola plataforma, sin necesidad de herramientas externas ni comisiones por transacción.
+
+## Características principales
+
+- **Gestión de miembros**: altas, bajas, contratos, historial de asistencia y estado de pago por atleta.
+- **Reservas de clases**: sistema de reservas en tiempo real para que los atletas reserven WODs desde la app.
+- **Cobros automáticos**: pasarela de pago integrada con domiciliación y cobro de cuotas mensuales sin comisiones.
+- **WODs y programación**: publicación diaria de entrenamientos con seguimiento de resultados y marcas personales.
+- **Comunicación push**: envío de notificaciones push y mensajes directos a todos los atletas o segmentos.
+- **Panel de coaches**: visión global de la ocupación de clases, miembros activos y cobros pendientes.
+
+## Público objetivo
+
+Propietarios y coaches de boxes de CrossFit en España y Latinoamérica que buscan una solución integral, sencilla y económica para gestionar su negocio.
+
+## Modelo de negocio
+
+Plan gratuito disponible para boxes pequeños. Planes de pago escalables según el número de miembros activos, sin comisiones por transacción.
+
+## Tecnología
+
+- App móvil nativa: React Native + Expo
+- Backend: Supabase (PostgreSQL, autenticación, almacenamiento, Edge Functions)
+- Infraestructura: Cloudflare Pages (web), Expo EAS (builds y actualizaciones OTA)
+
+## Idioma y localización
+
+Aplicación disponible en español. Datos almacenados en servidores europeos. Cumple con el RGPD.
+
+## Recursos
+
+- Web principal: https://www.wodbox.xyz/
+- Política de privacidad: https://www.wodbox.xyz/privacy.html
+- Términos de servicio: https://www.wodbox.xyz/terms.html
