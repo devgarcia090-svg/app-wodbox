@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const mime = require('mime-types');
 const archiver = require('archiver');
+const { sanitizeFilename, uploadLimiter } = require('../middleware/security');
 
 const router = express.Router();
 const SITES_DIR = path.join(__dirname, '..', 'sites');
@@ -182,16 +183,18 @@ router.post('/sites/:name/file', async (req, res) => {
   }
 });
 
-router.post('/sites/:name/upload', upload.array('files'), async (req, res) => {
+router.post('/sites/:name/upload', uploadLimiter, upload.array('files'), async (req, res) => {
   try {
     const targetPath = req.body.path || '';
     const results = [];
     for (const file of req.files) {
-      const destPath = safejoin(SITES_DIR, req.params.name, targetPath, file.originalname);
+      const safeName = sanitizeFilename(file.originalname);
+      if (!safeName) continue;
+      const destPath = safejoin(SITES_DIR, req.params.name, targetPath, safeName);
       if (!destPath) continue;
       await fs.ensureDir(path.dirname(destPath));
       await fs.writeFile(destPath, file.buffer);
-      results.push(file.originalname);
+      results.push(safeName);
     }
     res.json({ ok: true, uploaded: results });
   } catch (err) {
@@ -230,6 +233,21 @@ router.post('/sites/:name/rename', async (req, res) => {
     if (!fromPath || !toPath) return res.status(400).json({ error: 'Ruta inválida' });
     await fs.move(fromPath, toPath);
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Security log ---
+router.get('/security-log', async (req, res) => {
+  try {
+    const logFile = path.join(__dirname, '..', 'data', 'logs', 'security.log');
+    let lines = [];
+    if (await fs.pathExists(logFile)) {
+      const content = await fs.readFile(logFile, 'utf8');
+      lines = content.trim().split('\n').filter(Boolean);
+    }
+    res.json({ lines, httpsActive: false }); // httpsActive updated when certs present
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

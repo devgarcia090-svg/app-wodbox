@@ -529,6 +529,14 @@
 
     <div class="divider"></div>
 
+    <div class="nav-link" data-view="domains" onclick="navigate('domains')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Dominios & SSL
+    </div>
+    <div class="nav-link" data-view="security" onclick="navigate('security')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Seguridad
+    </div>
     <div class="nav-link" data-view="settings" onclick="navigate('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configuración
@@ -624,6 +632,31 @@
   </div>
 </div>
 
+<!-- Modal añadir dominio -->
+<div class="modal-overlay" id="modalAddDomain">
+  <div class="modal">
+    <div class="modal-title">Añadir dominio</div>
+    <div class="form-field">
+      <label class="form-label">Dominio</label>
+      <input class="form-input" id="newDomainName" placeholder="misitio.com" type="text">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Sitio asociado (opcional)</label>
+      <input class="form-input" id="newDomainSite" placeholder="nombre-del-sitio">
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;font-size:.8125rem;color:var(--muted);line-height:1.6;margin-bottom:.5rem">
+      Antes de obtener el certificado, asegúrate de que:<br>
+      • El dominio apunta a tu IP pública (registro DNS tipo A)<br>
+      • El puerto 80 está abierto en tu router (port forwarding)<br>
+      • El servidor está arrancado con permisos de admin/root
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalAddDomain')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addDomain()">Añadir</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal confirmar eliminar -->
 <div class="modal-overlay" id="modalConfirmDelete">
   <div class="modal">
@@ -707,6 +740,8 @@ function navigate(view, site, path) {
     files: renderFiles,
     upload: renderUpload,
     editor: renderEditor,
+    domains: renderDomains,
+    security: renderSecurity,
     settings: renderSettings
   };
   (renders[view] || (() => {}))();
@@ -999,6 +1034,169 @@ async function saveFile() {
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar`;
   if (res.ok) toast('Archivo guardado', 'success');
   else toast('Error al guardar', 'error');
+}
+
+// ── Domains & SSL ──
+async function renderDomains() {
+  setTopbarActions(`<button class="btn btn-primary" onclick="openModal('modalAddDomain')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Añadir dominio</button>`);
+
+  document.getElementById('mainContent').innerHTML = '<div style="color:var(--muted);padding:2rem">Cargando…</div>';
+  const domains = await api('/api/domains');
+
+  const certStatusBadge = (d) => {
+    const map = {
+      valid: `<span class="badge badge-green">✓ Activo</span>`,
+      pending: `<span class="badge" style="background:rgba(210,153,34,.15);color:#e3b341">● Pendiente</span>`,
+      requesting: `<span class="badge" style="background:rgba(37,99,235,.15);color:#93c5fd">⟳ Solicitando…</span>`,
+      error: `<span class="badge" style="background:rgba(248,81,73,.15);color:#f85149">✕ Error</span>`,
+    };
+    return map[d.certStatus] || map.pending;
+  };
+
+  const daysLeft = (d) => {
+    if (!d.expiresAt) return '';
+    const days = Math.floor((new Date(d.expiresAt) - Date.now()) / 86400000);
+    const color = days < 10 ? 'var(--danger)' : days < 30 ? 'var(--warning)' : 'var(--success)';
+    return `<span style="color:${color};font-size:.8rem">${days} días restantes</span>`;
+  };
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="settings-section" style="margin-bottom:1.25rem">
+      <h3>Cómo funciona</h3>
+      <ol style="font-size:.875rem;color:var(--muted);line-height:1.8;padding-left:1.25rem">
+        <li>Añade tu dominio aquí (ej: <code style="background:var(--surface2);padding:.1em .4em;border-radius:4px">misitio.com</code>)</li>
+        <li>En el panel de tu registrador de dominio, crea un registro <strong style="color:var(--text)">A</strong> apuntando a tu IP pública</li>
+        <li>Asegúrate de que el <strong style="color:var(--text)">puerto 80</strong> está abierto en tu router (port forwarding)</li>
+        <li>Pulsa <strong style="color:var(--text)">"Obtener certificado"</strong> — Let's Encrypt lo emitirá automáticamente</li>
+        <li>Los certificados se <strong style="color:var(--text)">renuevan solos</strong> antes de expirar</li>
+      </ol>
+    </div>
+
+    ${domains.length === 0 ? `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <h3>Sin dominios configurados</h3>
+        <p>Añade tu primer dominio para obtener HTTPS gratuito</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="openModal('modalAddDomain')">Añadir dominio</button>
+      </div>` : `
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      ${domains.map(d => `
+        <div class="settings-section" style="margin:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+            <div>
+              <div style="font-size:1rem;font-weight:700;font-family:monospace">${esc(d.domain)}</div>
+              ${d.siteName ? `<div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Sitio: ${esc(d.siteName)}</div>` : ''}
+              ${d.expiresAt ? `<div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">Expira: ${new Date(d.expiresAt).toLocaleDateString('es-ES')} — ${daysLeft(d)}</div>` : ''}
+              ${d.lastError ? `<div style="font-size:.8rem;color:var(--danger);margin-top:.25rem">Error: ${esc(d.lastError)}</div>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+              ${certStatusBadge(d)}
+              ${d.certStatus !== 'requesting' ? `
+                <button class="btn btn-secondary btn-sm" onclick="requestCert('${esc(d.domain)}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  ${d.certStatus === 'valid' ? 'Renovar' : 'Obtener certificado'}</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deleteDomain('${esc(d.domain)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`}`;
+}
+
+async function addDomain() {
+  const domain = document.getElementById('newDomainName').value.trim().toLowerCase();
+  const siteName = document.getElementById('newDomainSite').value.trim();
+  if (!domain) { toast('Introduce un dominio', 'error'); return; }
+
+  const res = await fetch('/api/domains', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ domain, siteName })
+  });
+  const data = await res.json();
+  closeModal('modalAddDomain');
+  document.getElementById('newDomainName').value = '';
+  document.getElementById('newDomainSite').value = '';
+  if (res.ok) { toast(`Dominio "${domain}" añadido`, 'success'); renderDomains(); }
+  else toast(data.error, 'error');
+}
+
+async function requestCert(domain) {
+  const res = await fetch(`/api/domains/${domain}/request-cert`, { method: 'POST' });
+  const data = await res.json();
+  toast(data.message || data.error, res.ok ? 'info' : 'error');
+  // Refresh after 3s to show "requesting" status
+  setTimeout(() => { if (currentView === 'domains') renderDomains(); }, 3000);
+  // Then poll every 15s up to 2 minutes
+  let polls = 0;
+  const interval = setInterval(async () => {
+    polls++;
+    if (polls > 8 || currentView !== 'domains') { clearInterval(interval); return; }
+    const doms = await api('/api/domains');
+    const d = doms.find(x => x.domain === domain);
+    if (d && d.certStatus !== 'requesting') { clearInterval(interval); renderDomains(); }
+  }, 15000);
+}
+
+async function deleteDomain(domain) {
+  if (!confirm(`¿Eliminar dominio "${domain}" y su certificado?`)) return;
+  const res = await fetch(`/api/domains/${encodeURIComponent(domain)}`, { method: 'DELETE' });
+  if (res.ok) { toast('Dominio eliminado', 'success'); renderDomains(); }
+  else toast('Error al eliminar', 'error');
+}
+
+// ── Security log viewer ──
+async function renderSecurity() {
+  document.getElementById('mainContent').innerHTML = '<div style="color:var(--muted);padding:2rem">Cargando…</div>';
+
+  try {
+    const res = await fetch('/api/security-log');
+    const data = await res.json();
+    const lines = data.lines || [];
+
+    const colorEvent = (line) => {
+      if (line.includes('LOGIN_BLOCKED') || line.includes('RATE_LIMIT')) return 'var(--danger)';
+      if (line.includes('LOGIN_FAIL') || line.includes('SUSPICIOUS')) return 'var(--warning)';
+      if (line.includes('LOGIN_OK')) return 'var(--success)';
+      return 'var(--muted)';
+    };
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="settings-section">
+        <h3>Resumen de protección activa</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem">
+          ${[
+            ['Helmet (cabeceras HTTP)', 'Activo', 'var(--success)'],
+            ['Rate limiting general', '200 req/15min', 'var(--success)'],
+            ['Rate limiting API', '100 req/15min', 'var(--success)'],
+            ['Anti brute-force login', '5 intentos → 15min bloqueo', 'var(--success)'],
+            ['Filtro solicitudes sospechosas', 'Activo', 'var(--success)'],
+            ['HSTS', 'maxAge 1 año', 'var(--success)'],
+            ['CSP (Content Security Policy)', 'Activo', 'var(--success)'],
+            ['Cookies HttpOnly + SameSite', 'Activo', 'var(--success)'],
+            ['HTTPS / Let\'s Encrypt', data.httpsActive ? 'Activo' : 'Sin certs aún', data.httpsActive ? 'var(--success)' : 'var(--warning)'],
+          ].map(([name, val, color]) => `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem">
+              <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.3rem">${name}</div>
+              <div style="font-size:.875rem;color:${color};font-weight:600">${val}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem">
+          <h3 style="margin:0;border:none;padding:0">Registro de seguridad</h3>
+          <button class="btn btn-secondary btn-sm" onclick="renderSecurity()">↻ Actualizar</button>
+        </div>
+        ${lines.length === 0 ? '<p style="color:var(--muted);font-size:.875rem">Sin eventos registrados.</p>' : `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;max-height:400px;overflow-y:auto;font-family:monospace;font-size:.8rem;line-height:1.6">
+          ${lines.slice(-100).reverse().map(line => `<div style="color:${colorEvent(line)}">${esc(line)}</div>`).join('')}
+        </div>`}
+      </div>`;
+  } catch (e) {
+    document.getElementById('mainContent').innerHTML = `<div style="color:var(--danger);padding:2rem">Error cargando logs: ${e.message}</div>`;
+  }
 }
 
 // ── Settings ──

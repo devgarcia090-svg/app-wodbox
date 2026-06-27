@@ -2,6 +2,13 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const fs = require('fs-extra');
 const path = require('path');
+const {
+  trackLoginFailure,
+  trackLoginSuccess,
+  isLoginLocked,
+  getRemainingLockSeconds,
+  logSecurity
+} = require('../middleware/security');
 
 const router = express.Router();
 const USERS_FILE = path.join(__dirname, '..', 'data', 'users.json');
@@ -19,15 +26,43 @@ async function getUsers() {
 }
 
 router.post('/login', async (req, res) => {
+  const ip = req.ip;
   try {
+    // Check if IP is currently blocked
+    if (isLoginLocked(ip)) {
+      const secs = getRemainingLockSeconds(ip);
+      const mins = Math.ceil(secs / 60);
+      return res.status(429).json({
+        error: `Demasiados intentos fallidos. Espera ${mins} minuto(s) antes de intentarlo de nuevo.`
+      });
+    }
+
     const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+    }
+
     const users = await getUsers();
     const user = users.find(u => u.username === username);
-    if (!user || !await bcrypt.compare(password, user.password)) {
+
+    // Always run bcrypt to prevent timing attacks revealing valid usernames
+    const validPassword = user
+      ? await bcrypt.compare(password, user.password)
+      : await bcrypt.compare(password, '$2b$12$invalidhashfortimingneutrality000000000000000000000');
+
+    if (!user || !validPassword) {
+      trackLoginFailure(ip);
+      logSecurity('LOGIN_FAIL', ip, `username=${username}`);
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-    req.session.user = { id: user.id, username: user.username, role: user.role };
-    res.json({ ok: true, user: req.session.user });
+
+    trackLoginSuccess(ip);
+    logSecurity('LOGIN_OK', ip, `username=${username}`);
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).json({ error: 'Error de sesión' });
+      req.session.user = { id: user.id, username: user.username, role: user.role };
+      res.json({ ok: true, user: req.session.user });
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
