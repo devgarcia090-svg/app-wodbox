@@ -1,10 +1,3 @@
-/**
- * LoginScreen — Modern Dark (Cinema Mobile) + Fitness/Gym palette
- * Design system from ui-ux-pro-max:
- *   BG #111827, Card #1F2937, Border #374151
- *   Primary #F97316, Foreground #F8FAFC, Muted #94A3B8
- *   Barlow Condensed ExtraBold headings, Inter body
- */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable,
@@ -12,24 +5,24 @@ import {
   ActivityIndicator, Dimensions, Animated,
 } from 'react-native';
 import { Fonts } from '../theme/fonts';
+import { withAlpha } from '../theme/colors';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useBoxConfig } from '../context/BoxConfigContext';
 
 const { width: W } = Dimensions.get('window');
 
-// ── Design tokens (from skill output) ────────────────────────────────────────
 const T = {
-  bg:       '#0f1623',   // slightly darker for OLED friendliness
-  card:     '#1a2235',   // elevated surface
-  card2:    '#202d42',   // input background
-  border:   '#2d3f5c',
-  text:     '#F8FAFC',
-  muted:    '#94A3B8',
-  red:      '#EF4444',
+  bg:     '#0f1623',
+  card:   '#1a2235',
+  card2:  '#202d42',
+  border: '#2d3f5c',
+  text:   '#F8FAFC',
+  muted:  '#94A3B8',
+  red:    '#EF4444',
 };
 
-// ── Animated press wrapper ────────────────────────────────────────────────────
+// ── Animated press wrapper ─────────────────────────────────────────────────────
 function PressScale({ children, onPress, disabled, style, accessibilityLabel }: {
   children: React.ReactNode; onPress: () => void;
   disabled?: boolean; style?: object; accessibilityLabel?: string;
@@ -52,7 +45,7 @@ function PressScale({ children, onPress, disabled, style, accessibilityLabel }: 
   );
 }
 
-// ── Field ─────────────────────────────────────────────────────────────────────
+// ── Field ──────────────────────────────────────────────────────────────────────
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={fieldS.wrap}>
@@ -63,10 +56,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 const fieldS = StyleSheet.create({
   wrap: { marginBottom: 14 },
-  label: { fontFamily: Fonts.bodySemiBold, fontSize: 11, color: T.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 },
+  label: {
+    fontFamily: Fonts.bodySemiBold, fontSize: 11, color: T.muted,
+    letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6,
+  },
 });
 
-// ── Input ─────────────────────────────────────────────────────────────────────
+// ── Input ──────────────────────────────────────────────────────────────────────
 const inputStyle = StyleSheet.create({
   base: {
     backgroundColor: T.card2,
@@ -77,7 +73,7 @@ const inputStyle = StyleSheet.create({
   },
 });
 
-// ── Password input with toggle ────────────────────────────────────────────────
+// ── Password input ─────────────────────────────────────────────────────────────
 function PassInput({ value, onChange, placeholder = '••••••••', onSubmit, fwdRef }: {
   value: string; onChange: (t: string) => void;
   placeholder?: string; onSubmit?: () => void;
@@ -115,7 +111,7 @@ const passS = StyleSheet.create({
   icon: { fontSize: 16, color: T.muted },
 });
 
-// ── Orange CTA button ─────────────────────────────────────────────────────────
+// ── CTA button ─────────────────────────────────────────────────────────────────
 function Btn({ label, onPress, loading, color, style }: {
   label: string; onPress: () => void; loading: boolean; color: string; style?: object;
 }) {
@@ -134,7 +130,48 @@ const btnS = StyleSheet.create({
   text: { fontFamily: Fonts.headingXBold, fontSize: 15, color: '#fff', letterSpacing: 2, textTransform: 'uppercase' },
 });
 
-// ── Logo wordmark ─────────────────────────────────────────────────────────────
+// ── Ambient glow orbs ──────────────────────────────────────────────────────────
+function GlowOrbs() {
+  const { primary_color } = useBoxConfig();
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <View style={[gS.orb, {
+        width: 440, height: 440,
+        top: 30, left: W / 2 - 220,
+        backgroundColor: withAlpha(primary_color, 0.09),
+      }]} />
+      <View style={[gS.orb, {
+        width: 210, height: 210,
+        top: 120, left: W / 2 - 105,
+        backgroundColor: withAlpha(primary_color, 0.07),
+      }]} />
+    </View>
+  );
+}
+const gS = StyleSheet.create({
+  orb: { position: 'absolute', borderRadius: 999 },
+});
+
+// ── Slide-up card entrance ─────────────────────────────────────────────────────
+function AnimatedCard({ children, style }: { children: React.ReactNode; style?: object }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 5 }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[style, {
+      opacity: anim,
+      transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [48, 0] }) }],
+    }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// ── Logo wordmark ──────────────────────────────────────────────────────────────
 function Wordmark() {
   const { name, primary_color, tagline, logo_prefix, logo_highlight } = useBoxConfig();
   const anim = useRef(new Animated.Value(0)).current;
@@ -153,7 +190,6 @@ function Wordmark() {
     second = name.slice(half).toUpperCase();
   }
 
-  // Fit name in one line: target 72% screen width
   const chars = name.length;
   const fs = Math.min(Math.floor((W * 0.72) / (chars * 0.42)), 88);
 
@@ -161,11 +197,24 @@ function Wordmark() {
     <Animated.View style={[wS.wrap, { opacity: anim }]}>
       {logo_prefix ? <Text style={wS.prefix}>{logo_prefix.toUpperCase()}</Text> : null}
 
-      {/* Orange top accent bar */}
-      <View style={[wS.accentBar, { backgroundColor: primary_color }]} />
+      {/* Accent bar with flanking lines */}
+      <View style={wS.accentRow}>
+        <View style={[wS.accentLine, { backgroundColor: withAlpha(primary_color, 0.35) }]} />
+        <View style={[wS.accentBar, { backgroundColor: primary_color }]} />
+        <View style={[wS.accentLine, { backgroundColor: withAlpha(primary_color, 0.35) }]} />
+      </View>
 
-      {/* Main wordmark — one line, two colors */}
-      <Text style={[wS.name, { fontSize: fs }]} adjustsFontSizeToFit numberOfLines={1}>
+      {/* Main wordmark with warm glow */}
+      <Text
+        style={[wS.name, {
+          fontSize: fs,
+          textShadowColor: withAlpha(primary_color, 0.5),
+          textShadowRadius: 20,
+          textShadowOffset: { width: 0, height: 2 },
+        }]}
+        adjustsFontSizeToFit
+        numberOfLines={1}
+      >
         <Text style={wS.nameDark}>{first}</Text>
         <Text style={[wS.nameAccent, { color: primary_color }]}>{second}</Text>
       </Text>
@@ -176,15 +225,17 @@ function Wordmark() {
 }
 const wS = StyleSheet.create({
   wrap: { alignItems: 'center', paddingHorizontal: 24 },
-  prefix: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: T.muted, letterSpacing: 5, marginBottom: 10 },
-  accentBar: { width: 48, height: 4, borderRadius: 2, marginBottom: 14 },
+  prefix: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: T.muted, letterSpacing: 5, marginBottom: 12 },
+  accentRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, width: '80%' },
+  accentLine: { flex: 1, height: 1 },
+  accentBar: { width: 40, height: 4, borderRadius: 2, marginHorizontal: 10 },
   name: { fontFamily: Fonts.headingXBold, color: T.text, letterSpacing: 3, lineHeight: undefined },
   nameDark: { color: T.text },
   nameAccent: {},
   tagline: { fontFamily: Fonts.body, fontSize: 11, color: T.muted, letterSpacing: 2.5, textTransform: 'uppercase', marginTop: 12 },
 });
 
-// ── Back ──────────────────────────────────────────────────────────────────────
+// ── Back button ────────────────────────────────────────────────────────────────
 function BackBtn({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={bkS.btn}
@@ -204,7 +255,7 @@ export function LoginScreen() {
   return needsPasswordSetup ? <SetPasswordScreen /> : <SignInScreen />;
 }
 
-// ── Sign In ───────────────────────────────────────────────────────────────────
+// ── Sign In ────────────────────────────────────────────────────────────────────
 function SignInScreen() {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
@@ -233,14 +284,16 @@ function SignInScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Hero */}
+      <GlowOrbs />
+
       <View style={s.hero}>
         <Wordmark />
       </View>
 
-      {/* Card */}
-      <View style={s.cardWrap}>
+      <AnimatedCard style={s.cardWrap}>
         <View style={s.card}>
+          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
+
           <Field label="Email">
             <TextInput
               style={inputStyle.base}
@@ -270,12 +323,12 @@ function SignInScreen() {
             <Text style={s.linkText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AnimatedCard>
     </KeyboardAvoidingView>
   );
 }
 
-// ── Forgot ────────────────────────────────────────────────────────────────────
+// ── Forgot ─────────────────────────────────────────────────────────────────────
 function ForgotScreen({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -307,13 +360,15 @@ function ForgotScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <GlowOrbs />
       <BackBtn onPress={onBack} />
       <View style={s.hero}>
         <Text style={ctr.title}>Recuperar{'\n'}contraseña</Text>
         <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Te enviaremos un enlace a tu email.</Text>
       </View>
-      <View style={s.cardWrap}>
+      <AnimatedCard style={s.cardWrap}>
         <View style={s.card}>
+          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
           <Field label="Email">
             <TextInput
               style={inputStyle.base}
@@ -330,12 +385,12 @@ function ForgotScreen({ onBack }: { onBack: () => void }) {
           {error ? <Text style={s.error}>{error}</Text> : null}
           <Btn label="Enviar enlace" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
         </View>
-      </View>
+      </AnimatedCard>
     </KeyboardAvoidingView>
   );
 }
 
-// ── Set Password ──────────────────────────────────────────────────────────────
+// ── Set Password ───────────────────────────────────────────────────────────────
 function SetPasswordScreen() {
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -368,14 +423,16 @@ function SetPasswordScreen() {
 
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <GlowOrbs />
       <View style={s.hero}>
         <Text style={ctr.title}>Hola,{' '}
           <Text style={{ color: primary_color }}>{name}</Text> 👋
         </Text>
         <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Crea tu contraseña para continuar.</Text>
       </View>
-      <View style={s.cardWrap}>
+      <AnimatedCard style={s.cardWrap}>
         <View style={s.card}>
+          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
           <Field label="Nueva contraseña">
             <PassInput value={pass} onChange={t => { setPass(t); setError(''); }}
               placeholder="Mínimo 6 caracteres" onSubmit={() => confirmRef.current?.focus()} />
@@ -387,20 +444,24 @@ function SetPasswordScreen() {
           {error ? <Text style={s.error}>{error}</Text> : null}
           <Btn label="Guardar y entrar" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
         </View>
-      </View>
+      </AnimatedCard>
     </KeyboardAvoidingView>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cardWrap: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 46 : 32 },
   card: {
-    backgroundColor: T.card, borderWidth: 1, borderColor: T.border,
-    borderRadius: 20, padding: 20,
+    backgroundColor: T.card,
+    borderWidth: 1, borderColor: T.border,
+    borderRadius: 20,
+    paddingTop: 0, paddingHorizontal: 20, paddingBottom: 20,
+    overflow: 'hidden',
   },
+  cardAccent: { height: 3, marginHorizontal: -20, marginBottom: 20 },
   error: { fontFamily: Fonts.body, fontSize: 13, color: T.red, textAlign: 'center', marginBottom: 10 },
   link: { alignItems: 'center', marginTop: 18 },
   linkText: { fontFamily: Fonts.body, fontSize: 13, color: T.muted },
