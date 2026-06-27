@@ -13,3 +13,4 @@ web-build/
 *.orig.*
 web-build/
 .expo-shared/
+.claude/skills/**/__pycache__/
