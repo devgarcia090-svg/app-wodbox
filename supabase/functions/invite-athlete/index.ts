@@ -4,6 +4,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// In-memory rate limit: max 20 invites per admin per hour
+const inviteHistory = new Map<string, number[]>();
+function checkRateLimit(adminId: string): boolean {
+  const now = Date.now();
+  const recent = (inviteHistory.get(adminId) ?? []).filter(t => now - t < 60 * 60 * 1000);
+  if (recent.length >= 20) return false;
+  recent.push(now);
+  inviteHistory.set(adminId, recent);
+  return true;
+}
+
 serve(async (req) => {
   try {
     const adminClient = createClient(supabaseUrl, serviceKey);
@@ -18,6 +29,10 @@ serve(async (req) => {
     const { data: profile } = await adminClient
       .from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') return new Response('Forbidden', { status: 403 });
+
+    if (!checkRateLimit(user.id)) {
+      return new Response('Too many invites. Try again later.', { status: 429 });
+    }
 
     const { email, name, plan } = await req.json();
     if (!email || !name || !plan) return new Response('Missing fields', { status: 400 });

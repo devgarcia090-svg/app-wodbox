@@ -112,12 +112,13 @@ const passS = StyleSheet.create({
 });
 
 // ── CTA button ─────────────────────────────────────────────────────────────────
-function Btn({ label, onPress, loading, color, style }: {
-  label: string; onPress: () => void; loading: boolean; color: string; style?: object;
+function Btn({ label, onPress, loading, color, style, disabled }: {
+  label: string; onPress: () => void; loading: boolean; color: string; style?: object; disabled?: boolean;
 }) {
+  const off = loading || !!disabled;
   return (
-    <PressScale onPress={onPress} disabled={loading} accessibilityLabel={label}
-      style={[btnS.btn, { backgroundColor: color }, loading && btnS.off, style]}>
+    <PressScale onPress={onPress} disabled={off} accessibilityLabel={label}
+      style={[btnS.btn, { backgroundColor: color }, off && btnS.off, style]}>
       {loading
         ? <ActivityIndicator color="#fff" />
         : <Text style={btnS.text}>{label}</Text>}
@@ -262,17 +263,42 @@ function SignInScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockUntil, setLockUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const { primary_color } = useBoxConfig();
   const passRef = useRef<TextInput>(null);
 
+  const isLocked = lockUntil !== null && now < lockUntil;
+  const lockSeconds = isLocked ? Math.ceil((lockUntil! - now) / 1000) : 0;
+
+  useEffect(() => {
+    if (!isLocked) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isLocked]);
+
   const submit = async () => {
+    if (isLocked) return;
     setError('');
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(), password: pass,
       });
-      if (err) setError('Email o contraseña incorrectos');
+      if (err) {
+        const next = failedAttempts + 1;
+        setFailedAttempts(next);
+        if (next >= 5) {
+          const lockMs = next >= 8 ? 5 * 60_000 : 60_000;
+          setLockUntil(Date.now() + lockMs);
+        } else {
+          setError('Email o contraseña incorrectos');
+        }
+      } else {
+        setFailedAttempts(0);
+        setLockUntil(null);
+      }
     } catch {
       setError('Error de conexión. Inténtalo de nuevo.');
     } finally {
@@ -315,9 +341,15 @@ function SignInScreen() {
               fwdRef={passRef} onSubmit={submit} />
           </Field>
 
-          {error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : null}
+          {isLocked
+            ? <Text style={s.error} accessibilityRole="alert">Demasiados intentos. Espera {lockSeconds}s.</Text>
+            : error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : null}
 
-          <Btn label="Entrar" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
+          <Btn
+            label={isLocked ? `Espera ${lockSeconds}s` : 'Entrar'}
+            onPress={submit} loading={loading} disabled={isLocked}
+            color={primary_color} style={{ marginTop: 6 }}
+          />
 
           <TouchableOpacity onPress={() => setShowForgot(true)} style={s.link}>
             <Text style={s.linkText}>¿Olvidaste tu contraseña?</Text>
