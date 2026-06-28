@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, Image,
+  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, Image, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -382,6 +382,17 @@ export function ProfileScreen() {
           )}
         </View>
 
+        {/* Legal links */}
+        <View style={styles.legalSection}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.wodbox.xyz/privacy.html')}>
+            <Text style={styles.legalLink}>Política de privacidad</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDot}>·</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.wodbox.xyz/terms.html')}>
+            <Text style={styles.legalLink}>Términos de uso</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Delete account */}
         <View style={styles.deleteSection}>
           <TouchableOpacity style={styles.deleteBtn} onPress={() => setDeleteConfirmOpen(true)}>
@@ -597,7 +608,13 @@ const styles = StyleSheet.create({
   mcExpiresDate: { fontFamily: Fonts.bodySemiBold, color: Colors.white, fontSize: 13 },
   sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 18, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.muted },
-  deleteSection: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 },
+  legalSection: {
+    paddingHorizontal: 16, paddingTop: 24,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  legalLink: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, textDecorationLine: 'underline' },
+  legalDot: { fontSize: 12, color: Colors.border, fontFamily: Fonts.body },
+  deleteSection: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   deleteBtn: {
     paddingVertical: 14, borderRadius: 10,
     borderWidth: 1, borderColor: Colors.red,
