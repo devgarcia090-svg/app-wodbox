@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
+  View, Text, ScrollView, TouchableOpacity, TextInput, Keyboard,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,7 +64,7 @@ export function AdminDashboard() {
         {BOTTOM_TABS.map(tab => {
           const active = activeTab === tab.key;
           return (
-            <TouchableOpacity key={tab.key} style={styles.bottomItem} onPress={() => setActiveTab(tab.key)}>
+            <TouchableOpacity key={tab.key} style={styles.bottomItem} onPress={() => { Keyboard.dismiss(); setActiveTab(tab.key); }}>
               {active && <View style={[styles.bottomActiveLine, { backgroundColor: primary_color }]} />}
               <Text style={styles.bottomIcon}>{tab.icon}</Text>
               <Text style={[styles.bottomLabel, active && styles.bottomLabelActive, active && { color: primary_color }]}>{tab.label}</Text>
