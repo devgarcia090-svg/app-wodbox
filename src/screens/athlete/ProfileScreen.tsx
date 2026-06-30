@@ -338,8 +338,12 @@ export function ProfileScreen() {
                 <Text style={styles.statLabel}>Este mes</Text>
               </View>
               <View style={styles.statCell}>
-                <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>{profile?.plan ? '✓' : '—'}</Text>
-                <Text style={styles.statLabel}>Membresía</Text>
+                <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>
+                  {profile?.classes_remaining != null ? profile.classes_remaining : profile?.plan ? '✓' : '—'}
+                </Text>
+                <Text style={styles.statLabel}>
+                  {profile?.classes_remaining != null ? 'Restantes' : 'Membresía'}
+                </Text>
               </View>
             </>
           )}
@@ -360,20 +364,29 @@ export function ProfileScreen() {
             </View>
           )}
 
-          {((profile as any)?.plan_classes ?? 0) > 0 && (() => {
-            const total     = (profile as any).plan_classes as number;
-            const remaining = profile?.classes_remaining ?? 0;
-            const used      = Math.max(0, total - remaining);
-            const pct       = Math.min(1, total > 0 ? used / total : 0);
+          {(() => {
+            const total     = (profile as any)?.plan_classes as number | undefined;
+            const remaining = profile?.classes_remaining;
+            if (remaining == null) return null;
+            if (total && total > 0) {
+              const used = Math.max(0, total - remaining);
+              const pct  = Math.min(1, used / total);
+              return (
+                <>
+                  <View style={styles.progressBg}>
+                    <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: boxConfig.primary_color }]} />
+                  </View>
+                  <Text style={styles.progressText}>
+                    Has usado {used} de {total} · te quedan <Text style={{ color: boxConfig.primary_color, fontFamily: Fonts.bodySemiBold }}>{remaining}</Text>
+                  </Text>
+                </>
+              );
+            }
             return (
-              <>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: boxConfig.primary_color }]} />
-                </View>
-                <Text style={styles.progressText}>
-                  Has reservado {used} de {total} · te quedan {remaining}
-                </Text>
-              </>
+              <View style={styles.remainingRow}>
+                <Text style={styles.remainingLabel}>Clases restantes</Text>
+                <Text style={[styles.remainingValue, { color: boxConfig.primary_color }]}>{remaining}</Text>
+              </View>
             );
           })()}
 
@@ -667,6 +680,9 @@ const styles = StyleSheet.create({
   progressBg: { height: 6, backgroundColor: Colors.border, borderRadius: 3, marginTop: 12, marginBottom: 6, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3 },
   progressText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginBottom: 8 },
+  remainingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 },
+  remainingLabel: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
+  remainingValue: { fontFamily: Fonts.heading, fontSize: 22, lineHeight: 24 },
   calendarWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   legalSection: {
     paddingHorizontal: 16, paddingTop: 24,
