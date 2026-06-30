@@ -40,7 +40,6 @@ const BOTTOM_TABS: { key: AdminTab; label: string; icon: string }[] = [
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('clases');
   const [classRefreshKey, setClassRefreshKey] = useState(0);
-  const [memberRefreshKey, setMemberRefreshKey] = useState(0);
   const { toast, showToast } = useToast();
   const insets = useSafeAreaInsets();
   const { primary_color } = useBoxConfig();
@@ -55,7 +54,7 @@ export function AdminDashboard() {
             onCreated={() => setClassRefreshKey(k => k + 1)}
           />
         )}
-        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={memberRefreshKey} />}
+        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={0} />}
         {activeTab === 'cobros' && <CobrosPanel showToast={showToast} />}
         {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
       </KeyboardAvoidingView>
@@ -853,7 +852,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
       )}
 
       {/* Member picker modal */}
-      <Modal visible={showMemberPicker} transparent animationType="slide">
+      <Modal visible={showMemberPicker} transparent animationType="slide" onRequestClose={() => setShowMemberPicker(false)}>
         <TouchableOpacity style={cobroStyles.modalOverlay} activeOpacity={1} onPress={() => setShowMemberPicker(false)}>
           <View style={cobroStyles.modalSheet}>
             <Text style={cobroStyles.modalTitle}>Seleccionar miembro</Text>

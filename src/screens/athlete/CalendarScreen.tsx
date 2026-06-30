@@ -1,92 +1,105 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 import { useBoxConfig } from '../../context/BoxConfigContext';
 
 const DAY_HEADERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const DAY_NAMES_ES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
-type DayType = { num: number; type: 'current' | 'other'; today?: boolean; reserved?: boolean; hasClass?: boolean };
+type DayType = { num: number; type: 'current' | 'other'; today?: boolean; iso: string };
 
-const CALENDAR_DAYS: DayType[] = [
-  { num: 26, type: 'other' }, { num: 27, type: 'other' }, { num: 28, type: 'other' },
-  { num: 29, type: 'other' }, { num: 30, type: 'other' }, { num: 31, type: 'other' }, { num: 1, type: 'current' },
-  { num: 2, type: 'current', hasClass: true }, { num: 3, type: 'current', hasClass: true },
-  { num: 4, type: 'current', hasClass: true }, { num: 5, type: 'current', hasClass: true },
-  { num: 6, type: 'current', hasClass: true }, { num: 7, type: 'current' }, { num: 8, type: 'current' },
-  { num: 9, type: 'current', reserved: true, hasClass: true }, { num: 10, type: 'current', hasClass: true },
-  { num: 11, type: 'current', reserved: true, hasClass: true }, { num: 12, type: 'current', hasClass: true },
-  { num: 13, type: 'current', reserved: true, hasClass: true }, { num: 14, type: 'current' }, { num: 15, type: 'current' },
-  { num: 16, type: 'current', hasClass: true }, { num: 17, type: 'current', reserved: true, hasClass: true },
-  { num: 18, type: 'current', hasClass: true }, { num: 19, type: 'current', reserved: true, hasClass: true },
-  { num: 20, type: 'current', hasClass: true }, { num: 21, type: 'current' }, { num: 22, type: 'current' },
-  { num: 23, type: 'current', reserved: true, hasClass: true }, { num: 24, type: 'current', today: true, hasClass: true },
-  { num: 25, type: 'current', hasClass: true }, { num: 26, type: 'current', hasClass: true },
-  { num: 27, type: 'current', hasClass: true }, { num: 28, type: 'current' }, { num: 29, type: 'current' },
-  { num: 30, type: 'current', hasClass: true },
-  { num: 1, type: 'other' }, { num: 2, type: 'other' }, { num: 3, type: 'other' },
-  { num: 4, type: 'other' }, { num: 5, type: 'other' }, { num: 6, type: 'other' },
-];
+function buildCalendarDays(year: number, month: number): DayType[] {
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  // Monday-first offset (0=Mon … 6=Sun)
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const days: DayType[] = [];
+
+  // Days from previous month
+  const prevMonthLast = new Date(year, month, 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const num = prevMonthLast - i;
+    const d = new Date(year, month - 1, num);
+    days.push({ num, type: 'other', iso: isoDate(d) });
+  }
+
+  // Days of current month
+  for (let n = 1; n <= lastDay.getDate(); n++) {
+    const d = new Date(year, month, n);
+    const iso = isoDate(d);
+    days.push({ num: n, type: 'current', today: iso === todayIso, iso });
+  }
+
+  // Fill to complete last row (7 cols)
+  const remaining = (7 - (days.length % 7)) % 7;
+  for (let n = 1; n <= remaining; n++) {
+    const d = new Date(year, month + 1, n);
+    days.push({ num: n, type: 'other', iso: isoDate(d) });
+  }
+
+  return days;
+}
+
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function buildWeekCols(year: number, month: number): { label: string; today: boolean }[] {
+  const today = new Date();
+  const todayIso = isoDate(today);
+
+  // Find Monday of current week
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dayAbbr = DAY_NAMES_ES[(d.getDay() + 6) % 7 === 6 ? 0 : (d.getDay() + 6) % 7];
+    const shortDay = ['L', 'M', 'X', 'J', 'V'][(d.getDay() + 6) % 7] ?? DAY_NAMES_ES[d.getDay()][0];
+    return { label: `${shortDay} ${d.getDate()}`, today: isoDate(d) === todayIso };
+  });
+}
 
 const WEEK_TIMES = ['07:00', '10:00', '12:00', '18:00', '19:30'];
-const WEEK_COLS = [
-  { label: 'L 22', today: false },
-  { label: 'M 23', today: false },
-  { label: 'X 24', today: true },
-  { label: 'J 25', today: false },
-  { label: 'V 26', today: false },
-];
-
-type SlotData = { name: string; coach: string; status: 'reserved' | 'full' | 'empty' | 'open' };
-
-const WEEK_DATA: SlotData[][] = [
-  [
-    { name: 'WOD', coach: 'Sara', status: 'reserved' },
-    { name: 'WOD', coach: 'Sara', status: 'open' },
-    { name: 'WOD', coach: 'Sara', status: 'reserved' },
-    { name: 'WOD', coach: 'Sara', status: 'open' },
-    { name: 'WOD', coach: 'Sara', status: 'open' },
-  ],
-  [
-    { name: '', coach: '', status: 'empty' },
-    { name: '', coach: '', status: 'empty' },
-    { name: 'Open', coach: 'Libre', status: 'open' },
-    { name: '', coach: '', status: 'empty' },
-    { name: 'Open', coach: 'Libre', status: 'open' },
-  ],
-  [
-    { name: 'Halterofilia', coach: 'Marcos', status: 'full' },
-    { name: '', coach: '', status: 'empty' },
-    { name: 'Halterofilia', coach: 'Marcos', status: 'full' },
-    { name: '', coach: '', status: 'empty' },
-    { name: '', coach: '', status: 'empty' },
-  ],
-  [
-    { name: 'WOD', coach: 'Sara', status: 'reserved' },
-    { name: 'WOD', coach: 'Sara', status: 'reserved' },
-    { name: 'WOD', coach: 'Sara', status: 'open' },
-    { name: 'WOD', coach: 'Sara', status: 'open' },
-    { name: 'WOD', coach: 'Sara', status: 'reserved' },
-  ],
-  [
-    { name: '', coach: '', status: 'empty' },
-    { name: 'Endurance', coach: 'Marcos', status: 'open' },
-    { name: 'Endurance', coach: 'Marcos', status: 'open' },
-    { name: 'Endurance', coach: 'Marcos', status: 'open' },
-    { name: '', coach: '', status: 'empty' },
-  ],
-];
 
 export function CalendarScreen() {
   const { primary_color } = useBoxConfig();
+  const now = new Date();
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+
+  const calendarDays = useMemo(() => buildCalendarDays(viewYear, viewMonth), [viewYear, viewMonth]);
+  const weekCols = useMemo(() => buildWeekCols(viewYear, viewMonth), [viewYear, viewMonth]);
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  };
+
+  const goToNextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Month header */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Junio 2026</Text>
+        <Text style={styles.sectionTitle}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
         <View style={styles.row}>
-          <TouchableOpacity style={styles.navBtn}><Text style={styles.navBtnText}>‹</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.navBtn}><Text style={styles.navBtnText}>›</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} onPress={goToPrevMonth}>
+            <Text style={styles.navBtnText}>‹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} onPress={goToNextMonth}>
+            <Text style={styles.navBtnText}>›</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -97,26 +110,21 @@ export function CalendarScreen() {
             <Text style={styles.calDayHeaderText}>{d}</Text>
           </View>
         ))}
-        {CALENDAR_DAYS.map((d, i) => (
+        {calendarDays.map((d, i) => (
           <TouchableOpacity
             key={i}
             style={[
               styles.calDay,
               d.today && { backgroundColor: primary_color },
-              d.reserved && !d.today && styles.calDayReserved,
             ]}
           >
             <Text style={[
               styles.calDayText,
               d.type === 'other' && styles.calDayOther,
               d.today && styles.calDayTodayText,
-              d.reserved && !d.today && styles.calDayReservedText,
             ]}>
               {d.num}
             </Text>
-            {d.hasClass && (
-              <View style={[styles.calDot, { backgroundColor: primary_color }, d.today && styles.calDotToday]} />
-            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -145,7 +153,7 @@ export function CalendarScreen() {
           {/* Week headers */}
           <View style={styles.weekHeaderRow}>
             <View style={styles.weekTimeCell} />
-            {WEEK_COLS.map((col, i) => (
+            {weekCols.map((col, i) => (
               <View key={i} style={styles.weekColHeader}>
                 <Text style={[styles.weekColHeaderText, col.today && { color: primary_color }]}>{col.label}</Text>
               </View>
@@ -157,24 +165,8 @@ export function CalendarScreen() {
               <View style={styles.weekTimeCell}>
                 <Text style={styles.weekTimeText}>{time}</Text>
               </View>
-              {WEEK_DATA[rowIdx].map((slot, colIdx) => (
-                <TouchableOpacity
-                  key={colIdx}
-                  style={[
-                    styles.weekSlot,
-                    slot.status === 'reserved' && { backgroundColor: withAlpha(primary_color, 0.15), borderColor: primary_color },
-                    slot.status === 'full' && styles.weekSlotFull,
-                    slot.status === 'empty' && styles.weekSlotEmpty,
-                  ]}
-                  disabled={slot.status === 'empty'}
-                >
-                  {slot.status !== 'empty' && (
-                    <>
-                      <Text style={styles.weekSlotName}>{slot.name}</Text>
-                      <Text style={styles.weekSlotCoach}>{slot.coach}</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+              {weekCols.map((_, colIdx) => (
+                <View key={colIdx} style={styles.weekSlotEmpty} />
               ))}
             </View>
           ))}
@@ -235,25 +227,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
   },
-  calDayToday: { backgroundColor: Colors.orange },
-  calDayReserved: {},
   calDayText: {
     fontSize: 13,
     fontFamily: Fonts.bodyMedium,
     color: Colors.white,
   },
   calDayOther: { color: Colors.surface3 },
-  calDayTodayText: { color: '#fff', fontFamily: Fonts.bodySemiBold },
-  calDayReservedText: { color: Colors.green },
-  calDot: {
-    position: 'absolute',
-    bottom: 3,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.orange,
-  },
-  calDotToday: { backgroundColor: '#fff' },
+  calDayTodayText: { color: Colors.white, fontFamily: Fonts.bodySemiBold },
   legend: {
     flexDirection: 'row',
     gap: 16,
@@ -268,22 +248,14 @@ const styles = StyleSheet.create({
   weekTimeCell: { width: 52, alignItems: 'flex-end', paddingRight: 8, paddingTop: 4 },
   weekColHeader: { width: 80, alignItems: 'center', paddingVertical: 4 },
   weekColHeaderText: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
-  weekColHeaderToday: { color: Colors.orange }, // overridden inline via primary_color
   weekRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
   weekTimeText: { fontSize: 11, color: Colors.muted, fontFamily: Fonts.body },
-  weekSlot: {
+  weekSlotEmpty: {
     width: 80,
     minHeight: 36,
-    backgroundColor: Colors.surface2,
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 6,
-    padding: 4,
-    paddingHorizontal: 6,
   },
-  weekSlotReserved: { backgroundColor: Colors.orangeGlow, borderColor: Colors.orange },
-  weekSlotFull: { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' },
-  weekSlotEmpty: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  weekSlotName: { fontSize: 10, fontFamily: Fonts.bodySemiBold, color: Colors.white },
-  weekSlotCoach: { fontSize: 9, color: Colors.muted, fontFamily: Fonts.body },
 });

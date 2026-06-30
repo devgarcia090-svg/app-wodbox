@@ -12,7 +12,9 @@ export interface Profile {
   plan: string;
   membership_status: 'active' | 'pending' | 'inactive';
   membership_expires: string | null;
+  membership_start: string | null;
   classes_remaining: number | null;
+  plan_classes: number | null;
 }
 
 interface AuthContextValue {
@@ -84,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, role, avatar_initials, avatar_color, avatar_url, plan, membership_status, membership_expires, classes_remaining')
+        .select('name, role, avatar_initials, avatar_color, avatar_url, plan, membership_status, membership_expires, membership_start, classes_remaining, plan_classes')
         .eq('id', userId)
         .single();
 

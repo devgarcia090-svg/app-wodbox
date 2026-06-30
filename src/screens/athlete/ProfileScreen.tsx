@@ -355,17 +355,17 @@ export function ProfileScreen() {
           <Text style={styles.mcPlan}>{profile?.plan ?? 'Sin plan'}</Text>
           <Text style={styles.mcMeta}>{boxConfig.name}</Text>
 
-          {(profile as any)?.membership_start && profile?.membership_expires && (
+          {profile?.membership_start && profile?.membership_expires && (
             <View style={styles.mcPeriodRow}>
               <Text style={styles.mcPeriodLabel}>Periodo actual</Text>
               <Text style={styles.mcPeriodDates}>
-                {fmtShortDate((profile as any).membership_start)} – {fmtShortDate(profile.membership_expires)}
+                {fmtShortDate(profile.membership_start)} – {fmtShortDate(profile.membership_expires)}
               </Text>
             </View>
           )}
 
           {(() => {
-            const total     = (profile as any)?.plan_classes as number | undefined;
+            const total = profile?.plan_classes;
             const remaining = profile?.classes_remaining;
             if (remaining == null) return null;
             if (total && total > 0) {
@@ -493,7 +493,7 @@ export function ProfileScreen() {
 
       {/* Edit Profile Modal */}
       <Modal visible={editOpen} transparent animationType="slide" onRequestClose={() => setEditOpen(false)}>
-        <KeyboardAvoidingView style={editStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={editStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setEditOpen(false)} />
           <View style={editStyles.sheet}>
             <View style={editStyles.handle} />

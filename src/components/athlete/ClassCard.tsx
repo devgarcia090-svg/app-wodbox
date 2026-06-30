@@ -35,8 +35,6 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
     item.status === 'reserved' ? 'Reservada ✓' :
     item.status === 'full' ? 'Llena' : 'Plazas libres';
 
-  const free = item.capacity - item.enrolled;
-
   return (
     <>
       <TouchableOpacity style={styles.card} onPress={() => onPress(item)} activeOpacity={0.8}>
