@@ -309,7 +309,7 @@ function SignInScreen() {
   if (showForgot) return <ForgotScreen onBack={() => setShowForgot(false)} />;
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <GlowOrbs />
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -397,7 +397,7 @@ function ForgotScreen({ onBack }: { onBack: () => void }) {
   );
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <GlowOrbs />
       <BackBtn onPress={onBack} />
       <ScrollView
@@ -467,7 +467,7 @@ function SetPasswordScreen() {
   );
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <GlowOrbs />
       <ScrollView
         contentContainerStyle={s.scroll}
