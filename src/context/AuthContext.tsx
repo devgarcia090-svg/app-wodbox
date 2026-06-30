@@ -84,13 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function fetchProfile(userId: string) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
-        .select('name, role, avatar_initials, avatar_color, avatar_url, plan, membership_status, membership_expires, membership_start, classes_remaining, plan_classes')
+        .select('*')
         .eq('id', userId)
         .single();
 
-      if (data && !error) setProfile(data as Profile);
+      if (data) setProfile(data as Profile);
     } finally {
       setLoading(false);
     }

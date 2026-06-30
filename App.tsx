@@ -24,7 +24,7 @@ import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
 
 function AppContent() {
-  const { session, profile, loading, signOut } = useAuth();
+  const { session, profile, loading, signOut, refreshProfile } = useAuth();
   const boxConfig = useBoxConfig();
   usePushToken(session?.user.id, boxConfig.name);
 
@@ -41,7 +41,7 @@ function AppContent() {
     );
   }
 
-  if (!session || !profile) {
+  if (!session) {
     return (
       <>
         <StatusBar barStyle="light-content" backgroundColor={Colors.black} />
@@ -49,6 +49,26 @@ function AppContent() {
           <LoginScreen />
         </SafeAreaView>
       </>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 14, marginBottom: 20 }}>
+          Error al cargar el perfil
+        </Text>
+        <TouchableOpacity onPress={refreshProfile} style={{ paddingVertical: 12, paddingHorizontal: 24 }}>
+          <Text style={{ color: boxConfig.primary_color, fontFamily: Fonts.bodyMedium, fontSize: 14 }}>
+            Reintentar
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={signOut} style={{ paddingVertical: 12, paddingHorizontal: 24 }}>
+          <Text style={{ color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 }}>
+            Cerrar sesión
+          </Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 

@@ -4,6 +4,14 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Hotfix: fetchProfile con columnas faltantes — 2026-06-30
+
+### Corregido
+- **`AuthContext.tsx` — login no navegaba tras autenticarse**: El `fetchProfile` seleccionaba columnas concretas incluyendo `membership_start` y `plan_classes`. Si esas columnas no existen en la BD todavía (la migración `membership_period.sql` es manual y puede no haberse ejecutado), la query fallaba con error de columna, `data` quedaba null, `setProfile` nunca se llamaba, y `App.tsx` seguía mostrando el login aunque el usuario estuviera autenticado. Cambiado a `select('*')` que ignora columnas ausentes y siempre devuelve lo que hay.
+- **`App.tsx` — bucle infinito cuando profile es null con sesión activa**: Separada la condición `!session || !profile` en dos bloques distintos. Ahora si hay sesión pero el perfil no carga, se muestra una pantalla de error con botón "Reintentar" y opción de cerrar sesión, en lugar de volver al login (que provocaba que el usuario reintentara el login sin efecto).
+
+---
+
 ## Hotfix: BoxLogo eliminado + login KAV — 2026-06-30
 
 ### Corregido
