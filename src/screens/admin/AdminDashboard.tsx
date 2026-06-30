@@ -516,7 +516,8 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                 onPress={() => {
                   setExpandedId(isExpanded ? null : m.id);
                   setEditPlan(m.plan);
-                  setEditRemaining(m.classes_remaining?.toString() ?? '');
+                  const defaultQty = m.plan === '10 Clases' ? '10' : m.plan === '14 Clases' ? '14' : '';
+                  setEditRemaining(m.classes_remaining?.toString() ?? defaultQty);
                 }}
                 activeOpacity={0.8}
               >
@@ -557,7 +558,12 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
                         <TouchableOpacity
                           key={t.id}
                           style={[expandStyles.tariffChip, sel && expandStyles.tariffChipSel, sel && { borderColor: primary_color, backgroundColor: withAlpha(primary_color, 0.15) }]}
-                          onPress={() => setEditPlan(t.id)}
+                          onPress={() => {
+                            setEditPlan(t.id);
+                            if (t.id === '10 Clases') setEditRemaining(r => r || '10');
+                            else if (t.id === '14 Clases') setEditRemaining(r => r || '14');
+                            else setEditRemaining('');
+                          }}
                         >
                           <Text style={[expandStyles.tariffChipText, sel && expandStyles.tariffChipTextSel, sel && { color: primary_color }]}>{t.name}</Text>
                           <Text style={[expandStyles.tariffChipPrice, sel && { color: primary_color }]}>€{t.price}</Text>
