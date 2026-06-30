@@ -19,7 +19,6 @@ import { AdminNavigator } from './src/navigation/AdminNavigator';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { BoxConfigProvider, useBoxConfig } from './src/context/BoxConfigContext';
-import { BoxLogo } from './src/components/common/BoxLogo';
 import { usePushToken } from './src/hooks/usePushToken';
 import { Colors } from './src/theme/colors';
 import { Fonts } from './src/theme/fonts';
@@ -32,8 +31,12 @@ function AppContent() {
   if (!boxConfig.configLoaded || loading) {
     return (
       <View style={styles.loadingContainer}>
-        {boxConfig.configLoaded && <BoxLogo size="large" />}
-        <ActivityIndicator color={boxConfig.configLoaded ? boxConfig.primary_color : Colors.black} style={{ marginTop: 24 }} />
+        {boxConfig.configLoaded && (
+          <Text style={[styles.loadingLogo, { color: boxConfig.primary_color }]}>
+            {boxConfig.name.toUpperCase()}
+          </Text>
+        )}
+        <ActivityIndicator color={boxConfig.configLoaded ? boxConfig.primary_color : Colors.white} style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -56,7 +59,7 @@ function AppContent() {
         <SafeAreaView style={styles.root} edges={['top']}>
           {/* Top Nav */}
           <View style={styles.nav}>
-            <BoxLogo size="small" />
+            <Text style={[styles.logo, { color: boxConfig.primary_color }]}>{boxConfig.name.toUpperCase()}</Text>
             <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
               <Text style={styles.logoutText}>Salir</Text>
             </TouchableOpacity>

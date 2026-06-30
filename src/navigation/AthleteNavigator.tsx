@@ -4,8 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { useBoxConfig } from '../context/BoxConfigContext';
-import { useAuth } from '../context/AuthContext';
-import { usePushToken } from '../hooks/usePushToken';
+
 import { HomeScreen } from '../screens/athlete/HomeScreen';
 import { CalendarScreen } from '../screens/athlete/CalendarScreen';
 import { ChatScreen } from '../screens/athlete/ChatScreen';
@@ -24,8 +23,6 @@ export function AthleteNavigator() {
   const [active, setActive] = useState<AthleteTab>('inicio');
   const insets = useSafeAreaInsets();
   const { primary_color } = useBoxConfig();
-  const { session } = useAuth();
-  usePushToken(session?.user.id);
 
   return (
     <View style={styles.root}>

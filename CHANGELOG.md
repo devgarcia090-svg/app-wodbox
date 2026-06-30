@@ -4,6 +4,15 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Hotfix: BoxLogo eliminado + login KAV — 2026-06-30
+
+### Corregido
+- **`App.tsx` — crash al iniciar (import de BoxLogo eliminado)**: `BoxLogo.tsx` fue borrado en la auditoría anterior pero `App.tsx` seguía importándolo. Metro no podía resolver el módulo y el bundle fallaba por completo, impidiendo que la app arrancara. Reemplazadas las dos referencias de `BoxLogo` con `<Text>` usando `boxConfig.name`.
+- **`LoginScreen.tsx` — botón "Entrar" no respondía en Expo Go**: `behavior={undefined}` en Android requiere `adjustResize` nativo para funcionar, que solo está activo en builds standalone (no en Expo Go). Cambiado a `behavior="padding"`, que funciona en ambos entornos: en producción añade padding de scroll extra (inocuo con `adjustResize`), en Expo Go permite hacer scroll para llegar al botón debajo del teclado.
+- **`AthleteNavigator.tsx` — registro de push token duplicado**: `usePushToken` se llamaba tanto en `App.tsx` como en `AthleteNavigator.tsx`. Eliminada la llamada redundante de `AthleteNavigator` (ya se gestiona a nivel de `AppContent`).
+
+---
+
 ## Auditoría y limpieza (round 2) — 2026-06-30
 
 ### Añadido
