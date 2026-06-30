@@ -7,6 +7,7 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 ## [Sin versión] — 2026-06-30
 
 ### Corregido
+- **Android build — botón "Entrar" no respondía**: Con `adjustResize` en el manifest, Android ya redimensiona el layout al aparecer el teclado. `KeyboardAvoidingView behavior="height"` hacía un segundo ajuste encima, desplazando los elementos visualmente de sus zonas táctiles reales. Revertido a `behavior={undefined}` en Android para que `adjustResize` lo gestione solo.
 - **Android build — teclado no subía el login**: Añadido `softwareKeyboardLayoutMode: "resize"` en `app.json`. En builds standalone Android el modo por defecto era `adjustPan` y `KeyboardAvoidingView` no recibía la altura del teclado correctamente. Requiere nuevo build para aplicarse.
 
 ---
