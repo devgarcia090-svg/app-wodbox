@@ -4,6 +4,13 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Hotfix: Race condition en login (loading state) — 2026-06-30
+
+### Corregido
+- **`AuthContext.tsx` — login mostraba spinner y nunca entraba (iOS y Android)**: `onAuthStateChange` recibía la sesión, llamaba `setSession()` y lanzaba `fetchProfile()` en background, pero no ponía `loading=true`. Esto dejaba una ventana donde `session=set, profile=null, loading=false`, que hacía que `App.tsx` volviera al login antes de que el perfil cargara. El usuario veía el spinner del botón apagarse y no pasaba nada. Añadido `setLoading(true)` justo antes de `fetchProfile()` en el handler de `onAuthStateChange`. También eliminada la llamada redundante a `getSession()` (ya innecesaria porque `onAuthStateChange` dispara inmediatamente al suscribirse con el estado actual de sesión).
+
+---
+
 ## Hotfix: fetchProfile con columnas faltantes — 2026-06-30
 
 ### Corregido
