@@ -42,7 +42,7 @@ export function Toast({ message, type, visible }: ToastProps) {
     Colors.white;
 
   return (
-    <Animated.View style={[styles.toast, { opacity, transform: [{ translateY }], borderColor }]}>
+    <Animated.View pointerEvents="none" style={[styles.toast, { opacity, transform: [{ translateY }], borderColor }]}>
       <Text style={[styles.text, { color: textColor }]}>{message}</Text>
     </Animated.View>
   );
