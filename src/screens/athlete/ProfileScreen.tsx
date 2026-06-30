@@ -17,6 +17,7 @@ import { useBoxConfig } from '../../context/BoxConfigContext';
 import { useInvoices } from '../../hooks/useInvoices';
 import type { InvoiceRow } from '../../hooks/useInvoices';
 import { supabase } from '../../lib/supabase';
+import { AttendanceCalendar, type BookedDay } from '../../components/athlete/AttendanceCalendar';
 
 interface RecentBooking {
   id: string;
@@ -51,6 +52,11 @@ function fmtExpiry(iso: string | null) {
   return `${d.getDate()} de ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function fmtShortDate(iso: string) {
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+
 function fmtAmount(n: number) {
   return n.toFixed(2).replace('.', ',') + '€';
 }
@@ -63,6 +69,7 @@ export function ProfileScreen() {
 
   const [stats, setStats] = useState({ total: 0, thisMonth: 0 });
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [calendarBookings, setCalendarBookings] = useState<BookedDay[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
 
   // Edit modal
@@ -188,7 +195,7 @@ export function ProfileScreen() {
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-    const [totalRes, monthRes, recentRes] = await Promise.all([
+    const [totalRes, monthRes, recentRes, calRes] = await Promise.all([
       supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
@@ -207,6 +214,12 @@ export function ProfileScreen() {
         .eq('status', 'confirmed')
         .order('created_at', { ascending: false })
         .limit(3),
+      supabase
+        .from('bookings')
+        .select('id, classes!bookings_class_id_fkey(date, time, name)')
+        .eq('athlete_id', userId)
+        .eq('status', 'confirmed')
+        .gte('classes.date', monthStart),
     ]);
 
     setStats({ total: totalRes.count ?? 0, thisMonth: monthRes.count ?? 0 });
@@ -219,6 +232,11 @@ export function ProfileScreen() {
           class_date: b.classes.date,
           class_time: b.classes.time,
         }))
+    );
+    setCalendarBookings(
+      ((calRes.data || []) as any[])
+        .filter(b => b.classes)
+        .map(b => ({ date: b.classes.date, time: b.classes.time, name: b.classes.name }))
     );
     setBookingsLoading(false);
   }, [session?.user.id]);
@@ -332,6 +350,33 @@ export function ProfileScreen() {
           <Text style={[styles.mcLabel, { color: boxConfig.primary_color }]}>Mi membresía</Text>
           <Text style={styles.mcPlan}>{profile?.plan ?? 'Sin plan'}</Text>
           <Text style={styles.mcMeta}>{boxConfig.name}</Text>
+
+          {(profile as any)?.membership_start && profile?.membership_expires && (
+            <View style={styles.mcPeriodRow}>
+              <Text style={styles.mcPeriodLabel}>Periodo actual</Text>
+              <Text style={styles.mcPeriodDates}>
+                {fmtShortDate((profile as any).membership_start)} – {fmtShortDate(profile.membership_expires)}
+              </Text>
+            </View>
+          )}
+
+          {((profile as any)?.plan_classes ?? 0) > 0 && (() => {
+            const total     = (profile as any).plan_classes as number;
+            const remaining = profile?.classes_remaining ?? 0;
+            const used      = Math.max(0, total - remaining);
+            const pct       = Math.min(1, total > 0 ? used / total : 0);
+            return (
+              <>
+                <View style={styles.progressBg}>
+                  <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: boxConfig.primary_color }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  Has reservado {used} de {total} · te quedan {remaining}
+                </Text>
+              </>
+            );
+          })()}
+
           <View style={styles.mcExpires}>
             <View>
               <Text style={styles.mcExpiresLabel}>Válida hasta</Text>
@@ -358,6 +403,14 @@ export function ProfileScreen() {
             ))}
           </>
         )}
+
+        {/* Attendance calendar */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Asistencia</Text>
+        </View>
+        <View style={styles.calendarWrap}>
+          <AttendanceCalendar bookedDays={calendarBookings} primaryColor={boxConfig.primary_color} />
+        </View>
 
         {/* Invoices */}
         <View style={styles.sectionHeader}>
@@ -608,6 +661,13 @@ const styles = StyleSheet.create({
   mcExpiresDate: { fontFamily: Fonts.bodySemiBold, color: Colors.white, fontSize: 13 },
   sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 18, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.muted },
+  mcPeriodRow: { marginTop: 10, marginBottom: 2 },
+  mcPeriodLabel: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
+  mcPeriodDates: { fontSize: 13, color: Colors.white, fontFamily: Fonts.bodySemiBold },
+  progressBg: { height: 6, backgroundColor: Colors.border, borderRadius: 3, marginTop: 12, marginBottom: 6, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
+  progressText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body, marginBottom: 8 },
+  calendarWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   legalSection: {
     paddingHorizontal: 16, paddingTop: 24,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

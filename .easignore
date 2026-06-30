@@ -1,0 +1,11 @@
+# Excluye ficheros innecesarios del upload a EAS Build
+node_modules/
+android/
+ios/
+.git/
+*.log
+*.map
+coverage/
+.expo/
+dist/
+web-build/
