@@ -37,7 +37,7 @@ export function HomeScreen() {
   const boxConfig = useBoxConfig();
   const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [selectedClass, setSelectedClass] = useState<import('../../data/mockData').ClassItem | null>(null);
   const { toast, showToast } = useToast();
 
   const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? DATE_PILLS[0].isoDate;
@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surface2,
   },
-  datePillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   dateDay: {
     fontSize: 10,
     fontFamily: Fonts.bodySemiBold,
@@ -212,7 +211,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surface2,
   },
-  timePillActive: { backgroundColor: Colors.orange, borderColor: Colors.orange },
   timePillText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
   timePillTextActive: { color: '#fff' },
   sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },

@@ -4,29 +4,36 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { useBoxConfig } from '../context/BoxConfigContext';
+import { useAuth } from '../context/AuthContext';
+import { usePushToken } from '../hooks/usePushToken';
 import { HomeScreen } from '../screens/athlete/HomeScreen';
+import { CalendarScreen } from '../screens/athlete/CalendarScreen';
 import { ChatScreen } from '../screens/athlete/ChatScreen';
 import { ProfileScreen } from '../screens/athlete/ProfileScreen';
 
-type AthleteTab = 'inicio' | 'chat' | 'perfil';
+type AthleteTab = 'inicio' | 'calendario' | 'chat' | 'perfil';
 
 const TABS: { key: AthleteTab; label: string; icon: string }[] = [
-  { key: 'inicio', label: 'Inicio', icon: '🏠' },
-  { key: 'chat',   label: 'Chat',   icon: '💬' },
-  { key: 'perfil', label: 'Perfil', icon: '👤' },
+  { key: 'inicio',     label: 'Inicio',  icon: '🏠' },
+  { key: 'calendario', label: 'Clases',  icon: '📅' },
+  { key: 'chat',       label: 'Chat',    icon: '💬' },
+  { key: 'perfil',     label: 'Perfil',  icon: '👤' },
 ];
 
 export function AthleteNavigator() {
   const [active, setActive] = useState<AthleteTab>('inicio');
   const insets = useSafeAreaInsets();
   const { primary_color } = useBoxConfig();
+  const { session } = useAuth();
+  usePushToken(session?.user.id);
 
   return (
     <View style={styles.root}>
       <View style={styles.content}>
-        {active === 'inicio' && <HomeScreen />}
-        {active === 'chat'   && <ChatScreen />}
-        {active === 'perfil' && <ProfileScreen />}
+        {active === 'inicio'     && <HomeScreen />}
+        {active === 'calendario' && <CalendarScreen />}
+        {active === 'chat'       && <ChatScreen />}
+        {active === 'perfil'     && <ProfileScreen />}
       </View>
 
       <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>

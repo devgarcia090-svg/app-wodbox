@@ -4,6 +4,32 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Auditoría y limpieza (round 2) — 2026-06-30
+
+### Añadido
+- **`AthleteNavigator.tsx`**: Completado el render del tab "Clases" — `<CalendarScreen />` ya se muestra al pulsar la pestaña. También wired `usePushToken(session?.user.id)` para registrar notificaciones push tras el login.
+
+### Corregido
+- **`Avatar.tsx`**: Añadido `useEffect(() => setImgError(false), [url])`. Sin él, una foto de perfil actualizada seguía mostrando las iniciales porque el flag de error no se reseteaba al cambiar la URL.
+- **`ChatScreen.tsx`**: `sendBroadcast` y `sendDM` borraban el input antes del `await` de Supabase; si la petición fallaba, el mensaje se perdía silenciosamente. Movido `setBcInput('')` / `setDmInput('')` dentro del bloque `if (!error)`.
+- **`AdminDashboard.tsx`**: `todayIso` era una variable local que duplicaba `TODAY_ISO` importada de `mockData`. Eliminada la variable local, usado `TODAY_ISO` directamente.
+- **`AdminDashboard.tsx`**: Eliminado `refreshKey` de `MiembrosPanel` (prop y useEffect). El prop siempre era `0`, la guardia `if (refreshKey > 0)` nunca se cumplía — el panel jamás hacía refetch externo. Eliminado el código muerto; las actualizaciones se disparan desde dentro del propio panel.
+
+### Eliminado (código muerto)
+- **`BoxLogo.tsx`**: Componente exportado pero nunca importado en ningún sitio. Eliminado.
+- **`HomeScreen.tsx`**: Estilos `datePillActive` y `timePillActive` nunca referenciados (el color activo se aplica inline). Eliminados.
+- **`ProfileScreen.tsx`**: Estilo `avatarHint` nunca referenciado. Eliminado.
+- **`AdminDashboard.tsx`**: Estilo `seenText` nunca referenciado. Eliminado.
+- **`CalendarScreen.tsx`**: Array `DAY_NAMES_ES` y variable `dayAbbr` nunca usados tras la reescritura. Eliminados.
+
+### Mejorado
+- **`HomeScreen.tsx`**: Tipo de `selectedClass` cambiado de `any` a `ClassItem | null`.
+- **`AttendanceCalendar.tsx`**: Sustituida concatenación `primaryColor + '28'` / `+ '55'` por llamadas a `withAlpha(primaryColor, 0.16)` / `withAlpha(primaryColor, 0.33)`. Funciona correctamente con cualquier formato de color, no solo hex 6 dígitos.
+- **`LogResultModal.tsx`**: Añadido `returnKeyType="done"` al TextInput de resultado — el teclado muestra "Hecho" en lugar de "Retorno".
+- **`CalendarScreen.tsx`**: `buildWeekCols` ya usa el mes visualizado como ancla en lugar de hardcodear la semana actual independientemente del mes.
+
+---
+
 ## [Sin versión] — 2026-06-30
 
 ### Corregido

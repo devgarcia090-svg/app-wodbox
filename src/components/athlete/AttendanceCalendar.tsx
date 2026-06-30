@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { Colors, withAlpha } from '../../theme/colors';
 import { Fonts } from '../../theme/fonts';
 
 export interface BookedDay {
@@ -65,7 +65,7 @@ export function AttendanceCalendar({ bookedDays, primaryColor }: Props) {
                 key={dateStr}
                 style={[
                   styles.cell,
-                  booked && { backgroundColor: primaryColor + '28', borderColor: primaryColor + '55', borderWidth: 1 },
+                  booked && { backgroundColor: withAlpha(primaryColor, 0.16), borderColor: withAlpha(primaryColor, 0.33), borderWidth: 1 },
                   isToday && styles.cellToday,
                 ]}
               >

@@ -54,7 +54,7 @@ export function AdminDashboard() {
             onCreated={() => setClassRefreshKey(k => k + 1)}
           />
         )}
-        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} refreshKey={0} />}
+        {activeTab === 'miembros' && <MiembrosPanel showToast={showToast} />}
         {activeTab === 'cobros' && <CobrosPanel showToast={showToast} />}
         {activeTab === 'chat' && <AdminChatPanel showToast={showToast} />}
       </KeyboardAvoidingView>
@@ -340,7 +340,7 @@ const TARIFFS = [
 
 // ─── Miembros Panel ────────────────────────────────────────────────────────────
 
-function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: any) => void; refreshKey: number }) {
+function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) {
   const { members, loading, refetch } = useMembers();
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -353,10 +353,6 @@ function MiembrosPanel({ showToast, refreshKey }: { showToast: (m: string, t: an
   const [selectedTariff, setSelectedTariff] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const { primary_color } = useBoxConfig();
-
-  useEffect(() => {
-    if (refreshKey > 0) refetch();
-  }, [refreshKey]);
 
   const filtered = members.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -638,8 +634,6 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
   const cobradoMes = paid.filter(i => i.date.startsWith(thisMonth)).reduce((s, i) => s + i.amount, 0);
   const pendienteTotal = pending.reduce((s, i) => s + i.amount, 0);
 
-  const todayIso = now.toISOString().slice(0, 10);
-
   const selectedMember = allMembers.find(m => m.id === nfMemberId);
 
   const handleMarkPaid = async (id: string, name: string) => {
@@ -659,7 +653,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
       member_id: mid,
       plan_name: nfPlan,
       amount: parseFloat(nfAmount.replace(',', '.')),
-      date: todayIso,
+      date: TODAY_ISO,
       payment_method: nfPayMethod,
     });
     setNfBusy(false);
@@ -1762,7 +1756,6 @@ const chatStyles = StyleSheet.create({
   broadcastLabel: { fontSize: 10, color: Colors.orange, fontFamily: Fonts.bodySemiBold, textTransform: 'uppercase', letterSpacing: 0.5 },
   broadcastBubble: { backgroundColor: '#1a0800', borderWidth: 1, borderColor: Colors.orange, borderRadius: 12, padding: 14 },
   broadcastText: { fontSize: 13, color: Colors.white, fontFamily: Fonts.body, lineHeight: 19 },
-  seenText: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.body, textAlign: 'center' },
   theirMsg: { gap: 3, alignSelf: 'flex-start' },
   sender: { fontSize: 10, color: Colors.muted, fontFamily: Fonts.bodySemiBold, paddingHorizontal: 4 },
   theirBubble: { backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border, borderRadius: 16, borderTopLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },

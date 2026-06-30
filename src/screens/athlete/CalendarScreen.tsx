@@ -6,7 +6,6 @@ import { useBoxConfig } from '../../context/BoxConfigContext';
 
 const DAY_HEADERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const DAY_NAMES_ES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
 type DayType = { num: number; type: 'current' | 'other'; today?: boolean; iso: string };
 
@@ -54,15 +53,19 @@ function buildWeekCols(year: number, month: number): { label: string; today: boo
   const today = new Date();
   const todayIso = isoDate(today);
 
-  // Find Monday of current week
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  // Find the first Monday of the given month
+  const firstMonday = new Date(year, month, 1);
+  firstMonday.setDate(1 + ((8 - firstMonday.getDay()) % 7 === 0 ? 0 : (8 - firstMonday.getDay()) % 7));
+  if (firstMonday.getDay() !== 1) {
+    // fallback: use Monday of current week
+    firstMonday.setTime(today.getTime());
+    firstMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  }
 
   return Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dayAbbr = DAY_NAMES_ES[(d.getDay() + 6) % 7 === 6 ? 0 : (d.getDay() + 6) % 7];
-    const shortDay = ['L', 'M', 'X', 'J', 'V'][(d.getDay() + 6) % 7] ?? DAY_NAMES_ES[d.getDay()][0];
+    const d = new Date(firstMonday);
+    d.setDate(firstMonday.getDate() + i);
+    const shortDay = ['L', 'M', 'X', 'J', 'V'][(d.getDay() + 6) % 7] ?? 'L';
     return { label: `${shortDay} ${d.getDate()}`, today: isoDate(d) === todayIso };
   });
 }

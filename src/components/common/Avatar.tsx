@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Fonts } from '../../theme/fonts';
 
@@ -19,6 +19,7 @@ export function Avatar({
   borderColor, borderWidth, square = false, onPress,
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [url]);
   const radius = square ? Math.floor(size * 0.22) : size / 2;
 
   const containerStyle = {

@@ -127,7 +127,6 @@ export function ChatScreen() {
   const sendBroadcast = async () => {
     if (!bcInput.trim() || !session?.user.id) return;
     const text = bcInput.trim();
-    setBcInput('');
     const { error } = await supabase.from('messages').insert({
       sender_id: session.user.id,
       text,
@@ -135,6 +134,7 @@ export function ChatScreen() {
       conversation_id: null,
     });
     if (!error) {
+      setBcInput('');
       fetchBroadcasts();
       setTimeout(() => bcScroll.current?.scrollToEnd(), 200);
     }
@@ -144,7 +144,6 @@ export function ChatScreen() {
     if (!dmInput.trim() || !session?.user.id || !convId) return;
     const text = dmInput.trim();
     if (text.length > 5000) return;
-    setDmInput('');
     const { error } = await supabase.from('messages').insert({
       sender_id: session.user.id,
       text,
@@ -152,6 +151,7 @@ export function ChatScreen() {
       conversation_id: convId,
     });
     if (!error) {
+      setDmInput('');
       await supabase.from('conversations').update({
         last_preview: text.slice(0, 100),
         last_at: nowIso(),

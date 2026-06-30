@@ -82,6 +82,7 @@ export function LogResultModal({
             placeholderTextColor={Colors.muted}
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="done"
           />
           <View style={styles.rxRow}>
             <View style={styles.rxLeft}>

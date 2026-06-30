@@ -772,7 +772,6 @@ const editStyles = StyleSheet.create({
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
   avatarPreview: { width: 56, height: 56, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarPreviewText: { fontFamily: Fonts.headingXBold, fontSize: 22, color: '#fff' },
-  avatarHint: { flex: 1, fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
   photoBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
