@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator, Dimensions, Animated,
 } from 'react-native';
 import { Fonts } from '../theme/fonts';
@@ -309,53 +309,59 @@ function SignInScreen() {
   if (showForgot) return <ForgotScreen onBack={() => setShowForgot(false)} />;
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <GlowOrbs />
-
-      <View style={s.hero}>
-        <Wordmark />
-      </View>
-
-      <AnimatedCard style={s.cardWrap}>
-        <View style={s.card}>
-          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
-
-          <Field label="Email">
-            <TextInput
-              style={inputStyle.base}
-              placeholder="tu@email.com"
-              placeholderTextColor={T.muted}
-              value={email}
-              onChangeText={t => { setEmail(t); setError(''); }}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-              returnKeyType="next"
-              onSubmitEditing={() => passRef.current?.focus()}
-              accessibilityLabel="Email"
-            />
-          </Field>
-
-          <Field label="Contraseña">
-            <PassInput value={pass} onChange={t => { setPass(t); setError(''); }}
-              fwdRef={passRef} onSubmit={submit} />
-          </Field>
-
-          {isLocked
-            ? <Text style={s.error} accessibilityRole="alert">Demasiados intentos. Espera {lockSeconds}s.</Text>
-            : error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : null}
-
-          <Btn
-            label={isLocked ? `Espera ${lockSeconds}s` : 'Entrar'}
-            onPress={submit} loading={loading} disabled={isLocked}
-            color={primary_color} style={{ marginTop: 6 }}
-          />
-
-          <TouchableOpacity onPress={() => setShowForgot(true)} style={s.link}>
-            <Text style={s.linkText}>¿Olvidaste tu contraseña?</Text>
-          </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={s.hero}>
+          <Wordmark />
         </View>
-      </AnimatedCard>
+
+        <AnimatedCard style={s.cardWrap}>
+          <View style={s.card}>
+            <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
+
+            <Field label="Email">
+              <TextInput
+                style={inputStyle.base}
+                placeholder="tu@email.com"
+                placeholderTextColor={T.muted}
+                value={email}
+                onChangeText={t => { setEmail(t); setError(''); }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+                returnKeyType="next"
+                onSubmitEditing={() => passRef.current?.focus()}
+                accessibilityLabel="Email"
+              />
+            </Field>
+
+            <Field label="Contraseña">
+              <PassInput value={pass} onChange={t => { setPass(t); setError(''); }}
+                fwdRef={passRef} onSubmit={submit} />
+            </Field>
+
+            {isLocked
+              ? <Text style={s.error} accessibilityRole="alert">Demasiados intentos. Espera {lockSeconds}s.</Text>
+              : error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : null}
+
+            <Btn
+              label={isLocked ? `Espera ${lockSeconds}s` : 'Entrar'}
+              onPress={submit} loading={loading} disabled={isLocked}
+              color={primary_color} style={{ marginTop: 6 }}
+            />
+
+            <TouchableOpacity onPress={() => setShowForgot(true)} style={s.link}>
+              <Text style={s.linkText}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+          </View>
+        </AnimatedCard>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -391,33 +397,40 @@ function ForgotScreen({ onBack }: { onBack: () => void }) {
   );
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <GlowOrbs />
       <BackBtn onPress={onBack} />
-      <View style={s.hero}>
-        <Text style={ctr.title}>Recuperar{'\n'}contraseña</Text>
-        <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Te enviaremos un enlace a tu email.</Text>
-      </View>
-      <AnimatedCard style={s.cardWrap}>
-        <View style={s.card}>
-          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
-          <Field label="Email">
-            <TextInput
-              style={inputStyle.base}
-              placeholder="tu@email.com"
-              placeholderTextColor={T.muted}
-              value={email}
-              onChangeText={t => { setEmail(t); setError(''); }}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-              autoFocus
-            />
-          </Field>
-          {error ? <Text style={s.error}>{error}</Text> : null}
-          <Btn label="Enviar enlace" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={s.hero}>
+          <Text style={ctr.title}>Recuperar{'\n'}contraseña</Text>
+          <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Te enviaremos un enlace a tu email.</Text>
         </View>
-      </AnimatedCard>
+        <AnimatedCard style={s.cardWrap}>
+          <View style={s.card}>
+            <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
+            <Field label="Email">
+              <TextInput
+                style={inputStyle.base}
+                placeholder="tu@email.com"
+                placeholderTextColor={T.muted}
+                value={email}
+                onChangeText={t => { setEmail(t); setError(''); }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+                autoFocus
+              />
+            </Field>
+            {error ? <Text style={s.error}>{error}</Text> : null}
+            <Btn label="Enviar enlace" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
+          </View>
+        </AnimatedCard>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -454,29 +467,36 @@ function SetPasswordScreen() {
   );
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <GlowOrbs />
-      <View style={s.hero}>
-        <Text style={ctr.title}>Hola,{' '}
-          <Text style={{ color: primary_color }}>{name}</Text> 👋
-        </Text>
-        <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Crea tu contraseña para continuar.</Text>
-      </View>
-      <AnimatedCard style={s.cardWrap}>
-        <View style={s.card}>
-          <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
-          <Field label="Nueva contraseña">
-            <PassInput value={pass} onChange={t => { setPass(t); setError(''); }}
-              placeholder="Mínimo 6 caracteres" onSubmit={() => confirmRef.current?.focus()} />
-          </Field>
-          <Field label="Confirmar contraseña">
-            <PassInput value={confirm} onChange={t => { setConfirm(t); setError(''); }}
-              fwdRef={confirmRef} onSubmit={submit} />
-          </Field>
-          {error ? <Text style={s.error}>{error}</Text> : null}
-          <Btn label="Guardar y entrar" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={s.hero}>
+          <Text style={ctr.title}>Hola,{' '}
+            <Text style={{ color: primary_color }}>{name}</Text> 👋
+          </Text>
+          <Text style={[ctr.body, { marginTop: 8, paddingHorizontal: 20 }]}>Crea tu contraseña para continuar.</Text>
         </View>
-      </AnimatedCard>
+        <AnimatedCard style={s.cardWrap}>
+          <View style={s.card}>
+            <View style={[s.cardAccent, { backgroundColor: primary_color }]} />
+            <Field label="Nueva contraseña">
+              <PassInput value={pass} onChange={t => { setPass(t); setError(''); }}
+                placeholder="Mínimo 6 caracteres" onSubmit={() => confirmRef.current?.focus()} />
+            </Field>
+            <Field label="Confirmar contraseña">
+              <PassInput value={confirm} onChange={t => { setConfirm(t); setError(''); }}
+                fwdRef={confirmRef} onSubmit={submit} />
+            </Field>
+            {error ? <Text style={s.error}>{error}</Text> : null}
+            <Btn label="Guardar y entrar" onPress={submit} loading={loading} color={primary_color} style={{ marginTop: 6 }} />
+          </View>
+        </AnimatedCard>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -484,7 +504,8 @@ function SetPasswordScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flexGrow: 1 },
+  hero: { flex: 1, minHeight: 180, alignItems: 'center', justifyContent: 'center', paddingTop: 20 },
   cardWrap: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 46 : 32 },
   card: {
     backgroundColor: T.card,
