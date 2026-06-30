@@ -58,14 +58,11 @@ function isoDate(d: Date) {
 
 function buildWeekDays() {
   const today = new Date();
-  const dow = today.getDay();
-  const daysFromMon = dow === 0 ? 6 : dow - 1;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - daysFromMon);
   const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+  // 3 past days + today + 10 future days = 14 pills (TODAY_IDX = 3)
+  return Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - 3 + i);
     return { day: dayNames[d.getDay()], num: String(d.getDate()), isoDate: isoDate(d) };
   });
 }
