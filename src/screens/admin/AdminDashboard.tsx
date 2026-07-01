@@ -413,12 +413,10 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
       body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff },
     });
     if (!error) {
-      // Keep pending_invites for display until athlete accepts
-      await supabase.from('pending_invites').insert({
-        name: newName.trim(),
-        email: newEmail.trim().toLowerCase(),
-        plan: selectedTariff,
-      });
+      await supabase.from('pending_invites').upsert(
+        { name: newName.trim(), email: newEmail.trim().toLowerCase(), plan: selectedTariff },
+        { onConflict: 'email' }
+      );
     }
     setInviting(false);
     if (error) {

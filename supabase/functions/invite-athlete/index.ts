@@ -15,6 +15,12 @@ function checkRateLimit(adminId: string): boolean {
   return true;
 }
 
+function jsonError(msg: string, status: number) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status, headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 serve(async (req) => {
   try {
     const adminClient = createClient(supabaseUrl, serviceKey);
@@ -31,28 +37,54 @@ serve(async (req) => {
     if (profile?.role !== 'admin') return new Response('Forbidden', { status: 403 });
 
     if (!checkRateLimit(user.id)) {
-      return new Response('Too many invites. Try again later.', { status: 429 });
+      return jsonError('Demasiadas invitaciones. Espera un momento.', 429);
     }
 
     const { email, name, plan } = await req.json();
-    if (!email || !name || !plan) return new Response('Missing fields', { status: 400 });
+    if (!email || !name || !plan) return jsonError('Faltan campos obligatorios', 400);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return new Response('Invalid email', { status: 400 });
-    if (name.trim().length < 2 || name.length > 100) return new Response('Invalid name', { status: 400 });
+    if (!emailRegex.test(email)) return jsonError('Email no válido', 400);
+    if (name.trim().length < 2 || name.length > 100) return jsonError('Nombre no válido', 400);
 
-    const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    const inviteOptions = {
       redirectTo: 'wodbox://auth/callback',
       data: { name, plan, role: 'athlete', invited: true },
-    });
+    };
 
-    if (error) return new Response(JSON.stringify({ error: error.message }), {
-      status: 400, headers: { 'Content-Type': 'application/json' },
-    });
+    const { error } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    });
+    if (!error) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // inviteUserByEmail failed — check if the email already exists in auth
+    const { data: { users } } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+    const existing = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    if (existing?.email_confirmed_at) {
+      // User has a fully active account — can't overwrite it
+      return jsonError('Este email ya tiene una cuenta activa en el box.', 409);
+    }
+
+    if (existing && !existing.email_confirmed_at) {
+      // User was invited before but never confirmed — delete and re-invite
+      const { error: delErr } = await adminClient.auth.admin.deleteUser(existing.id);
+      if (delErr) return jsonError('No se pudo limpiar la invitación anterior.', 500);
+
+      const { error: reinviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
+      if (reinviteErr) return jsonError(reinviteErr.message, 400);
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Any other Supabase error
+    return jsonError(error.message, 400);
+
   } catch (e) {
     return new Response(String(e), { status: 500 });
   }

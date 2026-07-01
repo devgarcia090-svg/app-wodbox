@@ -198,37 +198,24 @@ export function ProfileScreen() {
     const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
     const monthStart = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
 
-    const [totalRes, monthRes, recentRes, calRes] = await Promise.all([
-      supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('athlete_id', userId)
-        .eq('status', 'confirmed'),
-      supabase
-        .from('bookings')
-        .select('id, classes!bookings_class_id_fkey(date)', { count: 'exact' })
-        .eq('athlete_id', userId)
-        .eq('status', 'confirmed')
-        .gte('classes.date', monthStart),
-      supabase
-        .from('bookings')
-        .select('id, classes!bookings_class_id_fkey(name, date, time)')
-        .eq('athlete_id', userId)
-        .eq('status', 'confirmed')
-        .order('created_at', { ascending: false })
-        .limit(3),
-      supabase
-        .from('bookings')
-        .select('id, classes!bookings_class_id_fkey(date, time, name)')
-        .eq('athlete_id', userId)
-        .eq('status', 'confirmed')
-        .gte('classes.date', monthStart),
-    ]);
+    // Single query — filter client-side to avoid PostgREST embedded-resource filter issues
+    const { data: raw } = await supabase
+      .from('bookings')
+      .select('id, classes!bookings_class_id_fkey(date, time, name)')
+      .eq('athlete_id', userId)
+      .eq('status', 'confirmed');
 
-    setStats({ total: totalRes.count ?? 0, thisMonth: monthRes.count ?? 0 });
+    const all = ((raw ?? []) as any[]).filter(b => b.classes);
+
+    const total = all.length;
+    const thisMonth = all.filter(b => b.classes.date >= monthStart).length;
+
+    setStats({ total, thisMonth });
+
     setRecentBookings(
-      ((recentRes.data || []) as any[])
-        .filter(b => b.classes)
+      [...all]
+        .sort((a, b) => b.classes.date.localeCompare(a.classes.date))
+        .slice(0, 3)
         .map(b => ({
           id: b.id,
           class_name: b.classes.name,
@@ -236,22 +223,19 @@ export function ProfileScreen() {
           class_time: b.classes.time,
         }))
     );
+
     setCalendarBookings(
-      ((calRes.data || []) as any[])
-        .filter(b => b.classes)
+      all
+        .filter(b => b.classes.date >= monthStart)
         .map(b => ({ date: b.classes.date, time: b.classes.time, name: b.classes.name }))
     );
 
-    // Dynamic classes remaining: count confirmed bookings with past class dates in current membership period
+    // Dynamic remaining: past classes in current membership period
     if (profile?.plan_classes != null && profile?.membership_start) {
-      const { count: pCount } = await supabase
-        .from('bookings')
-        .select('id, classes!bookings_class_id_fkey(date)', { count: 'exact' })
-        .eq('athlete_id', userId)
-        .eq('status', 'confirmed')
-        .gte('classes.date', profile.membership_start)
-        .lte('classes.date', todayStr);
-      setPeriodConsumed(pCount ?? 0);
+      const consumed = all.filter(
+        b => b.classes.date >= profile.membership_start! && b.classes.date <= todayStr
+      ).length;
+      setPeriodConsumed(consumed);
     } else {
       setPeriodConsumed(null);
     }

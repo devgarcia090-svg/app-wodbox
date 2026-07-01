@@ -4,6 +4,15 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Fix invitaciones + contadores de clases correctos — 2026-07-01
+
+### Corregido
+- **`invite-athlete` (Edge Function) — re-invitación bloqueada**: `inviteUserByEmail` rechaza emails que ya existen en `auth.users`, aunque el perfil se haya borrado. Ahora si el email existe pero no tiene cuenta confirmada (invitación anterior caducada/no aceptada), se elimina el usuario de auth y se re-invita. Si ya tiene cuenta activa devuelve error claro "Este email ya tiene una cuenta activa en el box."
+- **`AdminDashboard.tsx` — insert en `pending_invites` fallaba en silencio**: Cambiado `insert` por `upsert({ onConflict: 'email' })`. Si el email ya tenía una fila de invitación pendiente (de un invite anterior), se actualiza con los nuevos datos en vez de fallar.
+- **`ProfileScreen.tsx` — contador "Este mes" mostraba total histórico**: Los filtros sobre columnas de tablas embebidas (`gte('classes.date', ...)`) en PostgREST sin `!inner` no filtran la fila padre — devuelven todos los registros y solo filtran qué datos embebidos se incluyen, no el COUNT. Refactorizado `fetchStats` a una sola query que trae todas las reservas con datos de clase y filtra en cliente. Ahora "Este mes" solo cuenta clases del mes natural actual, y `periodConsumed` (base del cálculo dinámico de restantes) también es correcto.
+
+---
+
 ## Clases restantes dinámicas + tab Clases eliminado — 2026-07-01
 
 ### Cambiado
