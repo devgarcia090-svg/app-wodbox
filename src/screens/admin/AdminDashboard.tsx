@@ -409,7 +409,7 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
       return;
     }
     setInviting(true);
-    const { error } = await supabase.functions.invoke('invite-athlete', {
+    const { data: inviteData, error } = await supabase.functions.invoke('invite-athlete', {
       body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff },
     });
     setInviting(false);
@@ -426,7 +426,10 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
       { name: newName.trim(), email: newEmail.trim().toLowerCase(), plan: selectedTariff },
       { onConflict: 'email' }
     );
-    showToast(`📧 Invitación enviada a ${newEmail}`, 'success');
+    const successMsg = inviteData?.reactivated
+      ? `✅ Perfil de ${newName.trim()} reactivado`
+      : `📧 Invitación enviada a ${newEmail}`;
+    showToast(successMsg, 'success');
     setShowForm(false);
     setNewName(''); setNewEmail(''); setSelectedTariff(null);
     refetch();

@@ -66,8 +66,25 @@ serve(async (req) => {
     const existing = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     if (existing?.email_confirmed_at) {
-      // User has a fully active account — can't overwrite it
-      return jsonError('Este email ya tiene una cuenta activa en el box.', 409);
+      // User has confirmed auth credentials — check if they have an active profile
+      const { data: existingProfile } = await adminClient
+        .from('profiles')
+        .select('id, membership_status')
+        .eq('id', existing.id)
+        .single();
+
+      if (existingProfile?.membership_status === 'active') {
+        return jsonError('Este email ya tiene una cuenta activa en el box.', 409);
+      }
+
+      // Auth exists but no active profile — reactivate by upserting the profile
+      await adminClient.from('profiles').upsert(
+        { id: existing.id, name, plan, role: 'athlete', membership_status: 'active', email: email.toLowerCase() },
+        { onConflict: 'id' }
+      );
+      return new Response(JSON.stringify({ ok: true, reactivated: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     if (existing && !existing.email_confirmed_at) {
