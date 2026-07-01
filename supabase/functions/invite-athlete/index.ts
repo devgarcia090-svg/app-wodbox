@@ -61,8 +61,9 @@ serve(async (req) => {
     }
 
     // inviteUserByEmail failed — check if the email already exists in auth
-    const { data: { users } } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-    const existing = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const { data: listData, error: listErr } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+    if (listErr || !listData) return jsonError('Error interno al verificar el email.', 500);
+    const existing = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
     if (existing?.email_confirmed_at) {
       // User has a fully active account — can't overwrite it

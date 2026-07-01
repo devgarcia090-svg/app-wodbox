@@ -412,17 +412,20 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
     const { error } = await supabase.functions.invoke('invite-athlete', {
       body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff },
     });
-    if (!error) {
-      await supabase.from('pending_invites').upsert(
-        { name: newName.trim(), email: newEmail.trim().toLowerCase(), plan: selectedTariff },
-        { onConflict: 'email' }
-      );
-    }
     setInviting(false);
     if (error) {
-      showToast('Error al enviar invitación', 'error');
+      let msg = 'Error al enviar invitación';
+      try {
+        const body = await (error as any).context?.json?.();
+        if (body?.error) msg = body.error;
+      } catch {}
+      showToast(msg, 'error');
       return;
     }
+    await supabase.from('pending_invites').upsert(
+      { name: newName.trim(), email: newEmail.trim().toLowerCase(), plan: selectedTariff },
+      { onConflict: 'email' }
+    );
     showToast(`📧 Invitación enviada a ${newEmail}`, 'success');
     setShowForm(false);
     setNewName(''); setNewEmail(''); setSelectedTariff(null);
