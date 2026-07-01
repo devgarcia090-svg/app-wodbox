@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
+import { supabase } from './src/lib/supabase';
 import {
   useFonts,
   BarlowCondensed_400Regular,
@@ -27,6 +29,30 @@ function AppContent() {
   const { session, profile, loading, signOut, refreshProfile } = useAuth();
   const boxConfig = useBoxConfig();
   usePushToken(session?.user.id, boxConfig.name);
+
+  useEffect(() => {
+    const handleURL = async (url: string) => {
+      // PKCE flow: redirectTo?code=xxx
+      const parsed = Linking.parse(url);
+      const code = parsed.queryParams?.code as string | undefined;
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+        return;
+      }
+      // Implicit flow: redirectTo#access_token=xxx&refresh_token=xxx
+      const hash = url.split('#')[1] ?? '';
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+    };
+
+    Linking.getInitialURL().then(url => { if (url) handleURL(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => handleURL(url));
+    return () => sub.remove();
+  }, []);
 
   if (!boxConfig.configLoaded || loading) {
     return (

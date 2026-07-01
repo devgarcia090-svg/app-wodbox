@@ -19,6 +19,7 @@ import { useBoxConfig } from '../../context/BoxConfigContext';
 import { withAlpha } from '../../theme/colors';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/common/Avatar';
+import * as Linking from 'expo-linking';
 
 // 60px = card horizontal margins (16×2) + card horizontal padding (14×2)
 const SLOTS_PER_ROW = 6;
@@ -409,8 +410,9 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
       return;
     }
     setInviting(true);
+    const redirectTo = Linking.createURL('auth/callback');
     const { data: inviteData, error } = await supabase.functions.invoke('invite-athlete', {
-      body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff },
+      body: { email: newEmail.trim().toLowerCase(), name: newName.trim(), plan: selectedTariff, redirectTo },
     });
     setInviting(false);
     if (error) {

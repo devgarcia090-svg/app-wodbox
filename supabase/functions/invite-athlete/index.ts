@@ -40,7 +40,7 @@ serve(async (req) => {
       return jsonError('Demasiadas invitaciones. Espera un momento.', 429);
     }
 
-    const { email, name, plan } = await req.json();
+    const { email, name, plan, redirectTo } = await req.json();
     if (!email || !name || !plan) return jsonError('Faltan campos obligatorios', 400);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,7 +48,7 @@ serve(async (req) => {
     if (name.trim().length < 2 || name.length > 100) return jsonError('Nombre no válido', 400);
 
     const inviteOptions = {
-      redirectTo: 'wodbox://auth/callback',
+      redirectTo: redirectTo ?? 'wodbox://auth/callback',
       data: { name, plan, role: 'athlete', invited: true },
     };
 
