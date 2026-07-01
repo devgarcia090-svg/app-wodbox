@@ -70,6 +70,7 @@ export function ProfileScreen() {
   const [stats, setStats] = useState({ total: 0, thisMonth: 0 });
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [calendarBookings, setCalendarBookings] = useState<BookedDay[]>([]);
+  const [periodConsumed, setPeriodConsumed] = useState<number | null>(null);
   const [bookingsLoading, setBookingsLoading] = useState(true);
 
   // Edit modal
@@ -193,7 +194,9 @@ export function ProfileScreen() {
     setBookingsLoading(true);
     const userId = session.user.id;
     const now = new Date();
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+    const monthStart = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
 
     const [totalRes, monthRes, recentRes, calRes] = await Promise.all([
       supabase
@@ -238,8 +241,23 @@ export function ProfileScreen() {
         .filter(b => b.classes)
         .map(b => ({ date: b.classes.date, time: b.classes.time, name: b.classes.name }))
     );
+
+    // Dynamic classes remaining: count confirmed bookings with past class dates in current membership period
+    if (profile?.plan_classes != null && profile?.membership_start) {
+      const { count: pCount } = await supabase
+        .from('bookings')
+        .select('id, classes!bookings_class_id_fkey(date)', { count: 'exact' })
+        .eq('athlete_id', userId)
+        .eq('status', 'confirmed')
+        .gte('classes.date', profile.membership_start)
+        .lte('classes.date', todayStr);
+      setPeriodConsumed(pCount ?? 0);
+    } else {
+      setPeriodConsumed(null);
+    }
+
     setBookingsLoading(false);
-  }, [session?.user.id]);
+  }, [session?.user.id, profile?.plan_classes, profile?.membership_start]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -293,6 +311,11 @@ export function ProfileScreen() {
     }
   };
 
+  // Dynamic remaining: plan_classes minus confirmed past classes since membership_start
+  const dynamicRemaining = (profile?.plan_classes != null && profile?.membership_start != null && periodConsumed != null)
+    ? Math.max(0, profile.plan_classes - periodConsumed)
+    : null;
+
   const statusBadge = profile?.membership_status === 'active' ? 'orange' : profile?.membership_status === 'pending' ? 'yellow' : 'red';
   const statusLabel = profile?.membership_status === 'active' ? 'Activa' : profile?.membership_status === 'pending' ? 'Pendiente' : 'Inactiva';
 
@@ -339,10 +362,10 @@ export function ProfileScreen() {
               </View>
               <View style={styles.statCell}>
                 <Text style={[styles.statValue, { color: boxConfig.primary_color }]}>
-                  {profile?.classes_remaining != null ? profile.classes_remaining : profile?.plan ? '✓' : '—'}
+                  {dynamicRemaining != null ? dynamicRemaining : profile?.plan ? '✓' : '—'}
                 </Text>
                 <Text style={styles.statLabel}>
-                  {profile?.classes_remaining != null ? 'Restantes' : 'Membresía'}
+                  {dynamicRemaining != null ? 'Restantes' : 'Membresía'}
                 </Text>
               </View>
             </>
@@ -366,7 +389,7 @@ export function ProfileScreen() {
 
           {(() => {
             const total = profile?.plan_classes;
-            const remaining = profile?.classes_remaining;
+            const remaining = dynamicRemaining;
             if (remaining == null) return null;
             if (total && total > 0) {
               const used = Math.max(0, total - remaining);

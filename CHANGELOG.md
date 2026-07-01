@@ -4,6 +4,14 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Clases restantes dinámicas + tab Clases eliminado — 2026-07-01
+
+### Cambiado
+- **`AthleteNavigator.tsx` — tab "Clases" eliminado**: El tab duplicaba el calendario de asistencia del perfil. Eliminado junto con su import de `CalendarScreen`. El nav del atleta queda con 3 tabs: Inicio, Chat, Perfil.
+- **`ProfileScreen.tsx` — `classes_remaining` ahora es dinámico**: En lugar de leer el campo manual `classes_remaining` de la BD, el valor se calcula en tiempo real: `plan_classes − reservas confirmadas con fecha pasada dentro del período actual de membresía` (`membership_start` hasta hoy). Si el atleta no tiene plan con número de clases (`plan_classes` null) o sin fecha de inicio, se sigue mostrando el tick de membresía. La lógica: cuando una clase reservada vence (fecha ≤ hoy y ≥ membership_start), se descuenta automáticamente del total del bono.
+
+---
+
 ## Hotfix: Race condition en login (loading state) — 2026-06-30
 
 ### Corregido
