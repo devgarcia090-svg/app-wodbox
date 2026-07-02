@@ -4,6 +4,16 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Fix flujo de invitaciones completo (auditoría) — 2026-07-02
+
+### Corregido
+- **`invite-athlete` (Edge Function) — el atleta invitado quedaba `inactive` y duplicado en Miembros**: El trigger `handle_new_user` lee `pending_invites` cuando se crea el usuario en auth, que ocurre en el momento de la invitación (no al aceptarla). El cliente insertaba la fila en `pending_invites` *después* de invocar la función, así que el trigger nunca la encontraba: perfil `inactive`, sin plan, y la fila de invitación quedaba huérfana duplicando al miembro en la lista. Ahora la propia edge function hace el upsert en `pending_invites` **antes** de `inviteUserByEmail` (y lo limpia en las ramas de error). Eliminado el upsert del cliente.
+- **`invite-athlete` — la reactivación podía degradar a un admin a atleta**: Si el email pertenecía a un admin, el upsert le machacaba `role`, nombre y plan. Ahora se comprueba el rol y devuelve error claro. Además el upsert incluía una columna `email` que no existe en `profiles`, por lo que la reactivación fallaba siempre en silencio; sustituido por `update` (o `insert` si no hay perfil) con las columnas reales.
+- **`App.tsx` — `SetPasswordScreen` era inalcanzable**: Solo se mostraba dentro de `LoginScreen`, que solo se renderiza sin sesión, pero el invitado llega con sesión ya establecida por el deep link. Entraba a la app sin fijar contraseña y quedaba bloqueado cuando caducara la sesión. Ahora `App.tsx` muestra `LoginScreen` (que enruta a `SetPasswordScreen`) cuando `needsPasswordSetup` es true.
+- **`AuthContext.tsx` / `App.tsx` — handler de deep links duplicado**: `AuthContext` tenía un handler que solo aceptaba `wodbox://` (inútil en Expo Go) y `App.tsx` tenía otro añadido ayer. En builds standalone ambos procesaban el mismo enlace pudiendo invalidar la sesión. Consolidado en un único handler en `AuthContext` que acepta cualquier scheme y soporta PKCE (`?code=`) e implicit flow (`#access_token`).
+
+---
+
 ## Fix invitaciones + contadores de clases correctos — 2026-07-01
 
 ### Corregido

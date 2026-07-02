@@ -43,16 +43,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Detect when user arrived via invite link and hasn't set a password yet
   const needsPasswordSetup = !!session?.user?.user_metadata?.invited;
 
-  // Handle deep link tokens (invite / password reset links)
+  // Handle auth deep links (invite / password reset). Works with any scheme:
+  // wodbox:// in standalone builds, exp:// in Expo Go.
   const handleAuthUrl = async (url: string) => {
-    if (!url.startsWith('wodbox://')) return;
-    const hash = url.split('#')[1];
-    if (!hash) return;
-    const params = new URLSearchParams(hash);
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
-    if (access_token && refresh_token) {
-      await supabase.auth.setSession({ access_token, refresh_token });
+    try {
+      // PKCE flow: ...?code=xxx
+      const parsed = Linking.parse(url);
+      const code = parsed.queryParams?.code as string | undefined;
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+        return;
+      }
+      // Implicit flow: ...#access_token=xxx&refresh_token=xxx
+      const hash = url.split('#')[1];
+      if (!hash) return;
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+    } catch (e) {
+      console.warn('[AuthContext] handleAuthUrl error:', e);
     }
   };
 

@@ -424,10 +424,6 @@ function MiembrosPanel({ showToast }: { showToast: (m: string, t: any) => void }
       showToast(msg, 'error');
       return;
     }
-    await supabase.from('pending_invites').upsert(
-      { name: newName.trim(), email: newEmail.trim().toLowerCase(), plan: selectedTariff },
-      { onConflict: 'email' }
-    );
     const successMsg = inviteData?.reactivated
       ? `✅ Perfil de ${newName.trim()} reactivado`
       : `📧 Invitación enviada a ${newEmail}`;

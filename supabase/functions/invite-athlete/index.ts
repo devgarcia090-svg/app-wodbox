@@ -47,12 +47,27 @@ serve(async (req) => {
     if (!emailRegex.test(email)) return jsonError('Email no válido', 400);
     if (name.trim().length < 2 || name.length > 100) return jsonError('Nombre no válido', 400);
 
+    const normEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    // The handle_new_user trigger reads pending_invites when the auth user is
+    // created (which happens at invite time), so the row must exist BEFORE
+    // calling inviteUserByEmail. The trigger consumes (deletes) it on success.
+    const { error: pendingErr } = await adminClient.from('pending_invites').upsert(
+      { name: cleanName, email: normEmail, plan },
+      { onConflict: 'email' }
+    );
+    if (pendingErr) return jsonError('No se pudo registrar la invitación.', 500);
+
+    const cleanupPending = () =>
+      adminClient.from('pending_invites').delete().eq('email', normEmail);
+
     const inviteOptions = {
       redirectTo: redirectTo ?? 'wodbox://auth/callback',
-      data: { name, plan, role: 'athlete', invited: true },
+      data: { name: cleanName, plan, role: 'athlete', invited: true },
     };
 
-    const { error } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
+    const { error } = await adminClient.auth.admin.inviteUserByEmail(normEmail, inviteOptions);
 
     if (!error) {
       return new Response(JSON.stringify({ ok: true }), {
@@ -62,38 +77,68 @@ serve(async (req) => {
 
     // inviteUserByEmail failed — check if the email already exists in auth
     const { data: listData, error: listErr } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-    if (listErr || !listData) return jsonError('Error interno al verificar el email.', 500);
-    const existing = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (listErr || !listData) {
+      await cleanupPending();
+      return jsonError('Error interno al verificar el email.', 500);
+    }
+    const existing = listData.users.find(u => u.email?.toLowerCase() === normEmail);
 
     if (existing?.email_confirmed_at) {
-      // User has confirmed auth credentials — check if they have an active profile
+      // Confirmed account — decide between blocking and reactivating
       const { data: existingProfile } = await adminClient
         .from('profiles')
-        .select('id, membership_status')
+        .select('id, role, membership_status')
         .eq('id', existing.id)
         .single();
 
+      if (existingProfile?.role === 'admin') {
+        await cleanupPending();
+        return jsonError('Este email pertenece a un administrador del box.', 409);
+      }
       if (existingProfile?.membership_status === 'active') {
+        await cleanupPending();
         return jsonError('Este email ya tiene una cuenta activa en el box.', 409);
       }
 
-      // Auth exists but no active profile — reactivate by upserting the profile
-      await adminClient.from('profiles').upsert(
-        { id: existing.id, name, plan, role: 'athlete', membership_status: 'active', email: email.toLowerCase() },
-        { onConflict: 'id' }
-      );
+      // Confirmed athlete without active profile — reactivate it
+      const { error: reactErr } = existingProfile
+        ? await adminClient
+            .from('profiles')
+            .update({ name: cleanName, plan, membership_status: 'active' })
+            .eq('id', existing.id)
+        : await adminClient
+            .from('profiles')
+            .insert({
+              id: existing.id,
+              name: cleanName,
+              role: 'athlete',
+              avatar_initials: cleanName.slice(0, 2).toUpperCase(),
+              plan,
+              membership_status: 'active',
+            });
+      await cleanupPending();
+      if (reactErr) return jsonError('No se pudo reactivar el perfil.', 500);
+
       return new Response(JSON.stringify({ ok: true, reactivated: true }), {
         status: 200, headers: { 'Content-Type': 'application/json' },
       });
     }
 
     if (existing && !existing.email_confirmed_at) {
-      // User was invited before but never confirmed — delete and re-invite
+      // Invited before but never confirmed — delete and re-invite.
+      // The profile cascades with the auth user; the fresh pending_invites
+      // row is consumed by the trigger on the new invite.
       const { error: delErr } = await adminClient.auth.admin.deleteUser(existing.id);
-      if (delErr) return jsonError('No se pudo limpiar la invitación anterior.', 500);
+      if (delErr) {
+        await cleanupPending();
+        return jsonError('No se pudo limpiar la invitación anterior.', 500);
+      }
 
-      const { error: reinviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
-      if (reinviteErr) return jsonError(reinviteErr.message, 400);
+      const { error: reinviteErr } = await adminClient.auth.admin.inviteUserByEmail(normEmail, inviteOptions);
+      if (reinviteErr) {
+        await cleanupPending();
+        return jsonError(reinviteErr.message, 400);
+      }
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200, headers: { 'Content-Type': 'application/json' },
@@ -101,6 +146,7 @@ serve(async (req) => {
     }
 
     // Any other Supabase error
+    await cleanupPending();
     return jsonError(error.message, 400);
 
   } catch (e) {
