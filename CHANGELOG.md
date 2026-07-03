@@ -4,6 +4,29 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Fecha "hoy" congelada, facturas duplicadas y perfiles ocultos entre atletas — 2026-07-03
+
+### Añadido
+- **`database/invoice_numbering.sql`**: tabla `invoice_counters` + función `create_invoice` para numerar facturas de forma atómica.
+- **`database/public_profiles.sql`**: función `public_profiles(ids)` que expone solo nombre/avatar (sin email, plan ni estado de membresía) de cualquier usuario a cualquier autenticado, sin tocar las políticas de RLS de `profiles`.
+- **`src/hooks/useTodayPills.ts`**: sustituye las constantes estáticas `TODAY_ISO`/`DATE_PILLS`/`TODAY_IDX` de `mockData.ts` por un hook que se recalcula cada vez que la app vuelve a primer plano.
+
+### Corregido
+- **La fecha "hoy" se congelaba al abrir la app**: `TODAY_ISO` y `DATE_PILLS` se calculaban una sola vez al cargar el módulo de JS. Si el móvil se dejaba en segundo plano de un día para otro, "Clases de hoy" seguía señalando el día anterior, el selector de fechas quedaba desplazado, y las facturas creadas desde Cobros se guardaban con la fecha de ayer. Ahora se recalculan al volver del segundo plano.
+- **Numeración de facturas duplicable**: se generaba como `count(*) + 1` en el cliente — dos admins facturando a la vez, o cualquier factura borrada previamente, podían repetir un número ya usado. Ahora la numeración se genera en un contador atómico por mes en base de datos.
+- **`markAsPaid` mostraba "✅ marcada como pagada" aunque el update fallara**: no comprobaba el error devuelto por Supabase. Ahora propaga el error y el admin ve un aviso real si falla.
+- **Un atleta no podía ver el perfil de otro atleta ni el del admin**: las políticas de RLS de `profiles` solo permiten leer la fila propia (o cualquiera, si eres admin). Esto rompía en silencio, mostrando datos por defecto:
+  - la lista de asistentes de una clase (cada atleta solo se veía a sí mismo),
+  - el leaderboard de resultados WOD (los rivales aparecían como "Atleta" genérico),
+  - el nombre y avatar del admin en los mensajes de chat del atleta (aparecía el nombre del box en su lugar).
+  Arreglado sin abrir el acceso a los datos sensibles del perfil (email, plan, membresía): `useClasses`, `useWodResults` y `ChatScreen` ahora resuelven nombre/avatar a través de `public_profiles`, que solo expone esas columnas.
+- **Chat del atleta silenciaba errores de carga y de envío**: si fallaba la query o el insert, la pantalla se quedaba como si no hubiera mensajes o el envío simplemente no hacía nada. Añadidos toasts de error.
+
+### Pendiente de configuración manual en Supabase
+- Ejecutar en el SQL Editor, en cualquier orden: `database/invoice_numbering.sql`, `database/public_profiles.sql`.
+
+---
+
 ## Reservas atómicas + bajas visibles + solicitud de plaza + seguridad push — 2026-07-03
 
 ### Añadido

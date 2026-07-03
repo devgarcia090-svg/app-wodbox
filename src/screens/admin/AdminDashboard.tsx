@@ -9,7 +9,7 @@ import { Fonts } from '../../theme/fonts';
 import { Badge } from '../../components/common/Badge';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
-import { TODAY_ISO, DATE_PILLS, TODAY_IDX } from '../../data/mockData';
+import { useTodayPills } from '../../hooks/useTodayPills';
 import { useClasses } from '../../hooks/useClasses';
 import { useMembers, MemberRow } from '../../hooks/useMembers';
 import { useInvoices } from '../../hooks/useInvoices';
@@ -81,8 +81,9 @@ export function AdminDashboard() {
 // ─── Clases Panel ─────────────────────────────────────────────────────────────
 
 function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: string, t: any) => void; refreshKey: number; onCreated: () => void }) {
+  const { todayIso, datePills, todayIdx } = useTodayPills();
   const [showNueva, setShowNueva] = useState(false);
-  const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
+  const [activeDateIdx, setActiveDateIdx] = useState(todayIdx >= 0 ? todayIdx : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -91,7 +92,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
   const [savingEdit, setSavingEdit] = useState(false);
   const { primary_color } = useBoxConfig();
 
-  const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? TODAY_ISO;
+  const selectedDate = datePills[activeDateIdx]?.isoDate ?? todayIso;
   const { classes, loading, refetch } = useClasses(selectedDate);
 
   useEffect(() => {
@@ -177,7 +178,7 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={adminDateStyles.scroll} contentContainerStyle={adminDateStyles.content}>
-        {DATE_PILLS.map((d, i) => (
+        {datePills.map((d, i) => (
           <TouchableOpacity
             key={i}
             style={[adminDateStyles.pill, activeDateIdx === i && adminDateStyles.pillActive, activeDateIdx === i && { backgroundColor: primary_color, borderColor: primary_color }]}
@@ -674,13 +675,15 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const todayIso = `${thisMonth}-${String(now.getDate()).padStart(2, '0')}`;
   const cobradoMes = paid.filter(i => i.date.startsWith(thisMonth)).reduce((s, i) => s + i.amount, 0);
   const pendienteTotal = pending.reduce((s, i) => s + i.amount, 0);
 
   const selectedMember = allMembers.find(m => m.id === nfMemberId);
 
   const handleMarkPaid = async (id: string, name: string) => {
-    await markAsPaid(id);
+    const { error } = await markAsPaid(id);
+    if (error) { showToast('Error al marcar como pagada', 'error'); return; }
     refetchExpiring();
     showToast(`✅ Factura de ${name} marcada como pagada`, 'success');
   };
@@ -696,7 +699,7 @@ function CobrosPanel({ showToast }: { showToast: (m: string, t: any) => void }) 
       member_id: mid,
       plan_name: nfPlan,
       amount: parseFloat(nfAmount.replace(',', '.')),
-      date: TODAY_ISO,
+      date: todayIso,
       payment_method: nfPayMethod,
     });
     setNfBusy(false);
@@ -1264,7 +1267,10 @@ function NuevaClasePanel({ showToast, onCreated, onBack }: { showToast: (m: stri
   const [coach, setCoach] = useState('');
   const [capacity, setCapacity] = useState('16');
   const [wod, setWod] = useState('');
-  const [date, setDate] = useState(TODAY_ISO);
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [repeat, setRepeat] = useState<'once' | 'week'>('once');
   const [busy, setBusy] = useState(false);
   const { primary_color } = useBoxConfig();

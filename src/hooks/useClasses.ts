@@ -8,7 +8,6 @@ interface RawBooking {
   athlete_id: string;
   status: string;
   cancelled_at: string | null;
-  profiles: { name: string; avatar_initials: string; avatar_color: string; avatar_url: string | null } | null;
 }
 
 interface RawClass {
@@ -21,6 +20,14 @@ interface RawClass {
   capacity: number;
   wod: string;
   bookings: RawBooking[];
+}
+
+interface PublicProfile {
+  id: string;
+  name: string;
+  avatar_initials: string | null;
+  avatar_color: string | null;
+  avatar_url: string | null;
 }
 
 export function useClasses(date: string) {
@@ -36,10 +43,7 @@ export function useClasses(date: string) {
       .from('classes')
       .select(`
         id, name, date, time, coach, duration, capacity, wod,
-        bookings(
-          id, athlete_id, status, cancelled_at,
-          profiles(name, avatar_initials, avatar_color, avatar_url)
-        )
+        bookings(id, athlete_id, status, cancelled_at)
       `)
       .eq('date', date)
       .order('time');
@@ -50,15 +54,32 @@ export function useClasses(date: string) {
       return;
     }
 
+    // RLS on `profiles` only allows reading your own row (or any row if
+    // you're admin), so the embedded `bookings(profiles(...))` join used
+    // to come back null for every athlete but yourself. Fetch names/avatars
+    // separately through a function that exposes just those safe columns.
+    const athleteIds = [...new Set(
+      (data as unknown as RawClass[]).flatMap(c => (c.bookings || []).map(b => b.athlete_id))
+    )];
+    const { data: profilesData } = athleteIds.length
+      ? await supabase.rpc('public_profiles', { p_ids: athleteIds })
+      : { data: [] as PublicProfile[] };
+    const profileMap = new Map<string, PublicProfile>(
+      (profilesData ?? []).map((p: PublicProfile) => [p.id, p])
+    );
+
     const userId = session.user.id;
-    const toAttendee = (b: RawBooking) => ({
-      bookingId: b.id,
-      athleteId: b.athlete_id,
-      name: b.profiles?.name ?? '—',
-      initials: b.profiles?.avatar_initials || b.profiles?.name.slice(0, 2).toUpperCase() || '?',
-      color: b.profiles?.avatar_color || '#f95c00',
-      url: b.profiles?.avatar_url || null,
-    });
+    const toAttendee = (b: RawBooking) => {
+      const p = profileMap.get(b.athlete_id);
+      return {
+        bookingId: b.id,
+        athleteId: b.athlete_id,
+        name: p?.name ?? '—',
+        initials: p?.avatar_initials || p?.name.slice(0, 2).toUpperCase() || '?',
+        color: p?.avatar_color || '#f95c00',
+        url: p?.avatar_url || null,
+      };
+    };
 
     const formatted: ClassItem[] = (data as unknown as RawClass[]).map(cls => {
       const confirmed = (cls.bookings || []).filter(b => b.status === 'confirmed');
@@ -78,13 +99,16 @@ export function useClasses(date: string) {
 
       const attendees = confirmed.map(toAttendee);
       const waitlist = waitlisted.map(toAttendee);
-      const cancelled = cancelledRows.map(b => ({
-        bookingId: b.id,
-        name: b.profiles?.name ?? '—',
-        initials: b.profiles?.avatar_initials || b.profiles?.name.slice(0, 2).toUpperCase() || '?',
-        color: b.profiles?.avatar_color || '#f95c00',
-        cancelledAt: b.cancelled_at,
-      }));
+      const cancelled = cancelledRows.map(b => {
+        const p = profileMap.get(b.athlete_id);
+        return {
+          bookingId: b.id,
+          name: p?.name ?? '—',
+          initials: p?.avatar_initials || p?.name.slice(0, 2).toUpperCase() || '?',
+          color: p?.avatar_color || '#f95c00',
+          cancelledAt: b.cancelled_at,
+        };
+      });
 
       return {
         id: cls.id,

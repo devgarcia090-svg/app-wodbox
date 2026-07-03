@@ -9,20 +9,20 @@ import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useClasses } from '../../hooks/useClasses';
 import { useClassesRemaining } from '../../hooks/useClassesRemaining';
+import { useTodayPills, type DatePill } from '../../hooks/useTodayPills';
 import { useAuth } from '../../context/AuthContext';
 import { useBoxConfig } from '../../context/BoxConfigContext';
-import { DATE_PILLS, TODAY_IDX } from '../../data/mockData';
 
 const DAY_NAMES: Record<string, string> = {
   LUN: 'Lunes', MAR: 'Martes', 'MIÉ': 'Miércoles',
   JUE: 'Jueves', VIE: 'Viernes', 'SÁB': 'Sábado', DOM: 'Domingo',
 };
 
-function classesLabel(dateIdx: number): string {
-  const d = DATE_PILLS[dateIdx];
+function classesLabel(dateIdx: number, datePills: DatePill[], todayIdx: number): string {
+  const d = datePills[dateIdx];
   if (!d) return 'Clases';
-  if (dateIdx === TODAY_IDX) return 'Clases de hoy';
-  if (TODAY_IDX >= 0 && dateIdx === TODAY_IDX + 1) return 'Clases de mañana';
+  if (dateIdx === todayIdx) return 'Clases de hoy';
+  if (todayIdx >= 0 && dateIdx === todayIdx + 1) return 'Clases de mañana';
   return `${DAY_NAMES[d.day] ?? d.day} ${d.num}`;
 }
 
@@ -36,12 +36,13 @@ function shortExpiry(iso: string | null) {
 export function HomeScreen() {
   const { profile } = useAuth();
   const boxConfig = useBoxConfig();
-  const [activeDateIdx, setActiveDateIdx] = useState(TODAY_IDX >= 0 ? TODAY_IDX : 0);
+  const { datePills, todayIdx } = useTodayPills();
+  const [activeDateIdx, setActiveDateIdx] = useState(todayIdx >= 0 ? todayIdx : 0);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<import('../../data/mockData').ClassItem | null>(null);
   const { toast, showToast } = useToast();
 
-  const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? DATE_PILLS[0].isoDate;
+  const selectedDate = datePills[activeDateIdx]?.isoDate ?? datePills[0].isoDate;
   const { classes, loading, refetch } = useClasses(selectedDate);
   const { remaining, refetch: refetchRemaining } = useClassesRemaining();
   const refreshAll = () => { refetch(); refetchRemaining(); };
@@ -51,7 +52,7 @@ export function HomeScreen() {
     ? classes.filter(c => c.time === selectedTime)
     : classes;
 
-  const today = DATE_PILLS[TODAY_IDX];
+  const today = datePills[todayIdx];
 
   return (
     <View style={styles.container}>
@@ -76,7 +77,7 @@ export function HomeScreen() {
       {/* Date scroll */}
       <View style={styles.dateScroll}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateContent}>
-          {DATE_PILLS.map((d, i) => (
+          {datePills.map((d, i) => (
             <TouchableOpacity
               key={i}
               style={[styles.datePill, activeDateIdx === i && { backgroundColor: boxConfig.primary_color, borderColor: boxConfig.primary_color }]}
@@ -111,8 +112,8 @@ export function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {selectedTime && selectedTime !== 'Todas'
-              ? `${classesLabel(activeDateIdx)} · ${selectedTime}`
-              : classesLabel(activeDateIdx)}
+              ? `${classesLabel(activeDateIdx, datePills, todayIdx)} · ${selectedTime}`
+              : classesLabel(activeDateIdx, datePills, todayIdx)}
           </Text>
         </View>
 

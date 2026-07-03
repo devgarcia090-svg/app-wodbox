@@ -47,18 +47,29 @@ export function useWodResults(classId: string | null) {
     setLoading(true);
     const { data } = await supabase
       .from('wod_results')
-      .select('*, profiles:athlete_id(name, avatar_initials, avatar_color, avatar_url)')
+      .select('*')
       .eq('class_id', classId);
 
     if (data) {
-      const mapped: WodResult[] = (data as any[]).map(r => ({
-        ...r,
-        athlete_name: r.profiles?.name ?? 'Atleta',
-        athlete_avatar: r.profiles?.avatar_url ?? null,
-        athlete_initials: r.profiles?.avatar_initials || (r.profiles?.name ?? 'A').slice(0, 2).toUpperCase(),
-        athlete_color: r.profiles?.avatar_color ?? '#f95c00',
-        sort_value: parseSortValue(r.result_text),
-      }));
+      // RLS on `profiles` only lets you read your own row, so a plain
+      // embedded join here returned null for every rival's name/avatar.
+      const athleteIds = [...new Set((data as any[]).map(r => r.athlete_id))];
+      const { data: profilesData } = athleteIds.length
+        ? await supabase.rpc('public_profiles', { p_ids: athleteIds })
+        : { data: [] as any[] };
+      const profileMap = new Map<string, any>((profilesData ?? []).map((p: any) => [p.id, p]));
+
+      const mapped: WodResult[] = (data as any[]).map(r => {
+        const p = profileMap.get(r.athlete_id);
+        return {
+          ...r,
+          athlete_name: p?.name ?? 'Atleta',
+          athlete_avatar: p?.avatar_url ?? null,
+          athlete_initials: p?.avatar_initials || (p?.name ?? 'A').slice(0, 2).toUpperCase(),
+          athlete_color: p?.avatar_color ?? '#f95c00',
+          sort_value: parseSortValue(r.result_text),
+        };
+      });
 
       // RX primero, luego por valor de resultado
       mapped.sort((a, b) => {

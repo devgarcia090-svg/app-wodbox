@@ -8,6 +8,8 @@ import { Fonts } from '../../theme/fonts';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useBoxConfig } from '../../context/BoxConfigContext';
+import { useToast } from '../../hooks/useToast';
+import { Toast } from '../../components/common/Toast';
 
 type Tab = 'general' | 'dm';
 
@@ -36,6 +38,7 @@ export function ChatScreen() {
   const boxConfig = useBoxConfig();
   const { primary_color } = boxConfig;
   const [activeTab, setActiveTab] = useState<Tab>('general');
+  const { toast, showToast } = useToast();
 
   // Broadcast
   const [broadcasts, setBroadcasts] = useState<ChatMessage[]>([]);
@@ -50,28 +53,44 @@ export function ChatScreen() {
   const [dmInput, setDmInput] = useState('');
   const dmScroll = useRef<ScrollView>(null);
 
+  // RLS on `profiles` only lets you read your own row, so embedding
+  // `profiles!messages_sender_id_fkey(...)` came back null for the admin's
+  // name/avatar. Look senders up separately through public_profiles.
+  const resolveSenders = useCallback(async (rows: any[]) => {
+    const ids = [...new Set(rows.map(m => m.sender_id).filter(Boolean))];
+    if (ids.length === 0) return new Map<string, any>();
+    const { data } = await supabase.rpc('public_profiles', { p_ids: ids });
+    return new Map((data ?? []).map((p: any) => [p.id, p]));
+  }, []);
+
   const fetchBroadcasts = useCallback(async () => {
     setBcLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
-      .select('id, text, sender_id, is_broadcast, created_at, profiles!messages_sender_id_fkey(name, avatar_initials, avatar_color)')
+      .select('id, text, sender_id, is_broadcast, created_at')
       .eq('is_broadcast', true)
       .order('created_at');
 
+    if (error) { showToast('Error al cargar el chat', 'error'); setBcLoading(false); return; }
+
+    const senders = await resolveSenders((data || []) as any[]);
     setBroadcasts(
-      ((data || []) as any[]).map(m => ({
-        id: m.id,
-        text: m.text,
-        sender_id: m.sender_id,
-        sender_name: m.profiles?.name ?? boxConfig.name,
-        sender_initials: m.profiles?.avatar_initials ?? 'CF',
-        sender_color: m.profiles?.avatar_color ?? Colors.orange,
-        is_broadcast: true,
-        created_at: m.created_at,
-      }))
+      ((data || []) as any[]).map(m => {
+        const p = senders.get(m.sender_id);
+        return {
+          id: m.id,
+          text: m.text,
+          sender_id: m.sender_id,
+          sender_name: p?.name ?? boxConfig.name,
+          sender_initials: p?.avatar_initials ?? 'CF',
+          sender_color: p?.avatar_color ?? Colors.orange,
+          is_broadcast: true,
+          created_at: m.created_at,
+        };
+      })
     );
     setBcLoading(false);
-  }, []);
+  }, [resolveSenders]);
 
   const getOrCreateConv = useCallback(async () => {
     if (!session?.user.id) return null;
@@ -91,26 +110,32 @@ export function ChatScreen() {
 
   const fetchDMs = useCallback(async (cid: string) => {
     setDmLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
-      .select('id, text, sender_id, created_at, profiles!messages_sender_id_fkey(name, avatar_initials, avatar_color)')
+      .select('id, text, sender_id, created_at')
       .eq('conversation_id', cid)
       .order('created_at');
 
+    if (error) { showToast('Error al cargar la conversación', 'error'); setDmLoading(false); return; }
+
+    const senders = await resolveSenders((data || []) as any[]);
     setDmMsgs(
-      ((data || []) as any[]).map(m => ({
-        id: m.id,
-        text: m.text,
-        sender_id: m.sender_id,
-        sender_name: m.profiles?.name ?? '—',
-        sender_initials: m.profiles?.avatar_initials ?? '?',
-        sender_color: m.profiles?.avatar_color ?? Colors.muted,
-        is_broadcast: false,
-        created_at: m.created_at,
-      }))
+      ((data || []) as any[]).map(m => {
+        const p = senders.get(m.sender_id);
+        return {
+          id: m.id,
+          text: m.text,
+          sender_id: m.sender_id,
+          sender_name: p?.name ?? '—',
+          sender_initials: p?.avatar_initials ?? '?',
+          sender_color: p?.avatar_color ?? Colors.muted,
+          is_broadcast: false,
+          created_at: m.created_at,
+        };
+      })
     );
     setDmLoading(false);
-  }, []);
+  }, [resolveSenders]);
 
   useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
 
@@ -137,6 +162,8 @@ export function ChatScreen() {
       setBcInput('');
       fetchBroadcasts();
       setTimeout(() => bcScroll.current?.scrollToEnd(), 200);
+    } else {
+      showToast('Error al enviar el mensaje', 'error');
     }
   };
 
@@ -158,6 +185,8 @@ export function ChatScreen() {
       }).eq('id', convId);
       fetchDMs(convId);
       setTimeout(() => dmScroll.current?.scrollToEnd(), 200);
+    } else {
+      showToast('Error al enviar el mensaje', 'error');
     }
   };
 
@@ -281,6 +310,7 @@ export function ChatScreen() {
           </View>
         </>
       )}
+      <Toast {...toast} />
     </KeyboardAvoidingView>
   );
 }

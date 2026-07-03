@@ -52,8 +52,9 @@ export function useInvoices(memberId?: string | null) {
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   const markAsPaid = async (id: string) => {
-    await supabase.from('invoices').update({ paid: true }).eq('id', id);
-    await fetchInvoices();
+    const { error } = await supabase.from('invoices').update({ paid: true }).eq('id', id);
+    if (!error) await fetchInvoices();
+    return { error };
   };
 
   const createInvoice = async (data: {
@@ -63,22 +64,14 @@ export function useInvoices(memberId?: string | null) {
     date: string;
     payment_method: 'efectivo' | 'tarjeta';
   }) => {
-    // Generate correlative number: F-YYYYMM-XXX
-    const { count } = await supabase
-      .from('invoices')
-      .select('id', { count: 'exact', head: true });
-    const n = String((count ?? 0) + 1).padStart(3, '0');
-    const ym = data.date.slice(0, 7).replace('-', '');
-    const number = `F-${ym}-${n}`;
-
-    const { error } = await supabase.from('invoices').insert({
-      member_id: data.member_id,
-      plan_name: data.plan_name,
-      amount: data.amount,
-      date: data.date,
-      paid: false,
-      number,
-      payment_method: data.payment_method,
+    // Numeración atómica generada en servidor (ver database/invoice_numbering.sql):
+    // evita colisiones si dos admins crean factura a la vez o si se borra una factura.
+    const { error } = await supabase.rpc('create_invoice', {
+      p_member_id: data.member_id,
+      p_plan_name: data.plan_name,
+      p_amount: data.amount,
+      p_date: data.date,
+      p_payment_method: data.payment_method,
     });
     if (!error) await fetchInvoices();
     return { error };
