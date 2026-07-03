@@ -22,7 +22,8 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ### Pendiente de configuración manual en Supabase (no se puede hacer desde el repo)
 - Ejecutar `database/booking_control.sql` y `database/push_tokens.sql` en el SQL Editor.
-- Definir el secreto `WEBHOOK_SECRET` en el proyecto (`supabase secrets set WEBHOOK_SECRET=<valor-aleatorio>`) y configurar en Database → Webhooks dos webhooks apuntando a `send-push` (uno en `messages` INSERT, otro en `bookings` INSERT+UPDATE) con la cabecera HTTP `x-webhook-secret: <mismo-valor>`.
+- Definir el secreto `WEBHOOK_SECRET` en el proyecto (`supabase secrets set WEBHOOK_SECRET=<valor-aleatorio>`).
+- Ejecutar `database/push_webhooks.sql` (sustituyendo `<TU_WEBHOOK_SECRET>` por el mismo valor de arriba) para que `messages` y `bookings` avisen a `send-push` vía `pg_net`, sin depender de la pantalla Database → Webhooks del Dashboard.
 - Redesplegar `send-push`.
 
 ---
