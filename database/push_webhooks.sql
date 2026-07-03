@@ -21,7 +21,7 @@ begin
     url := 'https://rqcqdcfptwghqwpvbhss.supabase.co/functions/v1/send-push',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-webhook-secret', '<x7k9mQp2vL4nR8wZ3jT6yB1sF5hD0cA>'
+      'x-webhook-secret', 'x7k9mQp2vL4nR8wZ3jT6yB1sF5hD0cA'
     ),
     body := jsonb_build_object(
       'type', TG_OP,
