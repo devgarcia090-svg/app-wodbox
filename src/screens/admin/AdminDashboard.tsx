@@ -138,6 +138,21 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
     else { showToast('Clase eliminada', 'success'); refetch(); }
   };
 
+  const acceptWaitlist = async (bookingId: string, athleteName: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'confirmed', cancelled_at: null })
+      .eq('id', bookingId);
+    if (error) showToast('Error al aceptar la solicitud', 'error');
+    else { showToast(`✅ ${athleteName} añadido a la clase`, 'success'); refetch(); }
+  };
+
+  const declineWaitlist = async (bookingId: string) => {
+    const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+    if (error) showToast('Error al rechazar la solicitud', 'error');
+    else { showToast('Solicitud rechazada', 'success'); refetch(); }
+  };
+
   const timePills = ['Todas', ...[...new Set(classes.map(c => c.time))].sort()];
   const filtered = selectedTime && selectedTime !== 'Todas'
     ? classes.filter(c => c.time === selectedTime)
@@ -238,6 +253,32 @@ function ClasesPanel({ showToast, refreshKey, onCreated }: { showToast: (m: stri
                   return <View key={i} style={clsStyles.slotEmpty} />;
                 })}
               </View>
+
+              {cls.waitlist.length > 0 && (
+                <View style={clsStyles.waitlistBox}>
+                  <Text style={clsStyles.waitlistTitle}>🙋 Solicitudes de plaza ({cls.waitlist.length})</Text>
+                  {cls.waitlist.map(w => (
+                    <View key={w.bookingId} style={clsStyles.waitlistRow}>
+                      <Text style={clsStyles.waitlistName} numberOfLines={1}>{w.name}</Text>
+                      <TouchableOpacity style={clsStyles.acceptBtn} onPress={() => acceptWaitlist(w.bookingId, w.name)}>
+                        <Text style={clsStyles.acceptBtnText}>Aceptar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={clsStyles.declineBtn} onPress={() => declineWaitlist(w.bookingId)}>
+                        <Text style={clsStyles.declineBtnText}>Rechazar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {cls.cancelled.length > 0 && (
+                <View style={clsStyles.cancelledBox}>
+                  <Text style={clsStyles.cancelledTitle}>🚪 Bajas ({cls.cancelled.length})</Text>
+                  <Text style={clsStyles.cancelledText} numberOfLines={2}>
+                    {cls.cancelled.map(c => c.name).join(', ')}
+                  </Text>
+                </View>
+              )}
 
               <View style={clsStyles.cardActions}>
                 <TouchableOpacity style={clsStyles.editBtn} onPress={() => { setConfirmDeleteId(null); openEdit(cls); }}>
@@ -1532,6 +1573,21 @@ const clsStyles = StyleSheet.create({
   confirmYesText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: '#fff' },
   confirmNo: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border },
   confirmNoText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
+  waitlistBox: {
+    marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border, gap: 6,
+  },
+  waitlistTitle: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.yellow, marginBottom: 2 },
+  waitlistRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  waitlistName: { flex: 1, fontSize: 12, color: Colors.white, fontFamily: Fonts.body },
+  acceptBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: Colors.green },
+  acceptBtnText: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: '#08260f' },
+  declineBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: Colors.surface2, borderWidth: 1, borderColor: Colors.border },
+  declineBtnText: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted },
+  cancelledBox: {
+    marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  cancelledTitle: { fontSize: 11, fontFamily: Fonts.bodySemiBold, color: Colors.muted, marginBottom: 2 },
+  cancelledText: { fontSize: 12, color: Colors.muted, fontFamily: Fonts.body },
 });
 
 const memStyles = StyleSheet.create({

@@ -43,9 +43,16 @@ async function registerToken(channelName: string): Promise<string | null> {
 export function usePushToken(userId: string | undefined, channelName = 'WodBox') {
   useEffect(() => {
     if (!userId) return;
-    registerToken(channelName).then(async (token) => {
-      if (!token) return;
-      await supabase.from('profiles').update({ push_token: token }).eq('id', userId);
-    });
+    registerToken(channelName)
+      .then(async (token) => {
+        if (!token) return;
+        await supabase.from('profiles').update({ push_token: token }).eq('id', userId);
+      })
+      .catch((e) => {
+        // getExpoPushTokenAsync throws if the EAS projectId isn't configured
+        // (app.json extra.eas.projectId) — fail silently instead of an
+        // unhandled rejection, push notifications just won't work.
+        console.warn('[usePushToken] registration failed:', e);
+      });
   }, [userId, channelName]);
 }

@@ -8,6 +8,7 @@ import { ClassModal } from '../../components/athlete/ClassModal';
 import { Toast } from '../../components/common/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useClasses } from '../../hooks/useClasses';
+import { useClassesRemaining } from '../../hooks/useClassesRemaining';
 import { useAuth } from '../../context/AuthContext';
 import { useBoxConfig } from '../../context/BoxConfigContext';
 import { DATE_PILLS, TODAY_IDX } from '../../data/mockData';
@@ -42,6 +43,8 @@ export function HomeScreen() {
 
   const selectedDate = DATE_PILLS[activeDateIdx]?.isoDate ?? DATE_PILLS[0].isoDate;
   const { classes, loading, refetch } = useClasses(selectedDate);
+  const { remaining, refetch: refetchRemaining } = useClassesRemaining();
+  const refreshAll = () => { refetch(); refetchRemaining(); };
 
   const timePills = ['Todas', ...[...new Set(classes.map(c => c.time))].sort()];
   const filteredClasses = selectedTime && selectedTime !== 'Todas'
@@ -63,7 +66,7 @@ export function HomeScreen() {
             <View style={[styles.memberDot, { backgroundColor: boxConfig.primary_color }]} />
             <Text style={[styles.memberText, { color: boxConfig.primary_color }]}>
               {profile.plan}
-              {profile.classes_remaining != null ? ` · ${profile.classes_remaining} restantes` : ''}
+              {remaining != null ? ` · ${remaining} restantes` : ''}
               {profile.membership_expires ? ` — vence ${shortExpiry(profile.membership_expires)}` : ''}
             </Text>
           </View>
@@ -129,7 +132,7 @@ export function HomeScreen() {
         item={selectedClass}
         onClose={() => setSelectedClass(null)}
         onAction={(msg, type) => showToast(msg, type)}
-        onRefresh={refetch}
+        onRefresh={refreshAll}
       />
       <Toast {...toast} />
     </View>

@@ -115,7 +115,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    // Clear the device's push token before signing out — otherwise it stays
+    // on this profile and, if another user logs in on the same device, they
+    // start receiving this account's push notifications.
+    if (session?.user.id) {
+      await supabase.from('profiles').update({ push_token: null }).eq('id', session.user.id);
+    }
+    await supabase.auth.signOut();
+  };
 
   const refreshProfile = async () => {
     if (session?.user.id) await fetchProfile(session.user.id);

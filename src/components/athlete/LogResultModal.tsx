@@ -114,7 +114,7 @@ export function LogResultModal({
               </TouchableOpacity>
             )}
             <Button label="Cancelar" variant="secondary" onPress={onClose} style={styles.flex1} />
-            <Button label={saving ? '…' : 'Guardar'} variant="primary" onPress={handleSave} style={styles.flex1} />
+            <Button label={saving ? '…' : 'Guardar'} variant="primary" onPress={handleSave} disabled={saving} style={styles.flex1} />
           </View>
         </View>
       </KeyboardAvoidingView>

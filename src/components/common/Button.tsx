@@ -11,11 +11,12 @@ interface ButtonProps {
   variant?: ButtonVariant;
   small?: boolean;
   full?: boolean;
+  disabled?: boolean;
   onPress: () => void;
   style?: ViewStyle;
 }
 
-export function Button({ label, variant = 'primary', small, full, onPress, style }: ButtonProps) {
+export function Button({ label, variant = 'primary', small, full, disabled, onPress, style }: ButtonProps) {
   const { primary_color } = useBoxConfig();
 
   const dynamicBtnStyle =
@@ -28,8 +29,9 @@ export function Button({ label, variant = 'primary', small, full, onPress, style
 
   return (
     <TouchableOpacity
-      style={[styles.base, styles[variant], dynamicBtnStyle, small && styles.smallBtn, full && styles.full, style]}
+      style={[styles.base, styles[variant], dynamicBtnStyle, small && styles.smallBtn, full && styles.full, disabled && styles.disabled, style]}
       onPress={onPress}
+      disabled={disabled}
       activeOpacity={0.75}
     >
       <Text style={[styles.text, styles[`${variant}Text` as keyof typeof styles], dynamicTextStyle, small && styles.smallText]}>
@@ -53,6 +55,7 @@ const styles = StyleSheet.create({
   danger: { backgroundColor: Colors.redBg, borderWidth: 1, borderColor: Colors.red },
   smallBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
   full: { width: '100%', paddingVertical: 12 },
+  disabled: { opacity: 0.5 },
   text: { fontFamily: Fonts.bodySemiBold, fontSize: 13 },
   primaryText: { color: '#fff' },
   secondaryText: { color: Colors.white },

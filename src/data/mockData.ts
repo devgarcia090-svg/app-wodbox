@@ -1,10 +1,20 @@
-export type ClassStatus = 'reserved' | 'full' | 'open';
+export type ClassStatus = 'reserved' | 'waitlist' | 'full' | 'open';
 
 export interface Attendee {
+  bookingId: string;
+  athleteId: string;
   name: string;
   initials: string;
   color: string;
   url?: string | null;
+}
+
+export interface CancelledBooking {
+  bookingId: string;
+  name: string;
+  initials: string;
+  color: string;
+  cancelledAt: string | null;
 }
 
 export interface ClassItem {
@@ -20,6 +30,8 @@ export interface ClassItem {
   wod: string;
   avatars: { initial: string; color: string; url?: string | null }[];
   attendees: Attendee[];
+  waitlist: Attendee[];
+  cancelled: CancelledBooking[];
 }
 
 function isoDate(d: Date) {

@@ -34,32 +34,16 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
     if (!session) return;
     setBusy(true);
     try {
-      if (item.status === 'reserved') {
-        const { error } = await supabase
-          .from('bookings')
-          .delete()
-          .eq('class_id', item.id)
-          .eq('athlete_id', session.user.id);
+      if (item.status === 'reserved' || item.status === 'waitlist') {
+        const { data, error } = await supabase.rpc('cancel_booking', { p_class_id: item.id });
         if (error) throw error;
-        onAction('Reserva cancelada', 'error');
-      } else if (item.status === 'full') {
-        const { error } = await supabase
-          .from('bookings')
-          .upsert(
-            { class_id: item.id, athlete_id: session.user.id, status: 'waitlist' },
-            { onConflict: 'class_id,athlete_id' },
-          );
-        if (error) throw error;
-        onAction('📋 Apuntado a lista de espera', 'success');
+        const result = data as { status: string; message: string };
+        onAction(result.message, result.status === 'error' ? 'error' : 'error');
       } else {
-        const { error } = await supabase
-          .from('bookings')
-          .upsert(
-            { class_id: item.id, athlete_id: session.user.id, status: 'confirmed' },
-            { onConflict: 'class_id,athlete_id' },
-          );
+        const { data, error } = await supabase.rpc('book_class', { p_class_id: item.id });
         if (error) throw error;
-        onAction('✅ Plaza reservada', 'success');
+        const result = data as { status: string; message: string };
+        onAction(result.message, result.status === 'error' ? 'error' : 'success');
       }
       onRefresh();
       onClose();
@@ -73,6 +57,7 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
   const free = item.capacity - item.enrolled;
   const meta = `👤 ${item.coach}  ·  👥 ${item.enrolled}/${item.capacity}  ·  ${
     item.status === 'reserved' ? 'Tu plaza está confirmada' :
+    item.status === 'waitlist' ? 'Solicitud enviada al entrenador' :
     item.status === 'full' ? 'Clase completa' :
     `${free} plaza${free !== 1 ? 's' : ''} libre${free !== 1 ? 's' : ''}`
   }`;
@@ -143,17 +128,22 @@ export function ClassModal({ item, onClose, onAction, onRefresh }: ClassModalPro
                   </>
                 ) : item.status === 'reserved' ? (
                   <>
-                    <Button label={busy ? '...' : 'Cancelar reserva'} variant="danger" onPress={handleAction} style={styles.flex1} />
+                    <Button label={busy ? '...' : 'Cancelar reserva'} variant="danger" onPress={handleAction} disabled={busy} style={styles.flex1} />
+                    <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
+                  </>
+                ) : item.status === 'waitlist' ? (
+                  <>
+                    <Button label={busy ? '...' : 'Cancelar solicitud'} variant="danger" onPress={handleAction} disabled={busy} style={styles.flex1} />
                     <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
                   </>
                 ) : item.status === 'full' ? (
                   <>
-                    <Button label={busy ? '...' : 'Lista de espera'} variant="ghost" onPress={handleAction} style={styles.flex1} />
+                    <Button label={busy ? '...' : 'Solicitar plaza al entrenador'} variant="ghost" onPress={handleAction} disabled={busy} style={styles.flex1} />
                     <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
                   </>
                 ) : (
                   <>
-                    <Button label={busy ? '...' : 'Reservar plaza'} variant="primary" onPress={handleAction} style={styles.flex1} />
+                    <Button label={busy ? '...' : 'Reservar plaza'} variant="primary" onPress={handleAction} disabled={busy} style={styles.flex1} />
                     <Button label="Cerrar" variant="secondary" onPress={onClose} style={styles.flex1} />
                   </>
                 )}

@@ -4,6 +4,29 @@ Registro de todos los cambios realizados en la app, de más reciente a más anti
 
 ---
 
+## Reservas atómicas + bajas visibles + solicitud de plaza + seguridad push — 2026-07-03
+
+### Añadido
+- **Bajas de clase visibles para el admin**: Cancelar una reserva ya no borra la fila, la marca `cancelled` con `cancelled_at`. En el panel de Clases del admin, cada clase con bajas muestra ahora un bloque "🚪 Bajas" con los nombres de quienes se han borrado.
+- **"Solicitar plaza al entrenador" cuando la clase está llena**: El botón de lista de espera pasa a llamarse "Solicitar plaza al entrenador"; al pulsarlo se envía una notificación push a todos los admins. El panel de Clases del admin muestra un bloque "🙋 Solicitudes de plaza" con botones Aceptar/Rechazar por cada solicitud; al aceptar, el atleta recibe una push de confirmación.
+- **`database/booking_control.sql`**: nuevo script con las funciones `book_class` y `cancel_booking`.
+- **`database/push_tokens.sql`**: columna `push_token` que faltaba en toda la instalación (drift de esquema).
+
+### Corregido
+- **Reservas sin control real de aforo ni de bono (overbooking)**: El cliente insertaba directamente en `bookings` sin ninguna comprobación en servidor — dos atletas podían reservar la última plaza a la vez, y un atleta con el bono agotado o la membresía caducada podía seguir reservando sin límite. Ahora toda reserva/cancelación pasa por las funciones `book_class`/`cancel_booking` (`SECURITY DEFINER`, con bloqueo de fila para serializar reservas concurrentes de la misma clase). Se han retirado los permisos directos de insert/update/delete de `bookings` para los atletas: solo pueden mutar sus reservas a través de estas funciones, que validan membresía activa, caducidad del bono (1 mes desde `membership_start`) y clases restantes antes de confirmar.
+- **`send-push` (Edge Function) sin autenticación**: Cualquiera con la anon key (pública, va en el APK) podía hacer POST directo a la función y enviar notificaciones push masivas suplantando a un admin, o manipular contadores de mensajes no leídos. Ahora exige una cabecera `x-webhook-secret` que debe coincidir con un secreto configurado en el proyecto, y en vez de confiar en el cuerpo del webhook, vuelve a leer el mensaje/reserva real de la base de datos antes de notificar.
+- **Contador "restantes" del Home mostraba un valor distinto al del Perfil**: El Home leía `profile.classes_remaining` (columna que nadie decrementaba nunca), mientras el Perfil ya calculaba el valor dinámico correcto. Nuevo hook `useClassesRemaining` con la misma fórmula (`plan_classes − reservas confirmadas del período`), usado ahora en el Home.
+- **Botones de acción no se deshabilitaban durante el envío**: `Button` no aceptaba `disabled`, así que el texto cambiaba a "..." pero el botón seguía siendo pulsable — doble tap disparaba la acción dos veces (reservar, guardar resultado). Añadido soporte real de `disabled` en `Button` y aplicado en `ClassModal` y `LogResultModal`.
+- **Fuga de notificaciones push entre usuarios en dispositivos compartidos**: Al cerrar sesión no se limpiaba `push_token`; si otro atleta iniciaba sesión en el mismo móvil, seguía llegando el token del usuario anterior y recibía sus notificaciones privadas. Ahora `signOut` limpia el token antes de cerrar sesión.
+- **Registro de push token fallaba en silencio en producción**: `getExpoPushTokenAsync()` sin `extra.eas.projectId` configurado lanza una excepción; la promesa no tenía `.catch()` y el registro de notificaciones quedaba muerto sin ningún aviso en consola.
+
+### Pendiente de configuración manual en Supabase (no se puede hacer desde el repo)
+- Ejecutar `database/booking_control.sql` y `database/push_tokens.sql` en el SQL Editor.
+- Definir el secreto `WEBHOOK_SECRET` en el proyecto (`supabase secrets set WEBHOOK_SECRET=<valor-aleatorio>`) y configurar en Database → Webhooks dos webhooks apuntando a `send-push` (uno en `messages` INSERT, otro en `bookings` INSERT+UPDATE) con la cabecera HTTP `x-webhook-secret: <mismo-valor>`.
+- Redesplegar `send-push`.
+
+---
+
 ## Fix flujo de invitaciones completo (auditoría) — 2026-07-02
 
 ### Corregido

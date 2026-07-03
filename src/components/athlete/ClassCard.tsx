@@ -24,15 +24,18 @@ export function ClassCard({ item, onPress }: ClassCardProps) {
 
   const accentColor =
     item.status === 'reserved' ? Colors.green :
+    item.status === 'waitlist' ? Colors.yellow :
     item.status === 'full' ? Colors.red :
     primary_color;
 
   const badgeVariant =
     item.status === 'reserved' ? 'orange' :
+    item.status === 'waitlist' ? 'yellow' :
     item.status === 'full' ? 'red' : 'green';
 
   const badgeLabel =
     item.status === 'reserved' ? 'Reservada ✓' :
+    item.status === 'waitlist' ? 'En espera' :
     item.status === 'full' ? 'Llena' : 'Plazas libres';
 
   return (

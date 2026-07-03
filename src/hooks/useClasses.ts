@@ -7,6 +7,7 @@ interface RawBooking {
   id: string;
   athlete_id: string;
   status: string;
+  cancelled_at: string | null;
   profiles: { name: string; avatar_initials: string; avatar_color: string; avatar_url: string | null } | null;
 }
 
@@ -31,42 +32,59 @@ export function useClasses(date: string) {
     if (!session) return;
     setLoading(true);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('classes')
       .select(`
         id, name, date, time, coach, duration, capacity, wod,
         bookings(
-          id, athlete_id, status,
+          id, athlete_id, status, cancelled_at,
           profiles(name, avatar_initials, avatar_color, avatar_url)
         )
       `)
       .eq('date', date)
       .order('time');
 
-    if (!data) {
+    if (error || !data) {
+      setClasses([]);
       setLoading(false);
       return;
     }
 
     const userId = session.user.id;
+    const toAttendee = (b: RawBooking) => ({
+      bookingId: b.id,
+      athleteId: b.athlete_id,
+      name: b.profiles?.name ?? '—',
+      initials: b.profiles?.avatar_initials || b.profiles?.name.slice(0, 2).toUpperCase() || '?',
+      color: b.profiles?.avatar_color || '#f95c00',
+      url: b.profiles?.avatar_url || null,
+    });
+
     const formatted: ClassItem[] = (data as unknown as RawClass[]).map(cls => {
       const confirmed = (cls.bookings || []).filter(b => b.status === 'confirmed');
+      const waitlisted = (cls.bookings || []).filter(b => b.status === 'waitlist');
+      const cancelledRows = (cls.bookings || [])
+        .filter(b => b.status === 'cancelled')
+        .sort((a, b) => (b.cancelled_at ?? '').localeCompare(a.cancelled_at ?? ''));
       const enrolled = confirmed.length;
       const isReserved = confirmed.some(b => b.athlete_id === userId);
+      const isWaitlisted = waitlisted.some(b => b.athlete_id === userId);
 
       let status: ClassStatus;
       if (isReserved) status = 'reserved';
+      else if (isWaitlisted) status = 'waitlist';
       else if (enrolled >= cls.capacity) status = 'full';
       else status = 'open';
 
-      const attendees = confirmed
-        .filter(b => b.profiles)
-        .map(b => ({
-          name: b.profiles!.name,
-          initials: b.profiles!.avatar_initials || b.profiles!.name.slice(0, 2).toUpperCase(),
-          color: b.profiles!.avatar_color || '#f95c00',
-          url: b.profiles!.avatar_url || null,
-        }));
+      const attendees = confirmed.map(toAttendee);
+      const waitlist = waitlisted.map(toAttendee);
+      const cancelled = cancelledRows.map(b => ({
+        bookingId: b.id,
+        name: b.profiles?.name ?? '—',
+        initials: b.profiles?.avatar_initials || b.profiles?.name.slice(0, 2).toUpperCase() || '?',
+        color: b.profiles?.avatar_color || '#f95c00',
+        cancelledAt: b.cancelled_at,
+      }));
 
       return {
         id: cls.id,
@@ -81,6 +99,8 @@ export function useClasses(date: string) {
         wod: cls.wod || '',
         avatars: attendees.slice(0, 3).map(a => ({ initial: a.initials[0] || '?', color: a.color, url: a.url })),
         attendees,
+        waitlist,
+        cancelled,
       };
     });
 
