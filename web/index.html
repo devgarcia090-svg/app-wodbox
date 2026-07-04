@@ -74,7 +74,7 @@
       "name": "¿Qué es WodBox?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "WodBox es una app all-in-one para gestionar boxes de CrossFit. Permite gestionar miembros, reservas, cobros y comunicación desde una sola plataforma."
+        "text": "WodBox es una app all-in-one para gestionar boxes de CrossFit. Permite gestionar miembros, reservas con control de aforo, el WOD del día con leaderboard, bonos de clases y comunicación con los atletas desde una sola plataforma."
       }
     },
     {
@@ -82,7 +82,15 @@
       "name": "¿Cuánto cuesta WodBox?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "WodBox ofrece un plan gratuito para empezar. Los planes de pago escalan según el número de miembros activos del box, sin comisiones por transacción."
+        "text": "WodBox tiene tres planes según el tamaño del box: Start 29€/mes (hasta 50 atletas activos), Pro 49€/mes (hasta 120) y Unlimited 79€/mes (atletas ilimitados). Todas las funciones están incluidas en todos los planes, sin permanencia ni cuota de alta, y el pago anual incluye 2 meses gratis."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Tiene permanencia o cuota de alta?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. WodBox no tiene permanencia ni cuota de alta: se paga mes a mes y puedes cancelar cuando quieras. Además, los primeros 20 boxes mantienen su tarifa de por vida."
       }
     },
     {
@@ -339,6 +347,17 @@ nav.s { background: rgba(6,9,15,.94); backdrop-filter: blur(20px); -webkit-backd
 .tn { font-size: 12.5px; font-weight: 600; }
 .tb { font-size: 10.5px; color: var(--muted); }
 
+/* ── FAQ ── */
+.faq-s { padding: 96px 0; }
+.faq-list { max-width: 720px; margin: 48px auto 0; display: flex; flex-direction: column; gap: 10px; }
+.faq-item { background: var(--s2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color .2s; }
+.faq-item[open] { border-color: rgba(249,92,0,.35); }
+.faq-item summary { list-style: none; cursor: pointer; padding: 18px 20px; font-size: 15px; font-weight: 700; color: var(--text); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-ico { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--a12); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; transition: transform .25s; }
+.faq-item[open] .faq-ico { transform: rotate(45deg); }
+.faq-a { padding: 0 20px 18px; font-size: 14px; color: var(--muted); line-height: 1.75; }
+
 /* ── CTA ── */
 .cta-s { padding: 120px 0; text-align: center; position: relative; overflow: hidden; }
 .cta-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 700px; height: 500px; background: radial-gradient(ellipse,rgba(249,92,0,.13) 0%,transparent 70%); pointer-events: none; animation: cglow 4s ease-in-out infinite alternate; }
@@ -403,6 +422,9 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   .price-note{font-size:12.5px;padding:0 8px;}
   /* cta y footer */
   .cta-s{padding:80px 0;}
+  .faq-s{padding:64px 0;}
+  .faq-item summary{font-size:14px;padding:15px 16px;}
+  .faq-a{padding:0 16px 15px;font-size:13.5px;}
   .btn-cta{padding:14px 26px;font-size:15px;}
   .ft-r{flex-direction:column;text-align:center;gap:16px;}
 }
@@ -447,9 +469,9 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <a href="#pricing" class="active">Precio</a>
       <a href="#how">Cómo funciona</a>
       <a href="#reviews">Opiniones</a>
+      <a href="#faq">FAQ</a>
     </div>
     <div class="nav-right">
-      <a href="#" class="btn-login">Iniciar sesión</a>
       <a href="mailto:hola@wodbox.xyz" class="btn-n">Empieza ahora →</a>
     </div>
   </div>
@@ -587,10 +609,10 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
         <div class="bc-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#f95c00" stroke-width="2"/><path d="M2 10h20" stroke="#f95c00" stroke-width="2"/><path d="M6 15h4" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
-        <div class="bc-t">Cobros automáticos</div>
-        <div class="bc-d">Domiciliación de cuotas sin comisiones. Alertas de impago y seguimiento en un clic.</div>
+        <div class="bc-t">Control de cobros</div>
+        <div class="bc-d">Facturación, alertas de membresías que vencen y seguimiento de pagos en un clic. Cobro automático por domiciliación: muy pronto, sin comisiones añadidas.</div>
         <div class="big-n">€0</div>
-        <div class="big-l">comisiones por transacción</div>
+        <div class="big-l">comisiones añadidas por WodBox</div>
       </div>
 
       <div class="bc r d4">
@@ -728,6 +750,41 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   </div>
 </section>
 
+<!-- FAQ -->
+<section class="faq-s" id="faq">
+  <div class="w">
+    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Preguntas frecuentes<div class="ebl"></div></div>
+    <h2 class="sec-title r d1" style="text-align:center">DUDAS<br><span style="color:var(--accent)">RESUELTAS</span></h2>
+
+    <div class="faq-list">
+      <details class="faq-item r d1">
+        <summary>¿Qué es WodBox?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">WodBox es una app all-in-one para gestionar boxes de CrossFit. Permite gestionar miembros, reservas con control de aforo, el WOD del día con leaderboard, bonos de clases y comunicación con los atletas desde una sola plataforma.</div>
+      </details>
+      <details class="faq-item r d2">
+        <summary>¿Cuánto cuesta WodBox?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">WodBox tiene tres planes según el tamaño del box: Start 29€/mes (hasta 50 atletas activos), Pro 49€/mes (hasta 120) y Unlimited 79€/mes (atletas ilimitados). Todas las funciones están incluidas en todos los planes, sin permanencia ni cuota de alta, y el pago anual incluye 2 meses gratis.</div>
+      </details>
+      <details class="faq-item r d2">
+        <summary>¿Tiene permanencia o cuota de alta?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">No. WodBox no tiene permanencia ni cuota de alta: se paga mes a mes y puedes cancelar cuando quieras. Además, los primeros 20 boxes mantienen su tarifa de por vida.</div>
+      </details>
+      <details class="faq-item r d3">
+        <summary>¿WodBox funciona en iOS y Android?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">Sí, WodBox está disponible como app nativa para iOS y Android, tanto para coaches como para atletas.</div>
+      </details>
+      <details class="faq-item r d3">
+        <summary>¿Puedo gestionar las reservas de clases con WodBox?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">Sí, WodBox incluye un sistema de reservas completo donde los atletas pueden reservar sus clases desde la app y los coaches pueden ver la ocupación en tiempo real.</div>
+      </details>
+      <details class="faq-item r d4">
+        <summary>¿WodBox cumple con el RGPD?<span class="faq-ico">+</span></summary>
+        <div class="faq-a">Sí, WodBox cumple con el Reglamento General de Protección de Datos (RGPD). Los datos se almacenan en servidores europeos y el box actúa como responsable del tratamiento.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="cta-s">
   <div class="cta-bg" aria-hidden="true"></div>
@@ -761,7 +818,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <a href="terms.html">Términos</a>
       <a href="mailto:hola@wodbox.xyz">Contacto</a>
     </div>
-    <div class="ft-c">© 2025 WodBox. Todos los derechos reservados.</div>
+    <div class="ft-c">© 2026 WodBox. Todos los derechos reservados.</div>
   </div>
 </footer>
 
