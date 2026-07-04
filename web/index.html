@@ -151,11 +151,11 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 body { font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
 /* ── SCROLL REVEAL ── */
-.r  { opacity: 0; transform: translateY(36px); transition: opacity .65s var(--ease), transform .65s var(--ease); }
+.r  { opacity: 0; transform: translateY(36px); filter: blur(7px); transition: opacity .75s var(--ease), transform .75s var(--ease), filter .75s var(--ease); }
 .rl { opacity: 0; transform: translateX(-44px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
 .rr { opacity: 0; transform: translateX(44px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
 .rs { opacity: 0; transform: scale(.93); transition: opacity .6s var(--ease), transform .6s var(--spring); }
-.r.on,.rl.on,.rr.on,.rs.on { opacity: 1; transform: none; }
+.r.on,.rl.on,.rr.on,.rs.on { opacity: 1; transform: none; filter: none; }
 .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}.d5{transition-delay:.40s}.d6{transition-delay:.48s}
 
 /* ── LAYOUT ── */
@@ -225,8 +225,8 @@ nav.s { background: rgba(6,9,15,.94); backdrop-filter: blur(20px); -webkit-backd
 @keyframes pd { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
 @keyframes fi { to{opacity:1} }
 
-.hero-title { font-size: clamp(52px,7vw,92px); font-weight: 900; line-height: .9; letter-spacing: -.025em; text-transform: uppercase; color: var(--text); margin-bottom: 22px; }
-.ht-line { display: block; overflow: hidden; }
+.hero-title { font-size: clamp(48px,6.2vw,84px); font-weight: 900; line-height: .9; letter-spacing: -.025em; text-transform: uppercase; color: var(--text); margin-bottom: 22px; }
+.ht-line { display: block; overflow: hidden; white-space: nowrap; }
 .ht-inner { display: block; opacity: 0; transform: translateY(100%); animation: li .65s var(--ease) forwards; }
 .l1 .ht-inner { animation-delay: .25s; }
 .l2 .ht-inner { animation-delay: .45s; }
@@ -383,6 +383,76 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 .ft-l a:hover { color: var(--text); }
 .ft-c { font-size: 12.5px; color: var(--muted); }
 
+/* ── MOTION: palabra rotatoria del hero ── */
+.rot-word { display: inline-block; color: var(--accent); }
+.rot-word.out { animation: rotOut .4s var(--ease) forwards; }
+.rot-word.in { animation: rotIn .5s var(--ease); }
+@keyframes rotOut { to { opacity: 0; transform: translateY(-55%) skewY(-5deg); filter: blur(6px); } }
+@keyframes rotIn { from { opacity: 0; transform: translateY(55%) skewY(5deg); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+/* ── MOTION: notificaciones flotando sobre el teléfono ── */
+.p-toast { position: absolute; padding: 10px 13px; background: rgba(13,20,32,.94); border: 1px solid var(--border2); border-radius: 14px; backdrop-filter: blur(8px); box-shadow: 0 18px 44px rgba(0,0,0,.55); display: flex; gap: 9px; align-items: center; width: max-content; max-width: 235px; opacity: 0; z-index: 5; }
+.pt-ic { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--a12); flex-shrink: 0; }
+.pt-t { font-size: 11.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.pt-s { font-size: 10px; color: var(--muted); }
+.p-toast.t1 { top: 12%; left: -72px; animation: toastIn 10.5s var(--ease) infinite 1.2s; }
+.p-toast.t2 { top: 42%; right: -80px; animation: toastIn 10.5s var(--ease) infinite 4.7s; }
+.p-toast.t3 { top: 71%; left: -64px; animation: toastIn 10.5s var(--ease) infinite 8.2s; }
+@keyframes toastIn {
+  0% { opacity: 0; transform: translateY(16px) scale(.9); }
+  3.5% { opacity: 1; transform: none; }
+  24% { opacity: 1; transform: none; }
+  29% { opacity: 0; transform: translateY(-12px) scale(.94); }
+  100% { opacity: 0; }
+}
+
+/* ── MOTION: marquee de funcionalidades ── */
+.mq { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--s1); overflow: hidden; padding: 15px 0; position: relative; }
+.mq::before, .mq::after { content: ''; position: absolute; top: 0; bottom: 0; width: 90px; z-index: 2; pointer-events: none; }
+.mq::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+.mq::after { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+.mq-track { display: flex; width: max-content; animation: mqScroll 32s linear infinite; }
+.mq:hover .mq-track { animation-play-state: paused; }
+.mq-i { display: flex; align-items: center; font-family: "Bebas", sans-serif; font-size: 21px; letter-spacing: .13em; color: var(--muted); white-space: nowrap; }
+.mq-i span { padding: 0 26px; }
+.mq-i b { color: var(--accent); font-weight: 400; }
+@keyframes mqScroll { to { transform: translateX(-50%); } }
+
+/* ── MOTION: tilt 3D + foco en las bento cards ── */
+@media(pointer:fine){
+  .bc { will-change: transform; }
+  .bc::after { content: ''; position: absolute; inset: 0; border-radius: 20px; background: radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(249,92,0,.10), transparent 65%); opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .bc:hover::after { opacity: 1; }
+}
+
+/* ── MOTION: demo viva dentro de las cards ── */
+.chart-bars .cb { transform: scaleY(0); transform-origin: bottom; transition: transform .9s var(--spring); }
+.bc.on .cb { transform: scaleY(1); }
+.bc.on .cb:nth-child(1){transition-delay:.10s}
+.bc.on .cb:nth-child(2){transition-delay:.18s}
+.bc.on .cb:nth-child(3){transition-delay:.26s}
+.bc.on .cb:nth-child(4){transition-delay:.34s}
+.bc.on .cb:nth-child(5){transition-delay:.42s}
+.bc.on .cb:nth-child(6){transition-delay:.50s}
+.bc.on .cb:nth-child(7){transition-delay:.58s}
+.memb-list .mb-row { opacity: 0; transform: translateX(-16px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+.bc.on .mb-row { opacity: 1; transform: none; }
+.bc.on .mb-row:nth-child(1){transition-delay:.20s}
+.bc.on .mb-row:nth-child(2){transition-delay:.36s}
+.bc.on .mb-row:nth-child(3){transition-delay:.52s}
+.sp { transition: background .35s, border-color .35s, transform .35s var(--spring); }
+.sp.pop { background: var(--green); border-color: var(--green); transform: scale(1.15); }
+
+/* ── Toggle mensual / anual ── */
+.bill-toggle { display: flex; justify-content: center; margin-top: 38px; }
+.bt-pill { display: flex; background: var(--s2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; gap: 4px; }
+.bt-btn { border: none; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 700; padding: 8px 18px; border-radius: 9px; cursor: pointer; transition: color .2s, background .2s; font-family: inherit; display: flex; align-items: center; }
+.bt-btn.active { background: var(--accent); color: #fff; }
+.bt-save { font-size: 10px; background: rgba(34,197,94,.15); color: var(--green); padding: 2px 7px; border-radius: 20px; margin-left: 7px; font-weight: 800; }
+.bt-btn.active .bt-save { background: rgba(255,255,255,.2); color: #fff; }
+.price-big, .price-mo { transition: opacity .18s var(--ease), transform .18s var(--ease); }
+.swap .price-big, .swap .price-mo { opacity: 0; transform: translateY(9px); }
+
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   .w{padding:0 20px;}
@@ -428,6 +498,13 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   .faq-s{padding:64px 0;}
   .faq-item summary{font-size:14px;padding:15px 16px;}
   .faq-a{padding:0 16px 15px;font-size:13.5px;}
+  .p-toast.t1,.p-toast.t3{left:-8px;}
+  .p-toast.t2{right:-8px;}
+  .p-toast{max-width:180px;padding:8px 10px;}
+  .pt-t{font-size:10.5px;}
+  .mq-i{font-size:16px;}
+  .mq-i span{padding:0 16px;}
+  .bt-btn{font-size:12.5px;padding:7px 13px;}
   .btn-cta{padding:14px 26px;font-size:15px;}
   .ft-r{flex-direction:column;text-align:center;gap:16px;}
 }
@@ -437,8 +514,12 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;}
-  .r,.rl,.rr,.rs{opacity:1;transform:none;}
+  .r,.rl,.rr,.rs{opacity:1;transform:none;filter:none;}
   .hero-badge,.hero-sub,.hero-ctas,.phone-wrap,.ht-inner{opacity:1;transform:none;}
+  .p-toast{opacity:1;}
+  .chart-bars .cb{transform:none;}
+  .memb-list .mb-row{opacity:1;transform:none;}
+  html{scroll-behavior:auto;}
 }
 </style>
 </head>
@@ -469,7 +550,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
         Funciones
         <svg class="nav-chevron" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
-      <a href="#pricing" class="active">Precio</a>
+      <a href="#pricing">Precio</a>
       <a href="#how">Cómo funciona</a>
       <a href="#reviews">Opiniones</a>
       <a href="#faq">FAQ</a>
@@ -487,7 +568,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <div class="hero-badge"><span class="bdot"></span> iOS · Android · Sin comisiones</div>
       <h1 class="hero-title">
         <span class="ht-line l1"><span class="ht-inner">TU BOX,</span></span>
-        <span class="ht-line l2"><span class="ht-inner">SIN CAOS</span></span>
+        <span class="ht-line l2"><span class="ht-inner">SIN <span class="rot-word" id="rotWord">CAOS</span></span></span>
       </h1>
       <p class="hero-sub">Gestiona miembros, reservas, cobros y comunicación desde una sola app. Diseñada para boxes de CrossFit que quieren crecer.</p>
       <div class="hero-ctas">
@@ -501,6 +582,9 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 
     <div class="phone-wrap">
       <div class="phone-shadow"></div>
+      <div class="p-toast t1" aria-hidden="true"><div class="pt-ic">🔔</div><div><div class="pt-t">Nueva reserva</div><div class="pt-s">María G. · WOD 07:00</div></div></div>
+      <div class="p-toast t2" aria-hidden="true"><div class="pt-ic">🏆</div><div><div class="pt-t">Nuevo resultado RX</div><div class="pt-s">Fran 21-15-9 · 4:38</div></div></div>
+      <div class="p-toast t3" aria-hidden="true"><div class="pt-ic">🙋</div><div><div class="pt-t">Solicitud de plaza</div><div class="pt-s">Halterofilia 19:30 · llena</div></div></div>
       <div class="phone-float">
         <div class="phone">
           <div class="p-notch"><div class="p-spk"></div><div class="p-cam"></div></div>
@@ -569,6 +653,14 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
     <div class="stat-i r d1"><div class="ts-t">0€ por reserva</div><div class="stat-l">sin comisiones añadidas</div></div>
     <div class="stat-i r d2"><div class="ts-t">Leaderboard</div><div class="stat-l">incluido en todos los planes</div></div>
     <div class="stat-i r d3"><div class="ts-t">RGPD</div><div class="stat-l">datos alojados en Europa</div></div>
+  </div>
+</div>
+
+<!-- MARQUEE -->
+<div class="mq" aria-hidden="true">
+  <div class="mq-track">
+    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Facturación</span><b>·</b></div>
+    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Facturación</span><b>·</b></div>
   </div>
 </div>
 
@@ -696,11 +788,18 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
     <h2 class="sec-title r d1" style="text-align:center">TODO INCLUIDO,<br><span style="color:var(--accent)">SIN SORPRESAS</span></h2>
     <p class="sec-sub r d2" style="margin:0 auto;text-align:center">Todas las funciones en todos los planes — solo pagas por el tamaño de tu box. Lo que otros venden como extra, aquí es el plan básico.</p>
 
+    <div class="bill-toggle r d3">
+      <div class="bt-pill" role="group" aria-label="Periodo de facturación">
+        <button type="button" class="bt-btn active" data-bill="m">Mensual</button>
+        <button type="button" class="bt-btn" data-bill="y">Anual<span class="bt-save">2 MESES GRATIS</span></button>
+      </div>
+    </div>
+
     <div class="price-grid">
       <!-- START -->
       <div class="price-card r d1">
         <div class="price-desc">Para el box pequeño que empieza. El producto completo, no una versión recortada.</div>
-        <div class="price-amount"><span class="price-big">29€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-amount"><span class="price-big" data-m="29" data-y="24">29€</span><span class="price-mo" data-m="/ mes" data-y="/ mes · facturado al año">/ mes</span></div>
         <div class="price-limit">Hasta 50 atletas activos</div>
         <div class="price-divider"></div>
         <div class="price-feat">
@@ -716,7 +815,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <!-- PRO (featured) -->
       <div class="price-card featured r d2">
         <div class="price-desc">Para el box mediano en crecimiento. Datos para decidir y herramientas para retener.</div>
-        <div class="price-amount"><span class="price-big">49€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-amount"><span class="price-big" data-m="49" data-y="41">49€</span><span class="price-mo" data-m="/ mes" data-y="/ mes · facturado al año">/ mes</span></div>
         <div class="price-limit">Hasta 120 atletas activos</div>
         <div class="price-divider"></div>
         <div class="price-feat">
@@ -732,7 +831,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <!-- UNLIMITED -->
       <div class="price-card r d3">
         <div class="price-desc">Para el box grande. Sin límites y con tu propia app en las stores.</div>
-        <div class="price-amount"><span class="price-big">79€</span><span class="price-mo">/ mes</span></div>
+        <div class="price-amount"><span class="price-big" data-m="79" data-y="66">79€</span><span class="price-mo" data-m="/ mes" data-y="/ mes · facturado al año">/ mes</span></div>
         <div class="price-limit">Atletas ilimitados</div>
         <div class="price-divider"></div>
         <div class="price-feat">
@@ -854,6 +953,97 @@ const cio = new IntersectionObserver(entries => {
   entries.forEach(e => { if(e.isIntersecting){ animateCount(e.target); cio.unobserve(e.target); } });
 }, {threshold: 0.5});
 document.querySelectorAll('.cnt').forEach(el => cio.observe(el));
+
+const noMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Palabra rotatoria del hero
+const rotEl = document.getElementById('rotWord');
+if (rotEl && !noMotion) {
+  const words = ['CAOS', 'EXCELS', 'PAPELEO', 'LÍOS'];
+  let wi = 0;
+  setInterval(() => {
+    rotEl.classList.add('out');
+    setTimeout(() => {
+      wi = (wi + 1) % words.length;
+      rotEl.textContent = words[wi];
+      rotEl.classList.remove('out');
+      rotEl.classList.add('in');
+      setTimeout(() => rotEl.classList.remove('in'), 520);
+    }, 400);
+  }, 2600);
+}
+
+// Scrollspy: resalta la sección visible en el nav
+const spyLinks = [...document.querySelectorAll('.nav-pill-group a')];
+const spyMap = new Map(spyLinks.map(a => [a.getAttribute('href').slice(1), a]));
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      spyLinks.forEach(a => a.classList.remove('active'));
+      const link = spyMap.get(e.target.id);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+['feat', 'pricing', 'how', 'reviews', 'faq'].forEach(id => {
+  const s = document.getElementById(id);
+  if (s) spy.observe(s);
+});
+
+// Tilt 3D + foco de luz en las bento cards (solo puntero fino)
+if (matchMedia('(pointer:fine)').matches && !noMotion) {
+  document.querySelectorAll('.bc').forEach(card => {
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      card.style.setProperty('--mx', (x * 100) + '%');
+      card.style.setProperty('--my', (y * 100) + '%');
+      card.style.transform = `translateY(-5px) perspective(900px) rotateX(${(0.5 - y) * 5}deg) rotateY(${(x - 0.5) * 5}deg)`;
+    });
+    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+  });
+
+  // Botones magnéticos
+  document.querySelectorAll('.btn-p, .btn-cta').forEach(btn => {
+    btn.addEventListener('pointermove', e => {
+      const r = btn.getBoundingClientRect();
+      btn.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .18}px, ${(e.clientY - r.top - r.height / 2) * .3}px)`;
+    });
+    btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
+  });
+}
+
+// Toggle mensual / anual
+const btBtns = document.querySelectorAll('.bt-btn');
+btBtns.forEach(btn => btn.addEventListener('click', () => {
+  if (btn.classList.contains('active')) return;
+  btBtns.forEach(b => b.classList.toggle('active'));
+  const mode = btn.dataset.bill;
+  document.querySelectorAll('.price-amount').forEach(pa => {
+    pa.classList.add('swap');
+    setTimeout(() => {
+      const big = pa.querySelector('.price-big'), mo = pa.querySelector('.price-mo');
+      big.textContent = big.dataset[mode] + '€';
+      mo.textContent = mo.dataset[mode];
+      pa.classList.remove('swap');
+    }, 190);
+  });
+}));
+
+// Demo viva del teléfono: la clase de las 10:00 se va llenando
+if (!noMotion) {
+  const empties = [...document.querySelectorAll('.phone .cc:nth-of-type(2) .sp.e')];
+  let bookIdx = 0;
+  if (empties.length) setInterval(() => {
+    if (bookIdx < empties.length) {
+      empties[bookIdx].classList.add('pop');
+      bookIdx++;
+    } else {
+      empties.forEach(s => s.classList.remove('pop'));
+      bookIdx = 0;
+    }
+  }, 2400);
+}
 </script>
 
 </body>
