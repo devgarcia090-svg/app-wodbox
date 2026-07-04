@@ -2,7 +2,7 @@
 
 > Software all-in-one para gestionar boxes de CrossFit. Desde 29€/mes, todo incluido, sin permanencia.
 
-WodBox es una aplicación móvil nativa (iOS y Android) diseñada para simplificar la gestión de boxes de CrossFit. Permite a los coaches y propietarios gestionar miembros, reservas de clases, el WOD del día y la comunicación con sus atletas desde una sola plataforma, sin comisiones por reserva.
+WodBox es una aplicación móvil nativa (iOS y Android) diseñada para simplificar la gestión de boxes de CrossFit. Permite a los coaches y propietarios gestionar miembros, reservas de clases, el WOD del día y la comunicación con sus atletas desde una sola plataforma. WodBox no procesa pagos: los cobros los gestiona cada box por su canal habitual.
 
 ## Características principales
 
@@ -10,8 +10,7 @@ WodBox es una aplicación móvil nativa (iOS y Android) diseñada para simplific
 - **Reservas de clases**: reservas en tiempo real con control de aforo y lista de espera; si la clase está llena, el atleta puede solicitar plaza al entrenador, que la aprueba o rechaza desde su panel.
 - **WOD del día con leaderboard**: publicación diaria de entrenamientos con registro de resultados RX/Scaled y clasificación entre atletas — incluido en todos los planes, no como extra de pago.
 - **Comunicación push**: notificaciones push ilimitadas, anuncios a todo el box y mensajes directos coach-atleta, sin coste por mensaje (sin SMS de pago).
-- **Control de cobros**: facturación, alertas de membresías que vencen y seguimiento de pagos. Cobro automático por domiciliación con pasarela integrada: en desarrollo, sin comisiones añadidas por WodBox.
-- **Panel de coaches**: ocupación de clases en tiempo real, solicitudes de plaza, bajas de cada clase, miembros activos y cobros pendientes.
+- **Panel de coaches**: ocupación de clases en tiempo real, solicitudes de plaza, bajas de cada clase y miembros activos.
 
 ## Precios (2026)
 

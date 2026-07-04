@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>WodBox — Gestión profesional para tu box de CrossFit</title>
-<meta name="description" content="Software all-in-one para boxes de CrossFit. Miembros, reservas, pagos y comunicación en una sola app. Sin comisiones.">
+<meta name="description" content="Software all-in-one para boxes de CrossFit. Miembros, reservas, WOD del día y comunicación en una sola app. Sin permanencia.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="canonical" href="https://www.wodbox.xyz/">
 <meta name="robots" content="index, follow">
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="WodBox">
 <meta property="og:locale" content="es_ES">
 <meta property="og:title" content="WodBox — Gestión profesional para tu box de CrossFit">
-<meta property="og:description" content="Software all-in-one para boxes de CrossFit. Gestiona miembros, reservas, cobros y comunicación desde una sola app. Sin comisiones.">
+<meta property="og:description" content="Software all-in-one para boxes de CrossFit. Gestiona miembros, reservas, WODs y comunicación desde una sola app. Sin permanencia.">
 <meta property="og:image" content="https://www.wodbox.xyz/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -25,7 +25,7 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WodBox — Gestión profesional para tu box de CrossFit">
-<meta name="twitter:description" content="Software all-in-one para boxes de CrossFit. Miembros, reservas, cobros y comunicación en una sola app. Sin comisiones.">
+<meta name="twitter:description" content="Software all-in-one para boxes de CrossFit. Miembros, reservas, WOD del día y comunicación en una sola app. Sin permanencia.">
 <meta name="twitter:image" content="https://www.wodbox.xyz/assets/og-image.png">
 
 <!-- JSON-LD: SoftwareApplication -->
@@ -51,7 +51,7 @@
     "Reservas de clases con control de aforo y lista de espera",
     "WOD del día con leaderboard RX/Scaled",
     "Comunicación push y chat con atletas",
-    "Facturación y control de cobros",
+    "Solicitudes de plaza con aprobación del coach",
     "Panel de control para coaches"
   ],
   "inLanguage": "es",
@@ -342,7 +342,8 @@ nav.s { background: rgba(6,9,15,.94); backdrop-filter: blur(20px); -webkit-backd
 .testi-g { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 48px; }
 .tc { background: var(--s2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: border-color .3s; }
 .tc:hover { border-color: rgba(249,92,0,.28); }
-.stars { color: var(--yellow); font-size: 13px; margin-bottom: 13px; letter-spacing: 2px; }
+.fc-ic { font-size: 26px; margin-bottom: 12px; }
+.fc-t { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
 .tq { font-size: 13.5px; color: var(--muted); line-height: 1.75; margin-bottom: 14px; font-style: italic; }
 .ta { display: flex; align-items: center; gap: 9px; }
 .tav { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
@@ -552,7 +553,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       </a>
       <a href="#pricing">Precio</a>
       <a href="#how">Cómo funciona</a>
-      <a href="#reviews">Opiniones</a>
+      <a href="#founders">Fundadores</a>
       <a href="#faq">FAQ</a>
     </div>
     <div class="nav-right">
@@ -565,12 +566,12 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 <section>
   <div class="hero">
     <div>
-      <div class="hero-badge"><span class="bdot"></span> iOS · Android · Sin comisiones</div>
+      <div class="hero-badge"><span class="bdot"></span> iOS · Android · Sin permanencia</div>
       <h1 class="hero-title">
         <span class="ht-line l1"><span class="ht-inner">TU BOX,</span></span>
         <span class="ht-line l2"><span class="ht-inner">SIN <span class="rot-word" id="rotWord">CAOS</span></span></span>
       </h1>
-      <p class="hero-sub">Gestiona miembros, reservas, cobros y comunicación desde una sola app. Diseñada para boxes de CrossFit que quieren crecer.</p>
+      <p class="hero-sub">Gestiona miembros, reservas, WODs y comunicación desde una sola app. Diseñada para boxes de CrossFit que quieren crecer.</p>
       <div class="hero-ctas">
         <a href="mailto:hola@wodbox.xyz" class="btn-p">
           Solicitar demo gratis
@@ -650,7 +651,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 <div class="stats-s">
   <div class="stats-g">
     <div class="stat-i r"><div class="ts-t">Sin permanencia</div><div class="stat-l">ni cuota de alta — mes a mes</div></div>
-    <div class="stat-i r d1"><div class="ts-t">0€ por reserva</div><div class="stat-l">sin comisiones añadidas</div></div>
+    <div class="stat-i r d1"><div class="ts-t">Tu marca</div><div class="stat-l">tu logo y tus colores en la app</div></div>
     <div class="stat-i r d2"><div class="ts-t">Leaderboard</div><div class="stat-l">incluido en todos los planes</div></div>
     <div class="stat-i r d3"><div class="ts-t">RGPD</div><div class="stat-l">datos alojados en Europa</div></div>
   </div>
@@ -659,8 +660,8 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
 <!-- MARQUEE -->
 <div class="mq" aria-hidden="true">
   <div class="mq-track">
-    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Facturación</span><b>·</b></div>
-    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Facturación</span><b>·</b></div>
+    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Solicitud de plaza</span><b>·</b></div>
+    <div class="mq-i"><span>Reservas en vivo</span><b>·</b><span>Aforo automático</span><b>·</b><span>Leaderboard RX / Scaled</span><b>·</b><span>Bonos de clases</span><b>·</b><span>Push ilimitado</span><b>·</b><span>WOD del día</span><b>·</b><span>Lista de espera</span><b>·</b><span>Solicitud de plaza</span><b>·</b></div>
   </div>
 </div>
 
@@ -704,10 +705,10 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
         <div class="bc-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#f95c00" stroke-width="2"/><path d="M2 10h20" stroke="#f95c00" stroke-width="2"/><path d="M6 15h4" stroke="#f95c00" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
-        <div class="bc-t">Control de cobros</div>
-        <div class="bc-d">Facturación, alertas de membresías que vencen y seguimiento de pagos en un clic. Cobro automático por domiciliación: muy pronto, sin comisiones añadidas.</div>
-        <div class="big-n">€0</div>
-        <div class="big-l">comisiones añadidas por WodBox</div>
+        <div class="bc-t">Solicitudes de plaza</div>
+        <div class="bc-d">¿Clase llena? El atleta pide plaza desde la app y el coach la aprueba o rechaza con un toque. Nadie se queda fuera por un malentendido.</div>
+        <div class="big-n">🙋 → ✓</div>
+        <div class="big-l">solicitud aprobada con un toque</div>
       </div>
 
       <div class="bc r d4">
@@ -750,32 +751,33 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
       <div class="step r d3">
         <div class="step-n">3</div>
         <div class="step-t">Empieza a operar</div>
-        <div class="step-d">Crea clases, gestiona reservas y cobra cuotas desde el primer día.</div>
+        <div class="step-d">Crea clases, gestiona reservas y publica tus WODs desde el primer día.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="sec" id="reviews" style="padding-top:48px">
+<!-- PROGRAMA FUNDADOR -->
+<section class="sec" id="founders" style="padding-top:48px">
   <div class="w">
-    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Testimonios<div class="ebl"></div></div>
-    <h2 class="sec-title r d1" style="text-align:center">LO QUE DICEN<br>LOS COACHES</h2>
+    <div class="eyebrow r" style="justify-content:center"><div class="ebl"></div>Programa fundador<div class="ebl"></div></div>
+    <h2 class="sec-title r d1" style="text-align:center">SÉ DE LOS<br><span style="color:var(--accent)">20 PRIMEROS</span></h2>
+    <p class="sec-sub r d2" style="margin:0 auto;text-align:center">WodBox está empezando, y no vamos a enseñarte reseñas infladas. Preferimos proponerte un trato que ningún software grande puede igualar:</p>
     <div class="testi-g">
       <div class="tc r d1">
-        <div class="stars">★★★★★</div>
-        <div class="tq">"Antes perdía horas con hojas de cálculo. Ahora en 5 minutos tengo toda la semana organizada. Mis atletas están encantados."</div>
-        <div class="ta"><div class="tav" style="background:#f95c00">CM</div><div><div class="tn">Carlos Martínez</div><div class="tb">CrossFit Murcia Norte</div></div></div>
+        <div class="fc-ic">🔒</div>
+        <div class="fc-t">Precio congelado de por vida</div>
+        <div class="tq">La tarifa con la que entres no sube nunca. Ni el año que viene, ni cuando la app tenga el triple de funciones.</div>
       </div>
       <div class="tc r d2">
-        <div class="stars">★★★★★</div>
-        <div class="tq">"El control de pagos automático me ha ahorrado conversaciones incómodas. Todo transparente desde la app."</div>
-        <div class="ta"><div class="tav" style="background:#3b82f6">AR</div><div><div class="tn">Ana Rodríguez</div><div class="tb">Box Valencia CrossFit</div></div></div>
+        <div class="fc-ic">⚡</div>
+        <div class="fc-t">Línea directa con el desarrollo</div>
+        <div class="tq">Hablas con quien construye la app, no con un buzón de sugerencias. Lo que tu box necesita entra en el roadmap y sale en semanas.</div>
       </div>
       <div class="tc r d3">
-        <div class="stars">★★★★★</div>
-        <div class="tq">"La personalización con mi logo y colores le da una imagen profesional que antes no me podía permitir."</div>
-        <div class="ta"><div class="tav" style="background:#22c55e">PL</div><div><div class="tn">Pablo López</div><div class="tb">Barbell Club Bilbao</div></div></div>
+        <div class="fc-ic">🤝</div>
+        <div class="fc-t">Puesta en marcha acompañada</div>
+        <div class="tq">Montamos tu box contigo: miembros, horarios, tarifas y los colores de tu marca. Gratis y sin permanencia.</div>
       </div>
     </div>
   </div>
@@ -807,7 +809,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>WOD del día con leaderboard RX/Scaled</div>
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Bonos de clases con caducidad</div>
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Chat y notificaciones push ilimitadas</div>
-          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Facturación y control de cobros</div>
+          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Calendario de asistencia por atleta</div>
         </div>
         <a href="mailto:hola@wodbox.xyz?subject=WodBox%20Start" class="btn-price btn-price-out">Solicitar demo</a>
       </div>
@@ -821,7 +823,6 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
         <div class="price-feat">
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todo lo del plan Start</div>
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Informes de asistencia y ocupación<span class="pf-soon">Pronto</span></div>
-          <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Cobro de cuotas automático<span class="pf-soon">Pronto</span></div>
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Alertas de retención de atletas<span class="pf-soon">Pronto</span></div>
           <div class="pf"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Soporte con respuesta en 24h</div>
         </div>
@@ -892,7 +893,7 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   <div class="cta-bg" aria-hidden="true"></div>
   <div class="w">
     <h2 class="cta-t r">TU BOX MERECE<br><span style="color:var(--accent)">LA MEJOR APP</span></h2>
-    <p class="cta-sub r d1">Demo gratuita · Sin permanencia · Sin comisiones</p>
+    <p class="cta-sub r d1">Demo gratuita · Sin permanencia · Todo incluido</p>
     <div class="r d2">
       <a href="mailto:hola@wodbox.xyz" class="btn-cta">
         Solicitar demo gratis
@@ -985,7 +986,7 @@ const spy = new IntersectionObserver(entries => {
     }
   });
 }, { rootMargin: '-40% 0px -55% 0px' });
-['feat', 'pricing', 'how', 'reviews', 'faq'].forEach(id => {
+['feat', 'pricing', 'how', 'founders', 'faq'].forEach(id => {
   const s = document.getElementById(id);
   if (s) spy.observe(s);
 });
