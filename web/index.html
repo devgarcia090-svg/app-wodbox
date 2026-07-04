@@ -290,6 +290,8 @@ nav.s { background: rgba(6,9,15,.94); backdrop-filter: blur(20px); -webkit-backd
 .stat-i { padding: 30px 36px; border-right: 1px solid var(--border); text-align: center; }
 .stat-i:last-child { border-right: none; }
 .stat-n { font-size: 46px; font-weight: 900; color: var(--accent); line-height: 1; letter-spacing: -.03em; }
+.ts-t { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: .01em; }
+.ts-t::before { content: '✓'; color: var(--accent); font-weight: 800; margin-right: 8px; }
 .stat-l { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
 /* ── SECTIONS ── */
@@ -403,7 +405,8 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   .stat-i:nth-child(odd){border-right:1px solid var(--border);}
   .stat-i:nth-child(n+3){border-bottom:none;}
   .stat-n{font-size:34px;}
-  .stat-l{font-size:12px;}
+  .ts-t{font-size:14.5px;}
+  .stat-l{font-size:11.5px;}
   /* secciones más compactas y centradas */
   .sec,.pricing-s{padding:64px 0;}
   .eyebrow{justify-content:center;}
@@ -559,13 +562,13 @@ footer { border-top: 1px solid var(--border); padding: 36px 0; }
   </div>
 </section>
 
-<!-- STATS -->
+<!-- TRUST STRIP -->
 <div class="stats-s">
   <div class="stats-g">
-    <div class="stat-i r"><div class="stat-n"><span class="cnt" data-t="0">0</span>€</div><div class="stat-l">comisión por reserva</div></div>
-    <div class="stat-i r d1"><div class="stat-n"><span class="cnt" data-t="5">0</span> min</div><div class="stat-l">para empezar</div></div>
-    <div class="stat-i r d2"><div class="stat-n"><span class="cnt" data-t="2">0</span> apps</div><div class="stat-l">iOS y Android</div></div>
-    <div class="stat-i r d3"><div class="stat-n"><span class="cnt" data-t="100">0</span>%</div><div class="stat-l">tu marca, tus colores</div></div>
+    <div class="stat-i r"><div class="ts-t">Sin permanencia</div><div class="stat-l">ni cuota de alta — mes a mes</div></div>
+    <div class="stat-i r d1"><div class="ts-t">0€ por reserva</div><div class="stat-l">sin comisiones añadidas</div></div>
+    <div class="stat-i r d2"><div class="ts-t">Leaderboard</div><div class="stat-l">incluido en todos los planes</div></div>
+    <div class="stat-i r d3"><div class="ts-t">RGPD</div><div class="stat-l">datos alojados en Europa</div></div>
   </div>
 </div>
 
